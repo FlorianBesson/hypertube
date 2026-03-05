@@ -1,0 +1,11 @@
+services:
+  front:
+    build:
+      dockerfile: ./frontend/Dockerfile
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./.env:/config/.env:ro
