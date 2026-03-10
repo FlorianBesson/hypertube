@@ -1,7 +1,8 @@
 services:
   front:
     build:
-      dockerfile: ./frontend/Dockerfile
+      context: ./frontend
+      dockerfile: ./Dockerfile
       target: dev
     ports:
       - "5173:5173"
@@ -9,3 +10,16 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - ./.env:/config/.env:ro
+  back: 
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+      - "5555:5555" #prisma studio
+    volumes:
+      - ./backend:./app
+      - /app/node_modules
+      - /app/src/uploads:/app/src/uploads
+
