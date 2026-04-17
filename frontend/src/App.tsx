@@ -4,10 +4,29 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
+import { useEffect } from 'react'
+
+async function testCall() {
+    try
+    {
+        const response = await fetch("/api/")
+        console.log(await response.text());
+        
+    }
+    catch (error)
+    {
+        console.log(error)
+    }
+}
+
 function App() {
   const [count, setCount] = useState(0)
 
-  return (
+    useEffect(() => {
+        testCall()
+  }, [])
+  
+    return (
     <>
       <section id="center">
         <div className="hero">
