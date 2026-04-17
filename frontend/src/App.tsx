@@ -4,7 +4,7 @@ import { useState } from 'react'
 async function testCall() {
     try
     {
-        const response = await fetch("/api/")
+        const response = await fetch("/api/db-check")
         console.log(await response.text());
         
     }

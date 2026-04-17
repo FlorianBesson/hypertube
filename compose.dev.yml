@@ -10,6 +10,8 @@ services:
             - ./frontend:/app
             - /app/node_modules
             - ./.env:/config/.env:ro
+        networks:
+            - prisma-network
         restart: unless-stopped
         
     api-express:
@@ -21,34 +23,54 @@ services:
         volumes:
             - ./backend/:/app/
         env_file:
-            - ./backend/.env
+            - .env
         networks:
             - prisma-network
+        depends_on:
+            postgres_db:
+                condition: service_healthy
         restart: unless-stopped
         
-    postgres:
+    postgres_db:
         image: postgres:17
+        hostname: postgres_db
+        container_name: postgres_db
         restart: always
         environment:
-            - POSTGRES_DB=postgres
-            - POSTGRES_USER=postgres
-            - POSTGRES_PASSWORD=prisma
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         ports:
             - "5432:5432"
         networks:
             - prisma-network
         healthcheck: 
-                test: ["CMD-SHELL", "pg_isready -U prisma -d postgres"] 
+                test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"] 
                 interval: 5s
                 timeout: 2s
                 retries: 20
         volumes: 
             - postgres_data:/var/lib/postgresql/data
         command: postgres -c listen_addresses='*'
-        logging: 
-            options: 
-                max-size: "10m"
-                max-file: "3"
+                
+    prisma-studio:
+        image: node:22
+        working_dir: /app
+        volumes:
+            - ./backend/:/app
+        command: npx prisma studio --port 5555 --browser none
+        ports: 
+            - "5555:5555"
+        env_file:
+            - .env
+        networks:
+            - prisma-network
+        depends_on:
+            postgres_db:
+                condition: service_healthy
+            api-express:
+                condition: service_started
+    
 networks: 
     prisma-network: 
 volumes: 

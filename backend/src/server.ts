@@ -3,9 +3,12 @@ import express, { Application, Request, Response } from 'express';
 // Database + Prisma imports
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import "dotenv/config";
+
+const DATABASE_URL = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@postgres_db:5432/${process.env.POSTGRES_DB}?schema=public`;
 
 const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL
+    connectionString: DATABASE_URL
 })
 
 const prisma = new PrismaClient({
@@ -15,12 +18,19 @@ const prisma = new PrismaClient({
 const app: Application = express();
 const PORT = 3000;
 
-app.get("/db-check", async (req, res) => {
-    const userCount = await prisma.user.count();
-    res.json(userCount == 0 ? "No users have been added yet." : "Some users have been added to the database.")
+app.get("/api/db-check", async (req, res) => {
+    try
+    {
+        const userCount = await prisma.user.count();
+        res.json({ success: true, message: "Database connected to Express !" })        
+    }
+    catch(error)
+    {
+        console.log()
+    }
 })
 
-app.get('/api', (req: Request, res: Response) => {
+app.get('/api/welcome', (req: Request, res: Response) => {
   res.send('Hello, TypeScript + Express!');
 });
 
