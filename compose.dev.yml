@@ -11,3 +11,13 @@ services:
             - /app/node_modules
             - ./.env:/config/.env:ro
         restart: unless-stopped
+        
+    api-express:
+        build:
+            context: ./backend
+            target: dev
+        ports: 
+            - "3000:3000"
+        volumes:
+             - ./backend/src:/app/src/
+        restart: unless-stopped
