@@ -1,7 +1,6 @@
 import express, { Application, Request, Response } from 'express';
 
 // Database + Prisma imports
-import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
