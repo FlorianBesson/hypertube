@@ -1,0 +1,7 @@
+services:    
+    api-express:
+        container_name: hypertube-express
+        build:
+            context: backend
+        ports: 
+            - "3000:3000"
