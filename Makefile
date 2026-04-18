@@ -27,7 +27,6 @@ check-env: ## Check if .env file exists
 
 dev: check-env dev-build dev-up ## Start development environment (build + up)
 	@echo "$(GREEN)Development environment started!$(NC)"
-	@echo "$(BLUE)PHP:$(NC) http://localhost:$${APP_LISTEN_ENDPOINT:-8080}"
 	@echo "$(BLUE)React:$(NC) http://localhost:5173"
 
 dev-build: 

@@ -4,8 +4,8 @@ import { useState } from 'react'
 async function testCall() {
     try
     {
-        const response = await fetch("/api/")
-        console.log(await response.text());
+        const response = await fetch("/api/db-check")
+        console.log(await response.json());
         
     }
     catch (error)
@@ -18,7 +18,7 @@ function App() {
   
     return (
     <>
-        <button onClick={testCall}>Test API Call</button>
+        <button onClick={testCall}>Api test + Db check</button>
     </>
   )
 }
