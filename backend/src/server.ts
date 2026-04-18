@@ -30,7 +30,7 @@ app.get("/api/db-check", async (req, res) => {
     }
 })
 
-app.get('/api/welcome', (req: Request, res: Response) => {
+app.get('/api/ping', (req: Request, res: Response) => {
   res.send('Hello, TypeScript + Express!');
 });
 
