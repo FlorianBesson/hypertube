@@ -37,14 +37,9 @@ dev-up: ## Start development containers
 	@echo "$(BLUE)Starting development containers...$(NC)"
 	docker compose -f compose.dev.yml up -d
 
-dev-restart: css-php-build css-react-build ## Restart development containers
-	@echo "$(BLUE)Restarting development containers...$(NC)"
-	docker compose -f compose.dev.yml restart
-
 dev-down: ## Stop development containers and clean CSS files
 	@echo "$(BLUE)Stopping development containers...$(NC)"
 	docker compose -f compose.dev.yml down
-	@$(MAKE) css-clean
 
 
 build: dev-build ## Alias for dev-build
@@ -61,4 +56,6 @@ logs: ## Show all container logs
 prisma-studio: ## Start Prisma Studio database browser
 	@echo "$(BLUE)Starting Prisma Studio on http://localhost:5555$(NC)"
 	@echo "$(YELLOW)Press Ctrl+C to stop$(NC)"
-	@docker compose -f compose.dev.yml exec api npx prisma studio --browser none --port 5555
+	@docker compose -f compose.dev.yml exec prisma-studio npx prisma studio --browser none --port 5555
+	
+re: down dev

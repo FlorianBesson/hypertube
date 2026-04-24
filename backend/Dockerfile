@@ -1,8 +1,6 @@
 FROM node:22 AS dev
 WORKDIR /app
 
-
-
 COPY package*.json tsconfig.json /app/
 
 RUN npm ci
