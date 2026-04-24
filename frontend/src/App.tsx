@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { RegisterView } from "./pages/Register";
 
 
 async function testCall() {
@@ -29,6 +29,7 @@ function App() {
                 className='bg-amber-200 p-3 rounded-lg cursor-pointer hover:bg-amber-100'
                 onClick={testCall}>Api test + Db check
             </button>
+            <RegisterView />
     </>
   )
 }

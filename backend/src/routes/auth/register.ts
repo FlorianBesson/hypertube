@@ -10,16 +10,17 @@ const RegisterSchema = z.object({
 export async function registerHandler(req: Request, res: Response) {
     try
     {
-        console.log("Calling /api/register");
         const result = RegisterSchema.safeParse({ username: req.body.username, password: req.body.password })
         if (!result.success)
-            throw new Error("ERREUR ZOD")
+            throw new Error("Zod validation failed")
             
             
-        res.json({ success: true, message: "Succesfully registed !" });
+        res.status(201).json({ success: true, message: "Succesfully registered !" });
     }
     catch (error)
     {
         console.log("Error calling /api/registered");
+        console.log(error.message)
+        res.status(400).json({success: false , message: error.message})
     }
 }
