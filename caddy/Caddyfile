@@ -5,11 +5,11 @@ localhost {
 
     # backend
     handle /api/* {
-        reverse_proxy api:3000
+        reverse_proxy api-express:3000
     }
 
     # frontend
     handle {
-        reverse_proxy frontend:80
+        reverse_proxy vite:80
     }
 }
