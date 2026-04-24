@@ -15,7 +15,7 @@ const prisma = new PrismaClient({
     adapter,
 })
 
-const app: Application = express();
+export const app: Application = express();
 const PORT = 3000;
 
 app.get("/api/db-check", async (req, res) => {
@@ -29,6 +29,8 @@ app.get("/api/db-check", async (req, res) => {
         console.log()
     }
 })
+
+
 
 app.get('/api/ping', (req: Request, res: Response) => {
   res.send('Hello, TypeScript + Express!');
