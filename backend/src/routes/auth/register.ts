@@ -1,14 +1,13 @@
-import { app } from "../../server";
+import { Request, Response } from 'express';
 import * as z from "zod"
 
-import { Request, Response } from 'express';
 
 const RegisterSchema = z.object({
     username: z.string().min(3),
     password: z.string().min(8)
 })
 
-app.post("/api/register", async (req: Request, res: Response) => {
+export async function registerHandler(req: Request, res: Response) {
     try
     {
         console.log("Calling /api/register");
@@ -21,6 +20,6 @@ app.post("/api/register", async (req: Request, res: Response) => {
     }
     catch (error)
     {
-        console.log("Error calling /api/register");
+        console.log("Error calling /api/registered");
     }
-})
+}
