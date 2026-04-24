@@ -49,13 +49,4 @@ down: dev-down ## Alias for dev-down
 logs: ## Show all container logs
 	docker compose -f compose.dev.yml logs -f --tail 100
 
-# =============================================================================
-# Database migration commands
-# =============================================================================
-
-prisma-studio: ## Start Prisma Studio database browser
-	@echo "$(BLUE)Starting Prisma Studio on http://localhost:5555$(NC)"
-	@echo "$(YELLOW)Press Ctrl+C to stop$(NC)"
-	@docker compose -f compose.dev.yml exec prisma-studio npx prisma studio --browser none --port 5555
-	
 re: down dev
