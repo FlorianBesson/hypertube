@@ -3,8 +3,10 @@ services:
         build:
             context: ./backend
             target: dev
-        ports: 
-            - "3000:3000"
+        ports:
+            - '127.0.0.1:5555:5555'
+        expose:
+            - '3000'
         volumes:
             - ./backend/:/app/
         env_file:
@@ -25,8 +27,6 @@ services:
             - POSTGRES_DB=${POSTGRES_DB}
             - POSTGRES_USER=${POSTGRES_USER}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-        ports:
-            - "5432:5432"
         networks:
             - prisma-network
         healthcheck: 
