@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import * as z from "zod"
 import { prisma } from '../../server';
+import bcrypt from 'bcrypt'
 
 
 const RegisterSchema = z.object({
+    email: z.
+        email("Field is required"),
+    
     username: z
         .string("Field is required")
         .min(3, {
@@ -27,27 +31,38 @@ const RegisterSchema = z.object({
 export async function registerHandler(req: Request, res: Response) {
     try
     {
-        const result = RegisterSchema.safeParse({ username: req.body.username, password: req.body.password })
+        const result = RegisterSchema.safeParse({ email: req.body.email, username: req.body.username, password: req.body.password })
         const zodErrors = result.error?.issues.map((i) => i.message)
         
         if (!result.success)
             return res.status(400).json({success: false, message: zodErrors})
-            
-            
-        await prisma.user.create({
-            data: {
-                username: "Hello",
-                email: "test@gmail.com",
-                password: "world"
+        
+        const { email, username, password } = result.data
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const user = await prisma.user.findUnique({
+            where: {
+                email: email
             }
         })
         
+        if (user)
+            throw new Error("Email is already in use");
+        
+        await prisma.user.create({
+            data: {
+                username: username,
+                email: email,
+                password: hashedPassword
+            }
+        })
+                
         res.status(201).json({ success: true, message: "Succesfully registered !" });
     }
     catch (error)
     {
-        console.log("Error calling /api/registered");
+        console.log("Error : /api/registered");
         console.log(error.message)
-        res.status(400).json({success: false , message: error.message})
+        res.status(500).json({success: false , message: "Internal Server Error"})
     }
 }

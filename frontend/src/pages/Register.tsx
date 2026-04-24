@@ -3,6 +3,7 @@ import { useState } from "react"
 function RegisterForm() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('')
     const [error, setError] = useState('')
 
     async function handleSubmit(e) {
@@ -39,8 +40,21 @@ function RegisterForm() {
     }
     
     return (
-        <form method="post" onSubmit={handleSubmit}>                
+        <form method="post" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-2 p-5 max-w-2xl border">
+                <div className="">
+                    <label className="">Email
+                        <input
+                            name="email"
+                            className="border ml-11"
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                        >
+                        </input>
+                    </label>
+                </div>
+                
                 <div className="">
                     <label className="">Username
                         <input
