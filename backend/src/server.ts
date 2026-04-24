@@ -1,4 +1,6 @@
 import express, { Application, Request, Response } from 'express';
+import { HttpError } from './errors';
+import { NextFunction } from 'express';
 
 import { checkDbConnection } from './db/utils';
 // Database + Prisma imports
@@ -30,6 +32,13 @@ app.use("/api/auth", authRouter);
 app.get('/api/ping', (req: Request, res: Response) => {
   res.send('Hello, TypeScript + Express!');
 });
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof HttpError)
+        return res.status(err.status).json({ success: false, message: err.message })
+    res.status(500).json({success: false, message: "Internal Server Error"})
+})
+
 
 app.listen(PORT, async () => {
     console.log(`Server running at http://localhost:${PORT}`);

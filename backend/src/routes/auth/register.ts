@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as z from "zod"
 import { prisma } from '../../server';
 import bcrypt from 'bcrypt'
+import { HttpError } from '../../errors';
 
 
 const RegisterSchema = z.object({
@@ -32,10 +33,10 @@ export async function registerHandler(req: Request, res: Response) {
     try
     {
         const result = RegisterSchema.safeParse({ email: req.body.email, username: req.body.username, password: req.body.password })
-        const zodErrors = result.error?.issues.map((i) => i.message)
+        const zodErrors = result.error?.issues.map((i) => i.message) || []
         
         if (!result.success)
-            return res.status(400).json({success: false, message: zodErrors})
+            throw new HttpError(400, zodErrors)
         
         const { email, username, password } = result.data
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -47,7 +48,7 @@ export async function registerHandler(req: Request, res: Response) {
         })
         
         if (user)
-            throw new Error("Email is already in use");
+            throw new HttpError(400, "Email already in use");
         
         await prisma.user.create({
             data: {
@@ -57,12 +58,13 @@ export async function registerHandler(req: Request, res: Response) {
             }
         })
                 
-        res.status(201).json({ success: true, message: "Succesfully registered !" });
+        res.status(201).json({ success: true, message: "Succesfully registered" });
     }
     catch (error)
-    {
-        console.log("Error : /api/registered");
-        console.log(error.message)
-        res.status(500).json({success: false , message: "Internal Server Error"})
+    {        
+        console.log("Error : /api/auth/registered");
+        if (error instanceof Error)
+            console.log(error.message)
+        throw new Error("Internal Server Error");
     }
 }
