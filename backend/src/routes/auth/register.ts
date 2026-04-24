@@ -30,41 +30,31 @@ const RegisterSchema = z.object({
 })
 
 export async function registerHandler(req: Request, res: Response) {
-    try
-    {
-        const result = RegisterSchema.safeParse({ email: req.body.email, username: req.body.username, password: req.body.password })
-        const zodErrors = result.error?.issues.map((i) => i.message) || []
-        
-        if (!result.success)
-            throw new HttpError(400, zodErrors)
-        
-        const { email, username, password } = result.data
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        const user = await prisma.user.findUnique({
-            where: {
-                email: email
-            }
-        })
-        
-        if (user)
-            throw new HttpError(400, "Email already in use");
-        
-        await prisma.user.create({
-            data: {
-                username: username,
-                email: email,
-                password: hashedPassword
-            }
-        })
-                
-        res.status(201).json({ success: true, message: "Succesfully registered" });
-    }
-    catch (error)
-    {        
-        console.log("Error : /api/auth/registered");
-        if (error instanceof Error)
-            console.log(error.message)
-        throw new Error("Internal Server Error");
-    }
+    const result = RegisterSchema.safeParse({ email: req.body.email, username: req.body.username, password: req.body.password })
+    const zodErrors = result.error?.issues.map((i) => i.message) || []
+    
+    if (!result.success)
+        throw new HttpError(400, zodErrors)
+    
+    const { email, username, password } = result.data
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const user = await prisma.user.findUnique({
+        where: {
+            email: email
+        }
+    })
+    
+    if (user)
+        throw new HttpError(400, "Email already in use");
+    
+    await prisma.user.create({
+        data: {
+            username: username,
+            email: email,
+            password: hashedPassword
+        }
+    })
+            
+    res.status(201).json({ success: true, message: "Succesfully registered" });
 }

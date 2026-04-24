@@ -29,10 +29,6 @@ export const app: Application = express();
 app.use(express.json());
 app.use("/api/auth", authRouter);
 
-app.get('/api/ping', (req: Request, res: Response) => {
-  res.send('Hello, TypeScript + Express!');
-});
-
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof HttpError)
         return res.status(err.status).json({ success: false, message: err.message })
