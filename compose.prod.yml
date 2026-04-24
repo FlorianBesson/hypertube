@@ -1,4 +1,16 @@
 services:
+
+    caddy:
+        image: caddy:2.11.2
+        ports:
+          - '80:80'
+          - '443:443'
+        volumes:
+            - ./caddy/Caddyfile:/etc/caddy/Caddy
+            - caddy_data:/data
+            - caddy_config:/config
+        restart: unless-stopped
+
     api-express:
         build:
             context: ./backend
@@ -12,7 +24,7 @@ services:
         env_file:
             - .env
         networks:
-            - prisma-network
+            - hypertube-network
         depends_on:
             postgres_db:
                 condition: service_healthy
@@ -28,7 +40,7 @@ services:
             - POSTGRES_USER=${POSTGRES_USER}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         networks:
-            - prisma-network
+            - hypertube-network
         healthcheck: 
                 test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"] 
                 interval: 5s
@@ -39,6 +51,8 @@ services:
         command: postgres -c listen_addresses='*'
     
 networks: 
-    prisma-network: 
+    hypertube-network: 
 volumes: 
     postgres_data: 
+    caddy_data: 
+    caddy_config: 
