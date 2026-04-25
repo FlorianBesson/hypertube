@@ -10,8 +10,9 @@ CMD ["sh", "-c", "npm run db:deploy && npm run dev"]
 FROM node:22-alpine AS prod
 WORKDIR /app
 COPY package*.json tsconfig.json ./
-RUN npm ci --omit=dev
-COPY . . 
+RUN npm ci
+COPY . .
 RUN npx prisma generate
 RUN npx tsc
+RUN npm prune --omit=dev
 CMD ["sh", "-c", "npm run db:deploy && node dist/src/server.js"]
