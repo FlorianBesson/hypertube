@@ -63,6 +63,8 @@ prod-restart: ## Restart production containers
 prod-down: ## Stop production containers
 	@echo "$(BLUE)Stopping production containers...$(NC)"
 	docker compose -f compose.prod.yml down
+prod-logs: ## Show all container logs
+	docker compose -f compose.prod.yml logs -f --tail 100
 
 
 

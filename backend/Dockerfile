@@ -14,4 +14,4 @@ RUN npm ci
 COPY . . 
 RUN npx prisma generate
 RUN npx tsc
-CMD ["sh", "-c", "npm run db:deploy && node dist/server.js"]
+CMD ["sh", "-c", "npm run db:deploy && node dist/src/server.js"]
