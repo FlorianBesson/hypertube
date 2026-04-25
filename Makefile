@@ -41,6 +41,32 @@ dev-down: ## Stop development containers and clean CSS files
 	@echo "$(BLUE)Stopping development containers...$(NC)"
 	docker compose -f compose.dev.yml down
 
+# =============================================================================
+# Production commands
+# =============================================================================
+
+prod: check-env prod-build prod-up ## Start production environment (build + up)
+	@echo "$(GREEN)Production environment started!$(NC)"
+
+prod-build: ## Build production containers
+	@echo "$(BLUE)Building production containers...$(NC)"
+	docker compose -f compose.prod.yml build
+
+prod-up: ## Start production containers
+	@echo "$(BLUE)Starting production containers...$(NC)"
+	docker compose -f compose.prod.yml up -d
+
+prod-restart: ## Restart production containers
+	@echo "$(BLUE)Restarting production containers...$(NC)"
+	docker compose -f compose.prod.yml restart
+
+prod-down: ## Stop production containers
+	@echo "$(BLUE)Stopping production containers...$(NC)"
+	docker compose -f compose.prod.yml down
+prod-logs: ## Show all container logs
+	docker compose -f compose.prod.yml logs -f --tail 100
+
+
 
 build: dev-build ## Alias for dev-build
 up: dev-up ## Alias for dev-up

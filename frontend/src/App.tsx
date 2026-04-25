@@ -1,11 +1,11 @@
-import { useState } from 'react'
 
 
 async function testCall() {
     try
     {
-        const response = await fetch("/api/db-check")
-        console.log(await response.json());
+        const response = await fetch("/api/ping")
+        // console.log(await response.json());
+        console.log(response);
         
     }
     catch (error)

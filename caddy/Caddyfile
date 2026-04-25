@@ -1,0 +1,15 @@
+# HTTP to HTTPS redirect (automatic with Caddy, but explicit for clarity)
+
+# Use localhost with automatic self-signed certificates
+localhost {
+
+    # backend
+    handle /api/* {
+        reverse_proxy api-express:3000
+    }
+    # frontend
+    handle {
+        root * /srv
+        file_server
+    }
+}

@@ -1,0 +1,74 @@
+services:
+
+    caddy:
+        image: caddy:2.11.2
+        ports:
+          - '80:80'
+          - '443:443'
+        volumes:
+            - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+            - frontend_dist:/srv
+        restart: unless-stopped
+        depends_on:
+          frontend:
+            condition: service_completed_successfully
+          api-express:
+            condition: service_started
+        networks:
+          - hypertube-network
+
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+            target: prod
+        command: sh -c "cp -a /app/dist/. /dist/"
+        volumes:
+            - frontend_dist:/dist
+        networks:
+            - hypertube-network
+
+    api-express:
+        build:
+            context: ./backend
+            target: prod
+        expose:
+            - '3000'
+        env_file:
+            - .env
+        networks:
+            - hypertube-network
+        depends_on:
+            postgres_db:
+                condition: service_healthy
+        restart: unless-stopped
+        
+    postgres_db:
+        image: postgres:17
+        hostname: postgres_db
+        container_name: postgres_db
+        restart: always
+        environment:
+            - POSTGRES_DB=${POSTGRES_DB}
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        networks:
+            - hypertube-network
+        healthcheck: 
+                test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+                interval: 5s
+                timeout: 2s
+                retries: 20
+        volumes: 
+            - postgres_data:/var/lib/postgresql/data
+        command: postgres -c listen_addresses='*'
+    
+networks: 
+    hypertube-network: 
+volumes: 
+    postgres_data: 
+    caddy_data: 
+    caddy_config: 
+    frontend_dist:
