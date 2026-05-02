@@ -1,9 +1,9 @@
 name: hypertube
-on: push
-  # push:
-  #   branches: [master]
-  # pull_request:
-  #   branches: [master]
+on: 
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 jobs:
   frontend:
     runs-on: ubuntu-latest
