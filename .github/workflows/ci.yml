@@ -35,6 +35,9 @@ jobs:
       - name: Run Install
         run: npm ci
         working-directory: backend
+      - name: Generate Prisma
+        run: npx prisma generate
+        working-directory: backend
       - name: Run TypeScript Check
         run: npx tsc --noEmit
         working-directory: backend
