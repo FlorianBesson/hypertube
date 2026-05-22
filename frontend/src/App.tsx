@@ -1,26 +1,7 @@
-
-
-async function testCall() {
-    try
-    {
-        const response = await fetch("/api/ping")
-        // console.log(await response.json());
-        console.log(response);
-        
-    }
-    catch (error)
-    {
-        console.log(error)
-    }
-}
+import LoginPage from './pages/LoginPage'
 
 function App() {
-  
-    return (
-    <>
-        <button onClick={testCall}>Api test + Db check</button>
-    </>
-  )
+  return <LoginPage />
 }
 
 export default App
