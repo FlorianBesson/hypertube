@@ -170,6 +170,97 @@ app.post("/api/user/avatar", authenticateToken, (req: Request, res: Response) =>
     });
 });
 
+// Update profile details
+app.put("/api/user/profile", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.userId;
+        const { name, email } = req.body;
+
+        if (email) {
+            const cleanEmail = email.toLowerCase().trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+                res.status(400).json({ success: false, message: "Format d'adresse email invalide" });
+                return;
+            }
+
+            const existingUser = await prisma.user.findUnique({
+                where: { email: cleanEmail }
+            });
+            if (existingUser && existingUser.id !== userId) {
+                res.status(400).json({ success: false, message: "Cette adresse email est déjà utilisée" });
+                return;
+            }
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: name !== undefined ? name : undefined,
+                email: email !== undefined ? email.toLowerCase().trim() : undefined,
+            }
+        });
+
+        res.json({
+            success: true,
+            message: "Profil mis à jour avec succès",
+            user: {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                name: updatedUser.name,
+                photo: updatedUser.photo
+            }
+        });
+    } catch (error) {
+        console.error("Profile update error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la mise à jour" });
+    }
+});
+
+// Update password
+app.put("/api/user/password", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.userId;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({ success: false, message: "Veuillez renseigner l'ancien et le nouveau mot de passe" });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            res.status(400).json({ success: false, message: "Le nouveau mot de passe doit faire au moins 6 caractères" });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+            return;
+        }
+
+        if (user.password !== currentPassword) {
+            res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
+            return;
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: newPassword }
+        });
+
+        res.json({
+            success: true,
+            message: "Mot de passe modifié avec succès"
+        });
+    } catch (error) {
+        console.error("Password update error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors du changement de mot de passe" });
+    }
+});
+
 app.get("/api/db-check", async (req, res) => {
     try
     {
