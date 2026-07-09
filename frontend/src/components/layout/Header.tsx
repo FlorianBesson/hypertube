@@ -1,12 +1,12 @@
-import type { LoggedUser } from '../../App'
-import Avatar from '../ui/Avatar'
+import type { LoggedUser } from "../../App";
+import Avatar from "../ui/Avatar";
 
 interface HeaderProps {
-  user: LoggedUser
-  view: 'dashboard' | 'profile'
-  onViewChange: (view: 'dashboard' | 'profile') => void
-  onLogout: () => void
-  lang: 'en' | 'fr'
+  user: LoggedUser;
+  view: "dashboard" | "profile";
+  onViewChange: (view: "dashboard" | "profile") => void;
+  onLogout: () => void;
+  lang: "en" | "fr";
 }
 
 const t = {
@@ -15,38 +15,38 @@ const t = {
   },
   fr: {
     logout: "Déconnexion",
-  }
-}
+  },
+};
 
 export default function Header({
   user,
   view,
   onViewChange,
   onLogout,
-  lang
+  lang,
 }: HeaderProps) {
   return (
-    <header className="px-10 py-6 flex items-center justify-between border-b border-white/10">
+    <header className="px-10 py-4 flex items-center justify-between">
       <span
-        onClick={() => onViewChange('dashboard')}
+        onClick={() => onViewChange("dashboard")}
         className="text-red-600 font-black text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
       >
         Hypertube
       </span>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         <div className="flex items-center">
           <Avatar
             photo={user.photo}
             name={user.name}
             email={user.email}
             size="sm"
-            active={view === 'profile'}
-            onClick={() => onViewChange('profile')}
+            active={view === "profile"}
+            onClick={() => onViewChange("profile")}
           />
         </div>
         <button
           onClick={onLogout}
-          className="text-neutral-400 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+          className="w-10 h-10 rounded-full border border-neutral-800 hover:border-red-600/60 bg-neutral-900/40 hover:bg-red-950/20 text-neutral-400 hover:text-red-500 transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center shadow-lg"
           title={t[lang].logout}
         >
           <svg
@@ -55,7 +55,7 @@ export default function Header({
             viewBox="0 0 24 24"
             strokeWidth={2}
             stroke="currentColor"
-            className="w-6 h-6"
+            className="w-5 h-5"
           >
             <path
               strokeLinecap="round"
@@ -66,5 +66,5 @@ export default function Header({
         </button>
       </div>
     </header>
-  )
+  );
 }

@@ -27,7 +27,7 @@ export default function Avatar({
 
   const isSm = size === 'sm'
 
-  const sizeClasses = isSm ? 'w-9 h-9 border-2 text-xs' : 'w-28 h-28 border-[3px] text-4xl'
+  const sizeClasses = isSm ? 'w-10 h-10 border-2 text-xs' : 'w-28 h-28 border-[3px] text-4xl'
 
   const borderClasses = active
     ? 'border-red-500 scale-105'
