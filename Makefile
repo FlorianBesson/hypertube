@@ -28,7 +28,7 @@ check-env: ## Check if .env file exists
 # Development commands
 # =============================================================================
 
-dev: check-env dev-build dev-up dragon ## Start development environment (build + up)
+dev: check-env dev-build dev-up  ## Start development environment (build + up)
 	@echo "$(GREEN)Development environment started!$(NC)"
 	@echo "$(BLUE)React:$(NC) http://localhost:5173"
 
@@ -83,12 +83,3 @@ logs: ## Show all container logs
 	docker compose -f compose.dev.yml logs -f --tail 100
 re: down dev
 h: help
-
-# =============================================================================
-# Stupid things
-# =============================================================================
-
-dragon: 
-	@# @cowsay -f dragon "🐲🔥 Welcome to Hypertube 🔥🐲" >> .dragon.txt
-	@cat .dragon.txt
-
