@@ -18,7 +18,7 @@ export default function LanguageSelector({
         onClick={() => onChange('en')}
         className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
           value === 'en'
-            ? 'bg-red-600 text-white shadow-[0_0_12px_rgba(220,38,38,0.4)] scale-105'
+            ? 'bg-red-600 text-white scale-105'
             : 'text-neutral-400 hover:text-neutral-200'
         }`}
       >
@@ -29,7 +29,7 @@ export default function LanguageSelector({
         onClick={() => onChange('fr')}
         className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
           value === 'fr'
-            ? 'bg-red-600 text-white shadow-[0_0_12px_rgba(220,38,38,0.4)] scale-105'
+            ? 'bg-red-600 text-white scale-105'
             : 'text-neutral-400 hover:text-neutral-200'
         }`}
       >
