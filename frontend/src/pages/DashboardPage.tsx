@@ -72,7 +72,7 @@ export default function DashboardPage({
           </div>
           <button
             onClick={onLogout}
-            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+            className="text-neutral-400 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center"
             title={t[lang].logout}
           >
             <svg
@@ -81,7 +81,7 @@ export default function DashboardPage({
               viewBox="0 0 24 24"
               strokeWidth={2}
               stroke="currentColor"
-              className="w-5 h-5"
+              className="w-6 h-6"
             >
               <path
                 strokeLinecap="round"
