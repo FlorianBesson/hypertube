@@ -64,7 +64,7 @@ export default function DashboardPage({
             ) : (
               <div
                 onClick={() => setView('profile')}
-                className={`w-9 h-9 rounded-full bg-gradient-to-tr from-neutral-950 to-red-600 border flex items-center justify-center text-xs font-black tracking-wider text-white shadow-md select-none transition-all cursor-pointer ${
+                className={`w-9 h-9 rounded-full bg-linear-to-tr from-neutral-950 to-red-600 border flex items-center justify-center text-xs font-black tracking-wider text-white shadow-md select-none transition-all cursor-pointer ${
                   view === 'profile' ? 'border-red-500 scale-105' : 'border-neutral-700 hover:border-red-500'
                 }`}
               >

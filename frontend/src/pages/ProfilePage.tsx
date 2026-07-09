@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import type { LoggedUser } from '../App'
 
 interface ProfilePageProps {
@@ -104,11 +104,13 @@ export default function ProfilePage({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Sync edits if user prop changes
-  useEffect(() => {
+  // Sync edits if user prop changes directly during render (React best practice)
+  const [prevUser, setPrevUser] = useState<LoggedUser>(user)
+  if (user !== prevUser) {
+    setPrevUser(user)
     setEditName(user.name || '')
     setEditEmail(user.email)
-  }, [user])
+  }
 
   // Helper to show status message temporarily
   const showStatus = (type: 'success' | 'error', text: string) => {
@@ -167,8 +169,9 @@ export default function ProfilePage({
 
       onUserUpdate(data.user)
       showStatus('success', lang === 'fr' ? "Photo de profil mise à jour !" : "Avatar updated successfully!")
-    } catch (err: any) {
-      showStatus('error', err.message || t[lang].networkError)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t[lang].networkError
+      showStatus('error', msg)
     } finally {
       setUploading(false)
     }
@@ -208,8 +211,9 @@ export default function ProfilePage({
       }
       setIsEditing(false)
       showStatus('success', t[lang].profileUpdated)
-    } catch (err: any) {
-      showStatus('error', err.message || t[lang].networkError)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t[lang].networkError
+      showStatus('error', msg)
     } finally {
       setSavingProfile(false)
     }
@@ -266,8 +270,9 @@ export default function ProfilePage({
       setConfirmPassword('')
       setIsChangingPassword(false)
       showStatus('success', t[lang].passwordUpdated)
-    } catch (err: any) {
-      showStatus('error', err.message || t[lang].networkError)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t[lang].networkError
+      showStatus('error', msg)
     } finally {
       setSavingPassword(false)
     }
@@ -335,7 +340,7 @@ export default function ProfilePage({
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-tr from-neutral-950 via-red-950 to-red-600 flex items-center justify-center">
+                <div className="w-full h-full bg-linear-to-tr from-neutral-950 via-red-950 to-red-600 flex items-center justify-center">
                   <span className="text-4xl font-black tracking-wider text-white drop-shadow-md">
                     {initials}
                   </span>
@@ -368,7 +373,7 @@ export default function ProfilePage({
 
           <div className="text-center">
             <h2 className="text-lg font-bold text-white tracking-tight">{user.name || t[lang].notSpecified}</h2>
-            <p className="text-xs text-neutral-400 mt-0.5 truncate max-w-[200px]">{user.email}</p>
+            <p className="text-xs text-neutral-400 mt-0.5 truncate max-w-50">{user.email}</p>
           </div>
 
           <div className="w-full border-t border-white/5 pt-4 flex flex-col items-center gap-2">
