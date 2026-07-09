@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import ProfileEditForm from '../components/profile/ProfileEditForm'
 import PasswordChangeForm from '../components/profile/PasswordChangeForm'
 import type { ToastMessage } from '../components/ui/Toast'
+import { translations } from '../locales/translations'
 
 interface ProfilePageProps {
   user: LoggedUser
@@ -15,37 +16,6 @@ interface ProfilePageProps {
   onUserUpdate: (user: LoggedUser) => void
 }
 
-const t = {
-  en: {
-    backToDashboard: "Back to dashboard",
-    myProfile: "My Profile",
-    changePhoto: "Change photo",
-    notSpecified: "Not specified",
-    memberBadge: "Active Account",
-    photoTooLarge: "File is too large (max 2MB)",
-    invalidFormat: "Invalid format. Use JPEG, PNG, or WEBP",
-    uploadFailed: "Upload failed",
-    networkError: "Network error, try again",
-    deleteAvatar: "Delete avatar",
-    avatarDeleted: "Avatar deleted successfully!",
-    deleteFailed: "Failed to delete avatar",
-  },
-  fr: {
-    backToDashboard: "Retour au tableau de bord",
-    myProfile: "Mon Profil",
-    changePhoto: "Modifier la photo",
-    notSpecified: "Non renseigné",
-    memberBadge: "Compte Actif",
-    photoTooLarge: "Le fichier est trop volumineux (max 2 Mo)",
-    invalidFormat: "Format invalide. Utilisez JPEG, PNG ou WEBP",
-    uploadFailed: "Erreur lors du téléversement",
-    networkError: "Erreur réseau, réessayez",
-    deleteAvatar: "Supprimer l'avatar",
-    avatarDeleted: "Avatar supprimé avec succès !",
-    deleteFailed: "Erreur lors de la suppression de l'avatar",
-  }
-}
-
 export default function ProfilePage({
   user,
   onBack,
@@ -53,6 +23,7 @@ export default function ProfilePage({
   onLanguageChange,
   onUserUpdate
 }: ProfilePageProps) {
+  const t = translations[lang].profile
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [statusMessage, setStatusMessage] = useState<ToastMessage | null>(null)
@@ -77,13 +48,13 @@ export default function ProfilePage({
     if (!file) return
 
     if (file.size > 2 * 1024 * 1024) {
-      showStatus('error', t[lang].photoTooLarge)
+      showStatus('error', t.photoTooLarge)
       return
     }
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      showStatus('error', t[lang].invalidFormat)
+      showStatus('error', t.invalidFormat)
       return
     }
 
@@ -103,13 +74,13 @@ export default function ProfilePage({
 
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.message || t[lang].uploadFailed)
+        throw new Error(data.message || t.uploadFailed)
       }
 
       onUserUpdate(data.user)
-      showStatus('success', lang === 'fr' ? "Photo de profil mise à jour !" : "Avatar updated successfully!")
+      showStatus('success', t.avatarUpdated)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t[lang].networkError
+      const msg = err instanceof Error ? err.message : t.networkError
       showStatus('error', msg)
     } finally {
       setUploading(false)
@@ -117,7 +88,7 @@ export default function ProfilePage({
   }
 
   const handleDeleteAvatar = async () => {
-    if (!window.confirm(lang === 'fr' ? "Êtes-vous sûr de vouloir supprimer votre avatar ?" : "Are you sure you want to delete your avatar?")) {
+    if (!window.confirm(t.deleteConfirm)) {
       return
     }
 
@@ -133,13 +104,13 @@ export default function ProfilePage({
 
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.message || t[lang].deleteFailed)
+        throw new Error(data.message || t.deleteFailed)
       }
 
       onUserUpdate(data.user)
-      showStatus('success', t[lang].avatarDeleted)
+      showStatus('success', t.avatarDeleted)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t[lang].networkError
+      const msg = err instanceof Error ? err.message : t.networkError
       showStatus('error', msg)
     } finally {
       setDeleting(false)
@@ -158,7 +129,7 @@ export default function ProfilePage({
           size="none"
           onClick={onBack}
           className="p-2.5"
-          title={t[lang].backToDashboard}
+          title={t.backToDashboard}
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -166,8 +137,8 @@ export default function ProfilePage({
           }
         />
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white">{t[lang].myProfile}</h1>
-          <p className="text-xs text-neutral-400 mt-0.5">{lang === 'fr' ? 'Gérez vos données personnelles et préférences.' : 'Manage your personal details and settings.'}</p>
+          <h1 className="text-xl font-bold tracking-tight text-white">{t.myProfile}</h1>
+          <p className="text-xs text-neutral-400 mt-0.5">{t.managePersonalDetails}</p>
         </div>
       </div>
 
@@ -195,9 +166,8 @@ export default function ProfilePage({
                   <>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white drop-shadow">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 47.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316Z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5Z" />
                     </svg>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-white drop-shadow">{t[lang].changePhoto}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-white drop-shadow">{t.changePhoto}</span>
                   </>
                 )}
               </div>
@@ -209,7 +179,7 @@ export default function ProfilePage({
                 className="absolute -top-1.5 -right-1.5 bg-neutral-950/95 hover:bg-neutral-900 border border-white/10 hover:border-red-500/50 text-white hover:text-red-500 p-2 rounded-full cursor-pointer transition-all duration-300 shadow-xl active:scale-90 z-10 opacity-0 group-hover/avatar:opacity-100"
                 onClick={handleDeleteAvatar}
                 disabled={deleting}
-                title={t[lang].deleteAvatar}
+                title={t.deleteAvatar}
               >
                 {deleting ? (
                   <span className="w-3.5 h-3.5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin block" />
@@ -231,13 +201,13 @@ export default function ProfilePage({
           />
 
           <div className="text-center">
-            <h2 className="text-lg font-bold text-white tracking-tight">{user.name || t[lang].notSpecified}</h2>
+            <h2 className="text-lg font-bold text-white tracking-tight">{user.name || t.notSpecified}</h2>
             <p className="text-xs text-neutral-400 mt-0.5 truncate max-w-50">{user.email}</p>
           </div>
 
           <div className="w-full border-t border-white/5 pt-4 flex flex-col items-center gap-2">
             <span className="text-[10px] bg-red-950/60 border border-red-500/20 text-red-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              {t[lang].memberBadge}
+              {t.memberBadge}
             </span>
           </div>
         </div>

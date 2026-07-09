@@ -1,0 +1,95 @@
+{
+  "header": {
+    "logout": "Déconnexion"
+  },
+  "footer": {
+    "allRightsReserved": "Tous droits réservés."
+  },
+  "login": {
+    "signIn": "Connecte-toi",
+    "or": "Ou",
+    "createAccount": "crée un nouveau compte",
+    "usernameRequired": "Le nom d'utilisateur est requis",
+    "passwordRequired": "Le mot de passe est requis",
+    "minCharacters": "Minimum 6 caractères",
+    "invalidCredentials": "Identifiants incorrects",
+    "networkError": "Erreur réseau, réessayez.",
+    "usernamePlaceholder": "Nom d'utilisateur",
+    "passwordPlaceholder": "Mot de passe",
+    "continueButton": "Continuer"
+  },
+  "dashboard": {
+    "communityTitle": "Membres de la communauté",
+    "communitySubtitle": "Sélectionnez un membre pour consulter ses informations publiques",
+    "viewProfile": "Consulter le profil",
+    "noMembers": "Aucun autre membre inscrit pour le moment.",
+    "loadingMembers": "Chargement des membres...",
+    "failedMembers": "Erreur lors du chargement des membres.",
+    "notSpecified": "Non renseigné"
+  },
+  "profile": {
+    "backToDashboard": "Retour au tableau de bord",
+    "myProfile": "Mon Profil",
+    "changePhoto": "Modifier la photo",
+    "notSpecified": "Non renseigné",
+    "memberBadge": "Compte Actif",
+    "photoTooLarge": "Le fichier est trop volumineux (max 2 Mo)",
+    "invalidFormat": "Format invalide. Utilisez JPEG, PNG ou WEBP",
+    "uploadFailed": "Erreur lors du téléversement",
+    "networkError": "Erreur réseau, réessayez",
+    "deleteAvatar": "Supprimer l'avatar",
+    "avatarDeleted": "Avatar supprimé avec succès !",
+    "deleteFailed": "Erreur lors de la suppression de l'avatar",
+    "managePersonalDetails": "Gérez vos données personnelles et préférences.",
+    "avatarUpdated": "Photo de profil mise à jour !",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer votre avatar ?"
+  },
+  "userProfile": {
+    "backToDashboard": "Retour au tableau de bord",
+    "userProfile": "Profil de l'utilisateur",
+    "loading": "Chargement du profil...",
+    "errorLoading": "Impossible de charger le profil de l'utilisateur.",
+    "notSpecified": "Non renseigné",
+    "memberBadge": "Membre de la communauté",
+    "memberSince": "Membre depuis le",
+    "infoSection": "Informations Publiques",
+    "publicProfileSubtitle": "Consultez les informations publiques et le statut de ce membre.",
+    "biography": "Biographie",
+    "lastLogin": "Dernière connexion",
+    "nameLabel": "Nom"
+  },
+  "profileEditForm": {
+    "firstName": "Prénom",
+    "emailAddress": "Adresse email",
+    "biography": "Biographie",
+    "placeholderBio": "Parlez-nous de vous...",
+    "notSpecified": "Non renseigné",
+    "editInfo": "Modifier le profil",
+    "language": "Langue",
+    "personalDetails": "Informations Personnelles",
+    "saveChanges": "Enregistrer",
+    "cancel": "Annuler",
+    "placeholderName": "Entrez votre prénom",
+    "emailRequired": "L'adresse email est requise",
+    "profileUpdated": "Profil mis à jour avec succès !",
+    "networkError": "Erreur réseau, réessayez",
+    "failedSave": "Erreur lors de la sauvegarde"
+  },
+  "passwordChangeForm": {
+    "changePassword": "Changer le mot de passe",
+    "security": "Sécurité & Identifiants",
+    "saveChanges": "Enregistrer",
+    "cancel": "Annuler",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmNewPassword": "Confirmer le nouveau mot de passe",
+    "passwordUpdated": "Mot de passe modifié avec succès !",
+    "passwordsDoNotMatch": "Les nouveaux mots de passe ne correspondent pas",
+    "passwordTooShort": "Le mot de passe doit faire au moins 6 caractères",
+    "networkError": "Erreur réseau, réessayez",
+    "fillAllFields": "Veuillez renseigner tous les champs",
+    "failedChange": "Erreur de changement de mot de passe",
+    "passwordLabel": "Mot de passe",
+    "changePasswordSecure": "Dernier changement inconnu"
+  }
+}

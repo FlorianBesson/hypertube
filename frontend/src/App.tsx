@@ -73,7 +73,13 @@ function App() {
     )
   }
 
-  return <LoginPage onLoginSuccess={handleLoginSuccess} />
+  return (
+    <LoginPage
+      lang={lang}
+      onLanguageChange={handleLanguageChange}
+      onLoginSuccess={handleLoginSuccess}
+    />
+  )
 }
 
 export default App

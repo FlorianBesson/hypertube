@@ -1,5 +1,7 @@
 import type { LoggedUser } from "../../App";
 import Avatar from "../ui/Avatar";
+import LanguageSelector from "../ui/LanguageSelector";
+import { translations } from "../../locales/translations";
 
 interface HeaderProps {
   user: LoggedUser;
@@ -7,16 +9,8 @@ interface HeaderProps {
   onViewChange: (view: "dashboard" | "profile" | "user-profile") => void;
   onLogout: () => void;
   lang: "en" | "fr";
+  onLanguageChange: (lang: "en" | "fr") => void;
 }
-
-const t = {
-  en: {
-    logout: "Logout",
-  },
-  fr: {
-    logout: "Déconnexion",
-  },
-};
 
 export default function Header({
   user,
@@ -24,7 +18,10 @@ export default function Header({
   onViewChange,
   onLogout,
   lang,
+  onLanguageChange,
 }: HeaderProps) {
+  const t = translations[lang].header;
+
   return (
     <header className="px-4 sm:px-6 md:px-10 py-4 flex items-center justify-between">
       <span
@@ -34,6 +31,7 @@ export default function Header({
         Hypertube
       </span>
       <div className="flex items-center gap-4">
+        <LanguageSelector value={lang} onChange={onLanguageChange} />
         <div className="flex items-center">
           <Avatar
             photo={user.photo}
@@ -47,7 +45,7 @@ export default function Header({
         <button
           onClick={onLogout}
           className="w-10 h-10 rounded-full border border-neutral-800 hover:border-red-600/60 bg-neutral-900/40 hover:bg-red-950/20 text-neutral-400 hover:text-red-500 transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center shadow-lg"
-          title={t[lang].logout}
+          title={t.logout}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
