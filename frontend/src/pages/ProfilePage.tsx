@@ -26,6 +26,9 @@ const t = {
     invalidFormat: "Invalid format. Use JPEG, PNG, or WEBP",
     uploadFailed: "Upload failed",
     networkError: "Network error, try again",
+    deleteAvatar: "Delete avatar",
+    avatarDeleted: "Avatar deleted successfully!",
+    deleteFailed: "Failed to delete avatar",
   },
   fr: {
     backToDashboard: "Retour au tableau de bord",
@@ -37,6 +40,9 @@ const t = {
     invalidFormat: "Format invalide. Utilisez JPEG, PNG ou WEBP",
     uploadFailed: "Erreur lors du téléversement",
     networkError: "Erreur réseau, réessayez",
+    deleteAvatar: "Supprimer l'avatar",
+    avatarDeleted: "Avatar supprimé avec succès !",
+    deleteFailed: "Erreur lors de la suppression de l'avatar",
   }
 }
 
@@ -48,6 +54,7 @@ export default function ProfilePage({
   onUserUpdate
 }: ProfilePageProps) {
   const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [statusMessage, setStatusMessage] = useState<ToastMessage | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -109,6 +116,36 @@ export default function ProfilePage({
     }
   }
 
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm(lang === 'fr' ? "Êtes-vous sûr de vouloir supprimer votre avatar ?" : "Are you sure you want to delete your avatar?")) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/user/avatar', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || t[lang].deleteFailed)
+      }
+
+      onUserUpdate(data.user)
+      showStatus('success', t[lang].avatarDeleted)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t[lang].networkError
+      showStatus('error', msg)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 relative">
       {/* Dynamic alert feedback banner */}
@@ -142,28 +179,48 @@ export default function ProfilePage({
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 rounded-full blur-2xl pointer-events-none" />
           
           {/* Avatar Container */}
-          <Avatar
-            photo={user.photo}
-            name={user.name}
-            email={user.email}
-            size="lg"
-            onClick={handlePhotoClick}
-          >
-            {/* Photo Upload Overlay */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 text-neutral-300">
-              {uploading ? (
-                <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white drop-shadow">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 47.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316Z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5Z" />
+          <div className="relative group/avatar">
+            <Avatar
+              photo={user.photo}
+              name={user.name}
+              email={user.email}
+              size="lg"
+              onClick={handlePhotoClick}
+            >
+              {/* Photo Upload Overlay */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 text-neutral-300">
+                {uploading ? (
+                  <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white drop-shadow">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 47.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5Z" />
+                    </svg>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-white drop-shadow">{t[lang].changePhoto}</span>
+                  </>
+                )}
+              </div>
+            </Avatar>
+
+            {user.photo && (
+              <button
+                type="button"
+                className="absolute -top-1.5 -right-1.5 bg-neutral-950/95 hover:bg-neutral-900 border border-white/10 hover:border-red-500/50 text-white hover:text-red-500 p-2 rounded-full cursor-pointer transition-all duration-300 shadow-xl active:scale-90 z-10 opacity-0 group-hover/avatar:opacity-100"
+                onClick={handleDeleteAvatar}
+                disabled={deleting}
+                title={t[lang].deleteAvatar}
+              >
+                {deleting ? (
+                  <span className="w-3.5 h-3.5 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin block" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                   </svg>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-white drop-shadow">{t[lang].changePhoto}</span>
-                </>
-              )}
-            </div>
-          </Avatar>
+                )}
+              </button>
+            )}
+          </div>
 
           <input
             type="file"

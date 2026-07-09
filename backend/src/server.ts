@@ -170,6 +170,54 @@ app.post("/api/user/avatar", authenticateToken, (req: Request, res: Response) =>
     });
 });
 
+// Delete photo/avatar endpoint
+app.delete("/api/user/avatar", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.userId;
+
+        // Find user to check if they have a photo
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+            return;
+        }
+
+        if (user.photo) {
+            // Check if photo is a local upload and exists, then delete it
+            if (user.photo.startsWith('/uploads/avatars/')) {
+                const fileName = user.photo.replace('/uploads/avatars/', '');
+                const filePath = path.join(uploadDirectory, fileName);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+        }
+
+        // Update user photo field in DB to null
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { photo: null }
+        });
+
+        res.json({
+            success: true,
+            message: "Photo de profil supprimée avec succès",
+            user: {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                name: updatedUser.name,
+                photo: updatedUser.photo
+            }
+        });
+    } catch (error) {
+        console.error("Avatar delete error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la suppression de la photo de profil" });
+    }
+});
+
 // Update profile details
 app.put("/api/user/profile", authenticateToken, async (req: Request, res: Response) => {
     try {
