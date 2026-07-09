@@ -249,11 +249,6 @@ export default function ProfileEditForm({
               disabled={savingProfile}
               loading={savingProfile}
               className="shrink-0"
-              icon={
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-              }
             >
               {t[lang].saveChanges}
             </Button>
@@ -261,11 +256,6 @@ export default function ProfileEditForm({
               type="button"
               variant="secondary"
               onClick={handleCancelEditing}
-              icon={
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              }
             >
               {t[lang].cancel}
             </Button>
