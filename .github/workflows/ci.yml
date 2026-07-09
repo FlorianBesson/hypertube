@@ -1,4 +1,4 @@
-name: hypertube
+name: magneto
 on: 
   push:
     branches: [master]
@@ -28,7 +28,7 @@ jobs:
         working-directory: frontend
 
       - name: Docker Build
-        run: docker build --target prod -t hypertube-frontend .
+        run: docker build --target prod -t magneto-frontend .
         working-directory: frontend
   backend:
     runs-on: ubuntu-latest
@@ -53,5 +53,5 @@ jobs:
         working-directory: backend
 
       - name: Docker Build
-        run: docker build --target prod -t hypertube-backend .
+        run: docker build --target prod -t magneto-backend .
         working-directory: backend

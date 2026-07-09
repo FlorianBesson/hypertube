@@ -28,7 +28,7 @@ export default function Header({
         onClick={() => onViewChange("dashboard")}
         className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
       >
-        Hypertube
+        Magneto
       </span>
       <div className="flex items-center gap-4">
         <LanguageSelector value={lang} onChange={onLanguageChange} />

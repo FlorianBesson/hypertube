@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'hypertube_super_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 
 // Login Endpoint (will be mounted at /api/auth/login)
 router.post("/login", async (req: Request, res: Response) => {
