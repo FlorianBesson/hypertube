@@ -16,7 +16,9 @@
     "networkError": "Erreur réseau, réessayez.",
     "usernamePlaceholder": "Nom d'utilisateur",
     "passwordPlaceholder": "Mot de passe",
-    "continueButton": "Continuer"
+    "continueButton": "Continuer",
+    "logButton42": "Se connecter via 42",
+    "logButtonGoogle": "Se connecter via Google"
   },
   "dashboard": {
     "communityTitle": "Membres de la communauté",

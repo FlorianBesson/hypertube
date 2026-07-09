@@ -144,6 +144,25 @@ export default function LoginPage({
             >
               {t.continueButton}
             </Button>
+
+            <div className="flex gap-2 w-full">
+              <Button
+                type="button"
+                disabled={loading}
+                loading={loading}
+                variant="secondary"
+                className="flex-1"
+                onClick={() => window.location.href = '/api/auth/42'}>
+                  {t.logButton42}
+              </Button>
+              <Button
+                type="button"
+                disabled={loading}
+                loading={loading}
+                className="flex-1">
+                  {t.logButtonGoogle}
+              </Button>
+            </div>
           </form>
 
         </div>
