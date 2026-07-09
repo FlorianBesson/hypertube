@@ -26,10 +26,10 @@ export default function Header({
   lang,
 }: HeaderProps) {
   return (
-    <header className="px-10 py-4 flex items-center justify-between">
+    <header className="px-4 sm:px-6 md:px-10 py-4 flex items-center justify-between">
       <span
         onClick={() => onViewChange("dashboard")}
-        className="text-red-600 font-black text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
+        className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
       >
         Hypertube
       </span>

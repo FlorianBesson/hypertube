@@ -88,9 +88,9 @@ export default function DashboardPage({
       />
 
       {/* ── Main Content ─────────────────────────────────── */}
-      <main className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto w-full">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-4xl mx-auto w-full">
         {view === 'dashboard' ? (
-          <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
+          <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-6 sm:p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
             {/* Subtle design gradient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
             {/* Community Members Section */}
