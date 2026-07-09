@@ -7,14 +7,21 @@ import { upload, uploadDirectory } from '../config/multer';
 
 const router = Router();
 
-// Photo upload endpoint (will be mounted at /api/user/avatar)
+/**
+ * Route: POST /api/user/avatar
+ * Description: Uploads and sets a new profile avatar image for the authenticated user.
+ * Authenticated: Yes
+ */
 router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
+    // Process single file upload under key 'avatar'
     upload.single('avatar')(req, res, async (err) => {
+        // Handle upload errors (size limit exceeded, wrong file type)
         if (err) {
             res.status(400).json({ success: false, message: err.message || "Erreur lors du téléversement" });
             return;
         }
 
+        // Verify if a file was actually sent
         if (!req.file) {
             res.status(400).json({ success: false, message: "Aucun fichier téléversé" });
             return;
@@ -24,7 +31,7 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
             const userId = (req as any).user.userId;
             const photoUrl = `/uploads/avatars/${req.file.filename}`;
 
-            // Update user in DB
+            // Save the relative file URL to the user profile in the database
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: { photo: photoUrl }
@@ -47,12 +54,16 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
     });
 });
 
-// Delete photo/avatar endpoint (will be mounted at /api/user/avatar)
+/**
+ * Route: DELETE /api/user/avatar
+ * Description: Deletes the profile avatar image from the server filesystem and sets it to null in the database.
+ * Authenticated: Yes
+ */
 router.delete("/avatar", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
 
-        // Find user to check if they have a photo
+        // Fetch current user details to check for an existing photo
         const user = await prisma.user.findUnique({
             where: { id: userId }
         });
@@ -63,17 +74,17 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
         }
 
         if (user.photo) {
-            // Check if photo is a local upload and exists, then delete it
+            // Delete the physical file from the disk if it resides in our avatars folder
             if (user.photo.startsWith('/uploads/avatars/')) {
                 const fileName = user.photo.replace('/uploads/avatars/', '');
                 const filePath = path.join(uploadDirectory, fileName);
                 if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
+                    fs.unlinkSync(filePath); // Sync delete operation
                 }
             }
         }
 
-        // Update user photo field in DB to null
+        // Remove the avatar reference in the database
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: { photo: null }
@@ -95,12 +106,17 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
     }
 });
 
-// Update profile details (will be mounted at /api/user/profile)
+/**
+ * Route: PUT /api/user/profile
+ * Description: Updates the name, email, or biography for the authenticated user.
+ * Authenticated: Yes
+ */
 router.put("/profile", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
         const { name, email, bio } = req.body;
 
+        // Validate the email format if provided
         if (email) {
             const cleanEmail = email.toLowerCase().trim();
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
@@ -108,6 +124,7 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
                 return;
             }
 
+            // Ensure the new email is not already taken by another registered user
             const existingUser = await prisma.user.findUnique({
                 where: { email: cleanEmail }
             });
@@ -117,6 +134,7 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
             }
         }
 
+        // Update the user properties in Postgres via Prisma
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
@@ -144,17 +162,23 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
     }
 });
 
-// Update password (will be mounted at /api/user/password)
+/**
+ * Route: PUT /api/user/password
+ * Description: Updates the password of the authenticated user after checking their current password.
+ * Authenticated: Yes
+ */
 router.put("/password", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
         const { currentPassword, newPassword } = req.body;
 
+        // Ensure both fields are provided
         if (!currentPassword || !newPassword) {
             res.status(400).json({ success: false, message: "Veuillez renseigner l'ancien et le nouveau mot de passe" });
             return;
         }
 
+        // Enforce password length requirements
         if (newPassword.length < 6) {
             res.status(400).json({ success: false, message: "Le nouveau mot de passe doit faire au moins 6 caractères" });
             return;
@@ -169,11 +193,13 @@ router.put("/password", authenticateToken, async (req: Request, res: Response) =
             return;
         }
 
+        // Validate password match
         if (user.password !== currentPassword) {
             res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
             return;
         }
 
+        // Update password in DB
         await prisma.user.update({
             where: { id: userId },
             data: { password: newPassword }

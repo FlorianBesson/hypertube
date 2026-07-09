@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 
+/**
+ * LoggedUser interface representing the structure of the authenticated user's session profile.
+ */
 export interface LoggedUser {
   id: number
   email: string
@@ -12,28 +15,36 @@ export interface LoggedUser {
 }
 
 function App() {
-  const [token, setToken] = useState<string | null>(null)
-  const [user, setUser] = useState<LoggedUser | null>(null)
-  const [checking, setChecking] = useState(true)
+  // Initialize authentication token state directly from localStorage to prevent flash of login screen
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'))
+  
+  // Initialize logged-in user profile state directly from localStorage
+  const [user, setUser] = useState<LoggedUser | null>(() => {
+    const savedUser = localStorage.getItem('user')
+    try {
+      return savedUser ? JSON.parse(savedUser) : null
+    } catch {
+      return null
+    }
+  })
+
+  // Initialize internationalization language state (default: English)
   const [lang, setLang] = useState<'en' | 'fr'>(() => {
     return (localStorage.getItem('lang') as 'en' | 'fr') || 'en'
   })
 
+  /**
+   * Updates selected UI language and persists choice to localStorage.
+   */
   const handleLanguageChange = (newLang: 'en' | 'fr') => {
     localStorage.setItem('lang', newLang)
     setLang(newLang)
   }
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    if (savedToken && savedUser) {
-      setToken(savedToken)
-      setUser(JSON.parse(savedUser))
-    }
-    setChecking(false)
-  }, [])
-
+  /**
+   * Callback invoked upon successful user authentication.
+   * Persists token and user profile to localStorage for session durability.
+   */
   const handleLoginSuccess = (newToken: string, loggedUser: LoggedUser) => {
     localStorage.setItem('token', newToken)
     localStorage.setItem('user', JSON.stringify(loggedUser))
@@ -41,6 +52,9 @@ function App() {
     setUser(loggedUser)
   }
 
+  /**
+   * Logs out the user by wiping session storage values and resetting state.
+   */
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -48,19 +62,15 @@ function App() {
     setUser(null)
   }
 
+  /**
+   * Updates cached user profile details in state and local storage.
+   */
   const handleUserUpdate = (updatedUser: LoggedUser) => {
     localStorage.setItem('user', JSON.stringify(updatedUser))
     setUser(updatedUser)
   }
 
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white">
-        <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
-      </div>
-    )
-  }
-
+  // Routing: If user is authenticated, render Dashboard, otherwise render Login Screen
   if (token && user) {
     return (
       <DashboardPage

@@ -24,11 +24,19 @@ export default function ProfilePage({
   onUserUpdate
 }: ProfilePageProps) {
   const t = translations[lang].profile
+  // uploading/deleting: state managers for loading indicators during HTTP requests
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  
+  // statusMessage: holds transient success or error alert banners (Toast messages)
   const [statusMessage, setStatusMessage] = useState<ToastMessage | null>(null)
+  
+  // fileInputRef: reference to the hidden file input used to trigger avatar selection
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  /**
+   * Triggers a temporary success or error notification banner.
+   */
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text })
     const duration = type === 'success' ? 3500 : 5000
@@ -37,21 +45,28 @@ export default function ProfilePage({
     }, duration)
   }
 
+  // Programmatically click the hidden file input element when avatar image is clicked
   const handlePhotoClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click()
     }
   }
 
+  /**
+   * Event handler triggered when a user selects a file to upload as an avatar.
+   * Enforces 2MB size limit and allowed graphic file types before executing POST request.
+   */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Limit client upload size to 2MB to matching backend restrictions
     if (file.size > 2 * 1024 * 1024) {
       showStatus('error', t.photoTooLarge)
       return
     }
 
+    // Verify format types
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
       showStatus('error', t.invalidFormat)
@@ -77,6 +92,7 @@ export default function ProfilePage({
         throw new Error(data.message || t.uploadFailed)
       }
 
+      // Propagate updated user profile to parent application state
       onUserUpdate(data.user)
       showStatus('success', t.avatarUpdated)
     } catch (err) {
@@ -87,6 +103,10 @@ export default function ProfilePage({
     }
   }
 
+  /**
+   * Deletes the user avatar after explicit confirmation prompt.
+   * Hits DELETE /api/user/avatar to remove file on server disk and nullify db field.
+   */
   const handleDeleteAvatar = async () => {
     if (!window.confirm(t.deleteConfirm)) {
       return

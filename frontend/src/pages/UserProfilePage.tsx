@@ -25,10 +25,16 @@ export default function UserProfilePage({
   lang
 }: UserProfilePageProps) {
   const t = translations[lang].userProfile
+  // loading: local state indicating if profile retrieval is currently running
   const [loading, setLoading] = useState(true)
+  
+  // error: holds API error messages if profile fetching fails
   const [error, setError] = useState<string | null>(null)
+  
+  // profile: holds details of the targeted public user profile
   const [profile, setProfile] = useState<UserProfile | null>(null)
 
+  // Fetch the selected user's public profile data from backend whenever the target ID changes
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true)
