@@ -7,6 +7,7 @@ interface DashboardPageProps {
   onLogout: () => void
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
+  onUserUpdate: (user: LoggedUser) => void
 }
 
 const t = {
@@ -26,7 +27,8 @@ export default function DashboardPage({
   user,
   onLogout,
   lang,
-  onLanguageChange
+  onLanguageChange,
+  onUserUpdate
 }: DashboardPageProps) {
   const [view, setView] = useState<'dashboard' | 'profile'>('dashboard')
   const initials = user.name
@@ -112,6 +114,7 @@ export default function DashboardPage({
             onBack={() => setView('dashboard')}
             lang={lang}
             onLanguageChange={onLanguageChange}
+            onUserUpdate={onUserUpdate}
           />
         )}
       </main>
