@@ -28,7 +28,7 @@ check-env: ## Check if .env file exists
 # Development commands
 # =============================================================================
 
-dev: check-env dev-build dev-up dragon ## Start development environment (build + up)
+dev: check-env dev-build dev-up  ## Start development environment (build + up)
 	@echo "$(GREEN)Development environment started!$(NC)"
 	@echo "$(BLUE)React:$(NC) http://localhost:5173"
 
@@ -72,7 +72,21 @@ prod-down: ## Stop production containers
 	docker compose -f compose.prod.yml down
 prod-logs: ## Show all container logs
 	docker compose -f compose.prod.yml logs -f --tail 100
+# =============================================================================
+# Database commands
+# =============================================================================
 
+db-seed: ## Seed the database with initial data
+	@echo "$(BLUE)Seeding database...$(NC)"
+	docker compose -f compose.dev.yml exec api-express npx prisma db seed
+
+db-reset: ## Reset database migrations and re-seed
+	@echo "$(BLUE)Resetting database and seeding...$(NC)"
+	docker compose -f compose.dev.yml exec api-express npx prisma migrate reset --force
+
+db-status: ## Check database migration status
+	@echo "$(BLUE)Checking database migration status...$(NC)"
+	docker compose -f compose.dev.yml exec api-express npx prisma migrate status
 
 
 build: dev-build ## Alias for dev-build
@@ -83,12 +97,3 @@ logs: ## Show all container logs
 	docker compose -f compose.dev.yml logs -f --tail 100
 re: down dev
 h: help
-
-# =============================================================================
-# Stupid things
-# =============================================================================
-
-dragon: 
-	@# @cowsay -f dragon "🐲🔥 Welcome to Hypertube 🔥🐲" >> .dragon.txt
-	@cat .dragon.txt
-
