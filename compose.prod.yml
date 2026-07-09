@@ -17,7 +17,7 @@ services:
           api-express:
             condition: service_started
         networks:
-          - hypertube-network
+          - magneto-network
 
     frontend:
         build:
@@ -28,7 +28,7 @@ services:
         volumes:
             - frontend_dist:/dist
         networks:
-            - hypertube-network
+            - magneto-network
 
     api-express:
         build:
@@ -39,7 +39,7 @@ services:
         env_file:
             - .env
         networks:
-            - hypertube-network
+            - magneto-network
         depends_on:
             postgres_db:
                 condition: service_healthy
@@ -55,7 +55,7 @@ services:
             - POSTGRES_USER=${POSTGRES_USER}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
         networks:
-            - hypertube-network
+            - magneto-network
         healthcheck: 
                 test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
                 interval: 5s
@@ -66,7 +66,7 @@ services:
         command: postgres -c listen_addresses='*'
     
 networks: 
-    hypertube-network: 
+    magneto-network: 
 volumes: 
     postgres_data: 
     caddy_data: 

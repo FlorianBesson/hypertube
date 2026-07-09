@@ -9,7 +9,7 @@ export default function Footer({ lang }: FooterProps) {
 
   return (
     <footer className="py-4 text-center text-xs text-neutral-600 w-full">
-      &copy; {new Date().getFullYear()} Hypertube. {t.allRightsReserved}
+      &copy; {new Date().getFullYear()} Magneto • {t.allRightsReserved}
     </footer>
   )
 }

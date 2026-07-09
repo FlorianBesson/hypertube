@@ -13,10 +13,10 @@ const prisma = new PrismaClient({
 })
 
 const users = [
-  { email: "antoine@hypertube.com", name: "Antoine", password: "password" },
-  { email: "florian@hypertube.com", name: "Florian", password: "password" },
-  { email: "françois@hypertube.com", name: "François", password: "password" },
-  { email: "jutha@hypertube.com", name: "Jutha", password: "password" },
+  { email: "antoine@magneto.com", name: "Antoine", password: "password" },
+  { email: "florian@magneto.com", name: "Florian", password: "password" },
+  { email: "françois@magneto.com", name: "François", password: "password" },
+  { email: "jutha@magneto.com", name: "Jutha", password: "password" },
 ];
 
 async function main() {

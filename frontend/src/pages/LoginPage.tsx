@@ -74,8 +74,9 @@ export default function LoginPage({
     >
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="px-6 sm:px-10 py-6 flex items-center justify-between">
+        {/* Application branding header logo */}
         <span className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none">
-          Hypertube
+          Magneto
         </span>
         <LanguageSelector value={lang} onChange={onLanguageChange} />
       </header>

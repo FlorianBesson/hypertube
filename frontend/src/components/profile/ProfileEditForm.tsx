@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { LoggedUser } from '../../App'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
@@ -27,16 +27,26 @@ export default function ProfileEditForm({
   const [editLang, setEditLang] = useState<'en' | 'fr'>(lang)
   const [savingProfile, setSavingProfile] = useState(false)
 
-  // Sync edits if user prop changes directly (e.g. from state update or external change)
-  useEffect(() => {
+  // Track previous prop values to adjust local state during render when props change
+  const [prevUser, setPrevUser] = useState(user)
+  const [prevLang, setPrevLang] = useState(lang)
+
+  if (user !== prevUser || lang !== prevLang) {
+    setPrevUser(user)
+    setPrevLang(lang)
     setEditName(user.name || '')
     setEditEmail(user.email)
     setEditBio(user.bio || '')
     setEditLang(lang)
-  }, [user, lang])
+  }
 
+  /**
+   * Submits updated profile information (name, email, bio) to backend profile API.
+   * On success, updates state in parent App component and shows success notification.
+   */
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Email is a mandatory field
     if (!editEmail) {
       showStatus('error', t.emailRequired)
       return

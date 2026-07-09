@@ -23,12 +23,22 @@ export default function DashboardPage({
   onUserUpdate
 }: DashboardPageProps) {
   const t = translations[lang].dashboard
+  // view: current active sub-page view ('dashboard' | 'profile' for edit own profile | 'user-profile' for other users)
   const [view, setView] = useState<'dashboard' | 'profile' | 'user-profile'>('dashboard')
+  
+  // selectedUserId: ID of the user whose public profile is currently being inspected
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  
+  // users: list of registered user objects retrieved from database
   const [users, setUsers] = useState<Array<{ id: number; name: string | null; photo: string | null }>>([])
+  
+  // loadingMembers: UI state representing if user fetching is currently in progress
   const [loadingMembers, setLoadingMembers] = useState(true)
+  
+  // errorMembers: UI state representing if fetching users failed
   const [errorMembers, setErrorMembers] = useState(false)
 
+  // Fetch list of registered users on mount to populate the community dashboard
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -41,7 +51,8 @@ export default function DashboardPage({
         if (!response.ok) throw new Error()
         const data = await response.json()
         setUsers(data.users || [])
-      } catch (err) {
+      } catch {
+        // Trigger error UI state if API fetch fails (e.g. invalid signature, server down)
         setErrorMembers(true)
       } finally {
         setLoadingMembers(false)
@@ -50,6 +61,7 @@ export default function DashboardPage({
     fetchUsers()
   }, [])
 
+  // Filter out the current logged-in user from the community members list
   const otherUsers = users.filter(u => u.id !== user.id)
 
   return (
