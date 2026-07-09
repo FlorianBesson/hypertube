@@ -6,12 +6,21 @@ export interface LoggedUser {
   id: number
   email: string
   name: string
+  photo?: string
 }
 
 function App() {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<LoggedUser | null>(null)
   const [checking, setChecking] = useState(true)
+  const [lang, setLang] = useState<'en' | 'fr'>(() => {
+    return (localStorage.getItem('lang') as 'en' | 'fr') || 'en'
+  })
+
+  const handleLanguageChange = (newLang: 'en' | 'fr') => {
+    localStorage.setItem('lang', newLang)
+    setLang(newLang)
+  }
 
   useEffect(() => {
     const savedToken = localStorage.getItem('token')
@@ -37,6 +46,11 @@ function App() {
     setUser(null)
   }
 
+  const handleUserUpdate = (updatedUser: LoggedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+    setUser(updatedUser)
+  }
+
   if (checking) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center text-white">
@@ -46,7 +60,15 @@ function App() {
   }
 
   if (token && user) {
-    return <DashboardPage user={user} onLogout={handleLogout} />
+    return (
+      <DashboardPage
+        user={user}
+        onLogout={handleLogout}
+        lang={lang}
+        onLanguageChange={handleLanguageChange}
+        onUserUpdate={handleUserUpdate}
+      />
+    )
   }
 
   return <LoginPage onLoginSuccess={handleLoginSuccess} />

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import Input from '../components/ui/Input'
+import Button from '../components/ui/Button'
 
 interface LoginForm {
   username: string
@@ -97,60 +99,41 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             )}
 
             {/* Username */}
-            <div className="flex flex-col gap-1">
-              <input
-                id="username"
-                type="text"
-                autoComplete="username"
-                placeholder="Nom d'utilisateur"
-                value={form.username}
-                disabled={loading}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                className={`w-full bg-neutral-800/80 border rounded px-4 py-4 text-base
-                  placeholder-neutral-500 outline-none transition-all
-                  focus:bg-neutral-800 focus:border-white/60
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  ${errors.username ? 'border-red-500' : 'border-neutral-600'}`}
-              />
-              {errors.username && (
-                <span className="text-xs text-red-400 px-1">{errors.username}</span>
-              )}
-            </div>
+            <Input
+              id="username"
+              type="text"
+              autoComplete="username"
+              placeholder="Nom d'utilisateur"
+              value={form.username}
+              disabled={loading}
+              error={errors.username}
+              variant="login"
+              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+            />
 
             {/* Password */}
-            <div className="flex flex-col gap-1">
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Mot de passe"
-                value={form.password}
-                disabled={loading}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                className={`w-full bg-neutral-800/80 border rounded px-4 py-4 text-base
-                  placeholder-neutral-500 outline-none transition-all
-                  focus:bg-neutral-800 focus:border-white/60
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  ${errors.password ? 'border-red-500' : 'border-neutral-600'}`}
-              />
-              {errors.password && (
-                <span className="text-xs text-red-400 px-1">{errors.password}</span>
-              )}
-            </div>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Mot de passe"
+              value={form.password}
+              disabled={loading}
+              error={errors.password}
+              variant="login"
+              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+            />
 
             {/* Submit */}
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 active:bg-red-800
-                disabled:opacity-60 disabled:cursor-not-allowed
-                text-white font-semibold rounded py-4 text-base
-                transition-colors flex items-center justify-center cursor-pointer"
+              loading={loading}
+              size="lg"
+              className="w-full mt-1"
             >
-              {loading
-                ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : 'Continuer'}
-            </button>
+              Continuer
+            </Button>
           </form>
 
         </div>
@@ -158,3 +141,4 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     </div>
   )
 }
+

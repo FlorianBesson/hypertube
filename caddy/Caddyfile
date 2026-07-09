@@ -7,6 +7,9 @@ localhost {
     handle /api/* {
         reverse_proxy api-express:3000
     }
+    handle /uploads/* {
+        reverse_proxy api-express:3000
+    }
     # frontend
     handle {
         root * /srv
