@@ -64,8 +64,8 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="px-10 py-6">
-        <span className="text-red-600 font-black text-3xl tracking-widest uppercase select-none">
+      <header className="px-6 sm:px-10 py-6">
+        <span className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none">
           Hypertube
         </span>
       </header>
