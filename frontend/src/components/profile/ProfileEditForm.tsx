@@ -15,6 +15,8 @@ const t = {
   en: {
     firstName: "First Name",
     emailAddress: "Email Address",
+    biography: "Biography",
+    placeholderBio: "Tell us about yourself...",
     notSpecified: "Not specified",
     editInfo: "Edit Profile",
     language: "Language",
@@ -29,6 +31,8 @@ const t = {
   fr: {
     firstName: "Prénom",
     emailAddress: "Adresse email",
+    biography: "Biographie",
+    placeholderBio: "Parlez-nous de vous...",
     notSpecified: "Non renseigné",
     editInfo: "Modifier le profil",
     language: "Langue",
@@ -52,6 +56,7 @@ export default function ProfileEditForm({
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(user.name || '')
   const [editEmail, setEditEmail] = useState(user.email)
+  const [editBio, setEditBio] = useState(user.bio || '')
   const [editLang, setEditLang] = useState<'en' | 'fr'>(lang)
   const [savingProfile, setSavingProfile] = useState(false)
 
@@ -59,6 +64,7 @@ export default function ProfileEditForm({
   useEffect(() => {
     setEditName(user.name || '')
     setEditEmail(user.email)
+    setEditBio(user.bio || '')
     setEditLang(lang)
   }, [user, lang])
 
@@ -80,7 +86,8 @@ export default function ProfileEditForm({
         },
         body: JSON.stringify({
           name: editName,
-          email: editEmail
+          email: editEmail,
+          bio: editBio
         })
       })
 
@@ -106,6 +113,7 @@ export default function ProfileEditForm({
   const handleCancelEditing = () => {
     setEditName(user.name || '')
     setEditEmail(user.email)
+    setEditBio(user.bio || '')
     setEditLang(lang)
     setIsEditing(false)
   }
@@ -202,6 +210,41 @@ export default function ProfileEditForm({
               </label>
               <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium">
                 {user.email}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Field: Biography */}
+        <div className="flex flex-col gap-1.5">
+          {isEditing ? (
+            <div className="flex flex-col gap-1.5 w-full">
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                {t[lang].biography}
+              </label>
+              <textarea
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
+                placeholder={t[lang].placeholderBio}
+                rows={3}
+                className="bg-neutral-950/60 border border-neutral-700/50 rounded-xl px-4 py-3 text-neutral-200 outline-none focus:border-red-500/70 focus:ring-1 focus:ring-red-500/50 transition-all duration-200 w-full text-sm resize-none"
+              />
+            </div>
+          ) : (
+            <>
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                {t[lang].biography}
+              </label>
+              <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium whitespace-pre-line min-h-[70px]">
+                {user.bio || (
+                  <span className="text-neutral-500 italic">{t[lang].notSpecified}</span>
+                )}
               </div>
             </>
           )}

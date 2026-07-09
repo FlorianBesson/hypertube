@@ -107,8 +107,13 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
             return;
         }
 
+        const updatedUser = await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLogin: new Date() }
+        });
+
         const token = jwt.sign(
-            { userId: user.id, email: user.email, name: user.name },
+            { userId: updatedUser.id, email: updatedUser.email, name: updatedUser.name },
             JWT_SECRET,
             { expiresIn: '1d' }
         );
@@ -118,10 +123,12 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
             message: "Connexion réussie",
             token,
             user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                photo: user.photo
+                id: updatedUser.id,
+                email: updatedUser.email,
+                name: updatedUser.name,
+                photo: updatedUser.photo,
+                bio: updatedUser.bio,
+                lastLogin: updatedUser.lastLogin
             }
         });
     } catch (error) {
@@ -222,7 +229,7 @@ app.delete("/api/user/avatar", authenticateToken, async (req: Request, res: Resp
 app.put("/api/user/profile", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { name, email } = req.body;
+        const { name, email, bio } = req.body;
 
         if (email) {
             const cleanEmail = email.toLowerCase().trim();
@@ -245,6 +252,7 @@ app.put("/api/user/profile", authenticateToken, async (req: Request, res: Respon
             data: {
                 name: name !== undefined ? name : undefined,
                 email: email !== undefined ? email.toLowerCase().trim() : undefined,
+                bio: bio !== undefined ? bio : undefined,
             }
         });
 
@@ -255,7 +263,9 @@ app.put("/api/user/profile", authenticateToken, async (req: Request, res: Respon
                 id: updatedUser.id,
                 email: updatedUser.email,
                 name: updatedUser.name,
-                photo: updatedUser.photo
+                photo: updatedUser.photo,
+                bio: updatedUser.bio,
+                lastLogin: updatedUser.lastLogin
             }
         });
     } catch (error) {
@@ -306,6 +316,83 @@ app.put("/api/user/password", authenticateToken, async (req: Request, res: Respo
     } catch (error) {
         console.error("Password update error:", error);
         res.status(500).json({ success: false, message: "Erreur serveur lors du changement de mot de passe" });
+    }
+});
+
+// Helper to mask emails for other users' profiles
+function maskEmail(email: string): string {
+    const [username, domain] = email.split('@');
+    if (!username || !domain) return email;
+    if (username.length <= 2) {
+        return `${username[0]}*@${domain}`;
+    }
+    return `${username[0]}${'*'.repeat(username.length - 2)}${username[username.length - 1]}@${domain}`;
+}
+
+// Get all users
+app.get("/api/users", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const users = await prisma.user.findMany({
+            select: {
+                id: true,
+                name: true,
+                photo: true
+            }
+        });
+
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error("Fetch users error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération des utilisateurs" });
+    }
+});
+
+// Get target user details by ID
+app.get("/api/users/:id", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const idParam = req.params.id;
+        if (!idParam) {
+            res.status(400).json({ success: false, message: "Identifiant manquant" });
+            return;
+        }
+        const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
+        const targetId = parseInt(idStr, 10);
+        if (isNaN(targetId)) {
+            res.status(400).json({ success: false, message: "Identifiant invalide" });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: targetId },
+            select: {
+                id: true,
+                name: true,
+                photo: true,
+                createdAt: true,
+                bio: true,
+                lastLogin: true
+            }
+        });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+            return;
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user.id,
+                name: user.name,
+                photo: user.photo,
+                createdAt: user.createdAt,
+                bio: user.bio,
+                lastLogin: user.lastLogin
+            }
+        });
+    } catch (error) {
+        console.error("Fetch user details error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération du profil" });
     }
 });
 

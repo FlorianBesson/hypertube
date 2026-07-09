@@ -3,7 +3,7 @@ import React from 'react'
 interface AvatarProps {
   photo?: string
   name?: string
-  email: string
+  email?: string
   size?: 'sm' | 'lg'
   active?: boolean
   onClick?: () => void
@@ -14,7 +14,7 @@ interface AvatarProps {
 export default function Avatar({
   photo,
   name = '',
-  email,
+  email = '',
   size = 'sm',
   active = false,
   onClick,
@@ -23,7 +23,7 @@ export default function Avatar({
 }: AvatarProps) {
   const initials = name
     ? name.slice(0, 2).toUpperCase()
-    : email.slice(0, 2).toUpperCase()
+    : (email ? email.slice(0, 2).toUpperCase() : '??')
 
   const isSm = size === 'sm'
 

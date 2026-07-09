@@ -3,8 +3,8 @@ import Avatar from "../ui/Avatar";
 
 interface HeaderProps {
   user: LoggedUser;
-  view: "dashboard" | "profile";
-  onViewChange: (view: "dashboard" | "profile") => void;
+  view: "dashboard" | "profile" | "user-profile";
+  onViewChange: (view: "dashboard" | "profile" | "user-profile") => void;
   onLogout: () => void;
   lang: "en" | "fr";
 }

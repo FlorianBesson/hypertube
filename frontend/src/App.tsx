@@ -7,6 +7,8 @@ export interface LoggedUser {
   email: string
   name: string
   photo?: string
+  bio?: string
+  lastLogin?: string
 }
 
 function App() {
