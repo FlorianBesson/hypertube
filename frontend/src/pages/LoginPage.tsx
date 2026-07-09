@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 
 interface LoginForm {
   username: string
@@ -11,7 +12,11 @@ interface LoginError {
   global?: string
 }
 
-export default function LoginPage() {
+interface LoginPageProps {
+  onLoginSuccess: (token: string, user: { id: number; email: string; name: string }) => void
+}
+
+export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [form, setForm]       = useState<LoginForm>({ username: '', password: '' })
   const [errors, setErrors]   = useState<LoginError>({})
   const [loading, setLoading] = useState(false)
@@ -39,7 +44,9 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) setErrors({ global: data.message || 'Identifiants incorrects' })
-      else console.log('Connecté :', data) // TODO: stocker token / rediriger
+      else {
+        onLoginSuccess(data.token, data.user)
+      }
     } catch {
       setErrors({ global: 'Erreur réseau, réessaie.' })
     } finally {
