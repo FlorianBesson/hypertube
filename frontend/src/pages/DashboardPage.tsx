@@ -1,11 +1,38 @@
+import { useState } from 'react'
 import type { LoggedUser } from '../App'
+import ProfilePage from './ProfilePage'
 
 interface DashboardPageProps {
   user: LoggedUser
   onLogout: () => void
+  lang: 'en' | 'fr'
+  onLanguageChange: (lang: 'en' | 'fr') => void
 }
 
-export default function DashboardPage({ user, onLogout }: DashboardPageProps) {
+const t = {
+  en: {
+    logout: "Logout",
+    loggedInAs: "Successfully logged in with the address",
+    allRightsReserved: "All rights reserved."
+  },
+  fr: {
+    logout: "Déconnexion",
+    loggedInAs: "Connexion réussie avec l'adresse",
+    allRightsReserved: "Tous droits réservés."
+  }
+}
+
+export default function DashboardPage({
+  user,
+  onLogout,
+  lang,
+  onLanguageChange
+}: DashboardPageProps) {
+  const [view, setView] = useState<'dashboard' | 'profile'>('dashboard')
+  const initials = user.name
+    ? user.name.slice(0, 2).toUpperCase()
+    : user.email.slice(0, 2).toUpperCase()
+
   return (
     <div
       className="min-h-screen flex flex-col text-white"
@@ -15,39 +42,83 @@ export default function DashboardPage({ user, onLogout }: DashboardPageProps) {
     >
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="px-10 py-6 flex items-center justify-between border-b border-white/10">
-        <span className="text-red-600 font-black text-3xl tracking-widest uppercase select-none">
+        <span
+          onClick={() => setView('dashboard')}
+          className="text-red-600 font-black text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
+        >
           Hypertube
         </span>
         <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end">
-            <span className="font-semibold text-neutral-200">{user.name}</span>
+          <div className="flex items-center">
+            {user.photo ? (
+              <img
+                src={user.photo}
+                alt={user.name}
+                onClick={() => setView('profile')}
+                className={`w-9 h-9 rounded-full object-cover border-2 transition-all cursor-pointer ${
+                  view === 'profile' ? 'border-red-500 scale-105' : 'border-neutral-700 hover:border-red-500'
+                }`}
+              />
+            ) : (
+              <div
+                onClick={() => setView('profile')}
+                className={`w-9 h-9 rounded-full bg-gradient-to-tr from-neutral-950 to-red-600 border flex items-center justify-center text-xs font-black tracking-wider text-white shadow-md select-none transition-all cursor-pointer ${
+                  view === 'profile' ? 'border-red-500 scale-105' : 'border-neutral-700 hover:border-red-500'
+                }`}
+              >
+                {initials}
+              </div>
+            )}
           </div>
           <button
             onClick={onLogout}
-            className="bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-sm font-semibold rounded px-4 py-2 transition-colors border border-neutral-700 hover:border-neutral-500 cursor-pointer"
+            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+            title={t[lang].logout}
           >
-            Déconnexion
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+              />
+            </svg>
           </button>
         </div>
       </header>
 
       {/* ── Main Content ─────────────────────────────────── */}
       <main className="flex-1 flex flex-col items-center justify-center p-8 max-w-4xl mx-auto w-full">
-        <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
-          {/* Subtle design gradient glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex flex-col gap-2">
-            <p className="text-neutral-400 text-center">
-              Connexion réussie avec l'adresse <span className="text-white font-medium">{user.email}</span>.
-            </p>
+        {view === 'dashboard' ? (
+          <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
+            {/* Subtle design gradient glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="flex flex-col gap-2">
+              <p className="text-neutral-400 text-center">
+                {t[lang].loggedInAs} <span className="text-white font-medium">{user.email}</span>.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <ProfilePage
+            user={user}
+            onBack={() => setView('dashboard')}
+            lang={lang}
+            onLanguageChange={onLanguageChange}
+          />
+        )}
       </main>
 
       {/* ── Footer ─────────────────────────────────────────── */}
       <footer className="py-6 text-center text-xs text-neutral-600 border-t border-white/5">
-        &copy; {new Date().getFullYear()} Hypertube. Tous droits réservés.
+        &copy; {new Date().getFullYear()} Hypertube. {t[lang].allRightsReserved}
       </footer>
     </div>
   )
