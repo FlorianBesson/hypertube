@@ -5,6 +5,7 @@ import UserProfilePage from './UserProfilePage'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import Avatar from '../components/ui/Avatar'
+import { translations } from '../locales/translations'
 
 interface DashboardPageProps {
   user: LoggedUser
@@ -14,27 +15,6 @@ interface DashboardPageProps {
   onUserUpdate: (user: LoggedUser) => void
 }
 
-const t = {
-  en: {
-    communityTitle: "Community Members",
-    communitySubtitle: "Select any member to view their public profile and details",
-    viewProfile: "View Profile",
-    noMembers: "No other members registered yet.",
-    loadingMembers: "Loading community members...",
-    failedMembers: "Failed to load members.",
-    notSpecified: "Not specified"
-  },
-  fr: {
-    communityTitle: "Membres de la communauté",
-    communitySubtitle: "Sélectionnez un membre pour consulter ses informations publiques",
-    viewProfile: "Consulter le profil",
-    noMembers: "Aucun autre membre inscrit pour le moment.",
-    loadingMembers: "Chargement des membres...",
-    failedMembers: "Erreur lors du chargement des membres.",
-    notSpecified: "Non renseigné"
-  }
-}
-
 export default function DashboardPage({
   user,
   onLogout,
@@ -42,6 +22,7 @@ export default function DashboardPage({
   onLanguageChange,
   onUserUpdate
 }: DashboardPageProps) {
+  const t = translations[lang].dashboard
   const [view, setView] = useState<'dashboard' | 'profile' | 'user-profile'>('dashboard')
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [users, setUsers] = useState<Array<{ id: number; name: string | null; photo: string | null }>>([])
@@ -85,6 +66,7 @@ export default function DashboardPage({
         onViewChange={setView}
         onLogout={onLogout}
         lang={lang}
+        onLanguageChange={onLanguageChange}
       />
 
       {/* ── Main Content ─────────────────────────────────── */}
@@ -100,25 +82,25 @@ export default function DashboardPage({
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-red-500">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                   </svg>
-                  {t[lang].communityTitle}
+                  {t.communityTitle}
                 </h2>
                 <p className="text-xs text-neutral-400">
-                  {t[lang].communitySubtitle}
+                  {t.communitySubtitle}
                 </p>
               </div>
 
               {loadingMembers ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-3">
                   <span className="w-6 h-6 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
-                  <p className="text-xs text-neutral-500">{t[lang].loadingMembers}</p>
+                  <p className="text-xs text-neutral-500">{t.loadingMembers}</p>
                 </div>
               ) : errorMembers ? (
                 <div className="text-center py-6 text-red-400 text-sm">
-                  {t[lang].failedMembers}
+                  {t.failedMembers}
                 </div>
               ) : otherUsers.length === 0 ? (
                 <div className="text-center py-8 text-neutral-500 text-sm italic">
-                  {t[lang].noMembers}
+                  {t.noMembers}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -139,11 +121,11 @@ export default function DashboardPage({
                       />
                       <div className="text-center w-full">
                         <p className="text-sm font-bold text-white group-hover:text-red-500 transition-colors truncate max-w-full px-2">
-                          {u.name || t[lang].notSpecified}
+                          {u.name || t.notSpecified}
                         </p>
                       </div>
                       <span className="text-[10px] uppercase font-black tracking-wider text-red-500 border border-red-500/10 bg-red-950/20 px-3 py-1 rounded-full group-hover:bg-red-600 group-hover:text-white group-hover:border-transparent transition-all duration-300">
-                        {t[lang].viewProfile}
+                        {t.viewProfile}
                       </span>
                     </div>
                   ))}

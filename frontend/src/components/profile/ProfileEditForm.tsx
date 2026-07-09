@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { LoggedUser } from '../../App'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
+import { translations } from '../../locales/translations'
 
 interface ProfileEditFormProps {
   user: LoggedUser
@@ -11,41 +12,6 @@ interface ProfileEditFormProps {
   showStatus: (type: 'success' | 'error', text: string) => void
 }
 
-const t = {
-  en: {
-    firstName: "First Name",
-    emailAddress: "Email Address",
-    biography: "Biography",
-    placeholderBio: "Tell us about yourself...",
-    notSpecified: "Not specified",
-    editInfo: "Edit Profile",
-    language: "Language",
-    personalDetails: "Personal Details",
-    saveChanges: "Save Changes",
-    cancel: "Cancel",
-    placeholderName: "Enter your name",
-    emailRequired: "Email is required",
-    profileUpdated: "Profile updated successfully!",
-    networkError: "Network error, try again",
-  },
-  fr: {
-    firstName: "Prénom",
-    emailAddress: "Adresse email",
-    biography: "Biographie",
-    placeholderBio: "Parlez-nous de vous...",
-    notSpecified: "Non renseigné",
-    editInfo: "Modifier le profil",
-    language: "Langue",
-    personalDetails: "Informations Personnelles",
-    saveChanges: "Enregistrer",
-    cancel: "Annuler",
-    placeholderName: "Entrez votre prénom",
-    emailRequired: "L'adresse email est requise",
-    profileUpdated: "Profil mis à jour avec succès !",
-    networkError: "Erreur réseau, réessayez",
-  }
-}
-
 export default function ProfileEditForm({
   user,
   lang,
@@ -53,6 +19,7 @@ export default function ProfileEditForm({
   onUserUpdate,
   showStatus
 }: ProfileEditFormProps) {
+  const t = translations[lang].profileEditForm
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(user.name || '')
   const [editEmail, setEditEmail] = useState(user.email)
@@ -71,7 +38,7 @@ export default function ProfileEditForm({
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editEmail) {
-      showStatus('error', t[lang].emailRequired)
+      showStatus('error', t.emailRequired)
       return
     }
 
@@ -93,7 +60,7 @@ export default function ProfileEditForm({
 
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.message || (lang === 'fr' ? "Erreur lors de la sauvegarde" : "Failed to save profile"))
+        throw new Error(data.message || t.failedSave)
       }
 
       onUserUpdate(data.user)
@@ -101,9 +68,9 @@ export default function ProfileEditForm({
         onLanguageChange(editLang)
       }
       setIsEditing(false)
-      showStatus('success', t[lang].profileUpdated)
+      showStatus('success', t.profileUpdated)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t[lang].networkError
+      const msg = err instanceof Error ? err.message : t.networkError
       showStatus('error', msg)
     } finally {
       setSavingProfile(false)
@@ -127,7 +94,7 @@ export default function ProfileEditForm({
           <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
-          {t[lang].personalDetails}
+          {t.personalDetails}
         </h3>
         {!isEditing && (
           <Button
@@ -140,7 +107,7 @@ export default function ProfileEditForm({
               </svg>
             }
           >
-            {t[lang].editInfo}
+            {t.editInfo}
           </Button>
         )}
       </div>
@@ -157,13 +124,13 @@ export default function ProfileEditForm({
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  {t[lang].firstName}
+                  {t.firstName}
                 </span>
               }
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder={t[lang].placeholderName}
+              placeholder={t.placeholderName}
             />
           ) : (
             <>
@@ -171,11 +138,11 @@ export default function ProfileEditForm({
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                {t[lang].firstName}
+                {t.firstName}
               </label>
               <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium">
                 {user.name || (
-                  <span className="text-neutral-500 italic">{t[lang].notSpecified}</span>
+                  <span className="text-neutral-500 italic">{t.notSpecified}</span>
                 )}
               </div>
             </>
@@ -192,7 +159,7 @@ export default function ProfileEditForm({
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  {t[lang].emailAddress}
+                  {t.emailAddress}
                 </span>
               }
               type="email"
@@ -206,7 +173,7 @@ export default function ProfileEditForm({
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                {t[lang].emailAddress}
+                {t.emailAddress}
               </label>
               <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium">
                 {user.email}
@@ -223,12 +190,12 @@ export default function ProfileEditForm({
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
-                {t[lang].biography}
+                {t.biography}
               </label>
               <textarea
                 value={editBio}
                 onChange={(e) => setEditBio(e.target.value)}
-                placeholder={t[lang].placeholderBio}
+                placeholder={t.placeholderBio}
                 rows={3}
                 className="bg-neutral-950/60 border border-neutral-700/50 rounded-xl px-4 py-3 text-neutral-200 outline-none focus:border-red-500/70 focus:ring-1 focus:ring-red-500/50 transition-all duration-200 w-full text-sm resize-none"
               />
@@ -239,11 +206,11 @@ export default function ProfileEditForm({
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
-                {t[lang].biography}
+                {t.biography}
               </label>
               <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium whitespace-pre-line min-h-[70px]">
                 {user.bio || (
-                  <span className="text-neutral-500 italic">{t[lang].notSpecified}</span>
+                  <span className="text-neutral-500 italic">{t.notSpecified}</span>
                 )}
               </div>
             </>
@@ -256,7 +223,7 @@ export default function ProfileEditForm({
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h2m0 0l2 2m-2-2v4a2 2 0 01-2 2h-1.5a3 3 0 01-3-3V11.5a3 3 0 013-3H15.4a2 2 0 011.8 1.11l1.24 2.48z" />
             </svg>
-            {t[lang].language}
+            {t.language}
           </label>
           {isEditing ? (
             <div className="relative">
@@ -293,14 +260,14 @@ export default function ProfileEditForm({
               loading={savingProfile}
               className="shrink-0"
             >
-              {t[lang].saveChanges}
+              {t.saveChanges}
             </Button>
             <Button
               type="button"
               variant="secondary"
               onClick={handleCancelEditing}
             >
-              {t[lang].cancel}
+              {t.cancel}
             </Button>
           </div>
         )}

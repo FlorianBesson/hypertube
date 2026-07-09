@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import LanguageSelector from '../components/ui/LanguageSelector'
+import { translations } from '../locales/translations'
 
 interface LoginForm {
   username: string
@@ -15,19 +17,26 @@ interface LoginError {
 }
 
 interface LoginPageProps {
+  lang: 'en' | 'fr'
+  onLanguageChange: (lang: 'en' | 'fr') => void
   onLoginSuccess: (token: string, user: { id: number; email: string; name: string }) => void
 }
 
-export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
+export default function LoginPage({
+  lang,
+  onLanguageChange,
+  onLoginSuccess
+}: LoginPageProps) {
+  const t = translations[lang].login
   const [form, setForm]       = useState<LoginForm>({ username: '', password: '' })
   const [errors, setErrors]   = useState<LoginError>({})
   const [loading, setLoading] = useState(false)
 
   function validate(): LoginError {
     const errs: LoginError = {}
-    if (!form.username.trim()) errs.username = "Le nom d'utilisateur est requis"
-    if (!form.password)        errs.password = 'Le mot de passe est requis'
-    else if (form.password.length < 6) errs.password = 'Minimum 6 caractères'
+    if (!form.username.trim()) errs.username = t.usernameRequired
+    if (!form.password)        errs.password = t.passwordRequired
+    else if (form.password.length < 6) errs.password = t.minCharacters
     return errs
   }
 
@@ -45,12 +54,12 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
         body:    JSON.stringify(form),
       })
       const data = await res.json()
-      if (!res.ok) setErrors({ global: data.message || 'Identifiants incorrects' })
+      if (!res.ok) setErrors({ global: data.message || t.invalidCredentials })
       else {
         onLoginSuccess(data.token, data.user)
       }
     } catch {
-      setErrors({ global: 'Erreur réseau, réessaie.' })
+      setErrors({ global: t.networkError })
     } finally {
       setLoading(false)
     }
@@ -64,10 +73,11 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="px-6 sm:px-10 py-6">
+      <header className="px-6 sm:px-10 py-6 flex items-center justify-between">
         <span className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none">
           Hypertube
         </span>
+        <LanguageSelector value={lang} onChange={onLanguageChange} />
       </header>
 
       {/* ── Séparateur ─────────────────────────────────────── */}
@@ -79,11 +89,11 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
           {/* Titre */}
           <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">Connecte-toi</h1>
+            <h1 className="text-3xl font-bold">{t.signIn}</h1>
             <p className="text-neutral-400 text-sm">
-              Ou{' '}
+              {t.or}{' '}
               <a href="/register" className="text-white underline hover:text-neutral-300 transition-colors">
-                crée un nouveau compte
+                {t.createAccount}
               </a>
               .
             </p>
@@ -103,7 +113,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               id="username"
               type="text"
               autoComplete="username"
-              placeholder="Nom d'utilisateur"
+              placeholder={t.usernamePlaceholder}
               value={form.username}
               disabled={loading}
               error={errors.username}
@@ -116,7 +126,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               id="password"
               type="password"
               autoComplete="current-password"
-              placeholder="Mot de passe"
+              placeholder={t.passwordPlaceholder}
               value={form.password}
               disabled={loading}
               error={errors.password}
@@ -132,7 +142,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               size="lg"
               className="w-full mt-1"
             >
-              Continuer
+              {t.continueButton}
             </Button>
           </form>
 
@@ -141,4 +151,3 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     </div>
   )
 }
-

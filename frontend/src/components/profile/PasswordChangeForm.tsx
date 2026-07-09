@@ -1,44 +1,15 @@
 import { useState } from 'react'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
+import { translations } from '../../locales/translations'
 
 interface PasswordChangeFormProps {
   lang: 'en' | 'fr'
   showStatus: (type: 'success' | 'error', text: string) => void
 }
 
-const t = {
-  en: {
-    changePassword: "Change password",
-    security: "Security & Credentials",
-    saveChanges: "Save Changes",
-    cancel: "Cancel",
-    currentPassword: "Current Password",
-    newPassword: "New Password",
-    confirmNewPassword: "Confirm New Password",
-    passwordUpdated: "Password updated successfully!",
-    passwordsDoNotMatch: "New passwords do not match",
-    passwordTooShort: "Password must be at least 6 characters",
-    networkError: "Network error, try again",
-    fillAllFields: "Please fill in all password fields",
-  },
-  fr: {
-    changePassword: "Changer le mot de passe",
-    security: "Sécurité & Identifiants",
-    saveChanges: "Enregistrer",
-    cancel: "Annuler",
-    currentPassword: "Mot de passe actuel",
-    newPassword: "Nouveau mot de passe",
-    confirmNewPassword: "Confirmer le nouveau mot de passe",
-    passwordUpdated: "Mot de passe modifié avec succès !",
-    passwordsDoNotMatch: "Les nouveaux mots de passe ne correspondent pas",
-    passwordTooShort: "Le mot de passe doit faire au moins 6 caractères",
-    networkError: "Erreur réseau, réessayez",
-    fillAllFields: "Veuillez renseigner tous les champs",
-  }
-}
-
 export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeFormProps) {
+  const t = translations[lang].passwordChangeForm
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -48,17 +19,17 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showStatus('error', t[lang].fillAllFields)
+      showStatus('error', t.fillAllFields)
       return
     }
 
     if (newPassword !== confirmPassword) {
-      showStatus('error', t[lang].passwordsDoNotMatch)
+      showStatus('error', t.passwordsDoNotMatch)
       return
     }
 
     if (newPassword.length < 6) {
-      showStatus('error', t[lang].passwordTooShort)
+      showStatus('error', t.passwordTooShort)
       return
     }
 
@@ -79,16 +50,16 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
 
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.message || (lang === 'fr' ? "Erreur de changement de mot de passe" : "Failed to change password"))
+        throw new Error(data.message || t.failedChange)
       }
 
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setIsChangingPassword(false)
-      showStatus('success', t[lang].passwordUpdated)
+      showStatus('success', t.passwordUpdated)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t[lang].networkError
+      const msg = err instanceof Error ? err.message : t.networkError
       showStatus('error', msg)
     } finally {
       setSavingPassword(false)
@@ -111,7 +82,7 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
           <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          {t[lang].security}
+          {t.security}
         </h3>
         {!isChangingPassword && (
           <Button
@@ -124,7 +95,7 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
               </svg>
             }
           >
-            {t[lang].changePassword}
+            {t.changePassword}
           </Button>
         )}
       </div>
@@ -134,7 +105,7 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
           {/* Field: Current Password */}
           <Input
             variant="profile"
-            label={t[lang].currentPassword}
+            label={t.currentPassword}
             type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -144,7 +115,7 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
           {/* Field: New Password */}
           <Input
             variant="profile"
-            label={t[lang].newPassword}
+            label={t.newPassword}
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -154,7 +125,7 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
           {/* Field: Confirm Password */}
           <Input
             variant="profile"
-            label={t[lang].confirmNewPassword}
+            label={t.confirmNewPassword}
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -169,14 +140,14 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
               loading={savingPassword}
               className="shrink-0"
             >
-              {t[lang].saveChanges}
+              {t.saveChanges}
             </Button>
             <Button
               type="button"
               variant="secondary"
               onClick={handleCancel}
             >
-              {t[lang].cancel}
+              {t.cancel}
             </Button>
           </div>
         </form>
@@ -189,8 +160,8 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
               </svg>
             </div>
             <div>
-              <h4 className="text-xs font-bold text-neutral-300">{lang === 'fr' ? 'Mot de passe' : 'Password Credentials'}</h4>
-              <p className="text-[11px] text-neutral-500 mt-0.5">{lang === 'fr' ? 'Dernier changement inconnu' : 'Change password to secure account'}</p>
+              <h4 className="text-xs font-bold text-neutral-300">{t.passwordLabel}</h4>
+              <p className="text-[11px] text-neutral-500 mt-0.5">{t.changePasswordSecure}</p>
             </div>
           </div>
           <div className="text-neutral-500 text-lg tracking-widest font-black select-none">
