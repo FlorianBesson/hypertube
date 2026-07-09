@@ -16,7 +16,6 @@ interface DashboardPageProps {
 
 const t = {
   en: {
-    loggedInAs: "Successfully logged in with the address",
     communityTitle: "Community Members",
     communitySubtitle: "Select any member to view their public profile and details",
     viewProfile: "View Profile",
@@ -26,7 +25,6 @@ const t = {
     notSpecified: "Not specified"
   },
   fr: {
-    loggedInAs: "Connexion réussie avec l'adresse",
     communityTitle: "Membres de la communauté",
     communitySubtitle: "Sélectionnez un membre pour consulter ses informations publiques",
     viewProfile: "Consulter le profil",
@@ -95,15 +93,8 @@ export default function DashboardPage({
           <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
             {/* Subtle design gradient glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-            
-            <div className="flex flex-col gap-2">
-              <p className="text-neutral-400 text-center">
-                {t[lang].loggedInAs} <span className="text-white font-medium">{user.email}</span>.
-              </p>
-            </div>
-
             {/* Community Members Section */}
-            <div className="flex flex-col gap-6 w-full mt-6">
+            <div className="flex flex-col gap-6 w-full">
               <div className="flex flex-col gap-1 border-b border-white/5 pb-3">
                 <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-red-500">
