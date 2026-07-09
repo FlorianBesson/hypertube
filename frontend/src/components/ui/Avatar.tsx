@@ -49,7 +49,7 @@ export default function Avatar({
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="w-1/2 h-1/2 text-neutral-400"
+            className="w-1/2 h-1/2 text-neutral-400 transition-opacity duration-300 ease-in-out group-hover/avatar:opacity-0"
           >
             <path
               strokeLinecap="round"
