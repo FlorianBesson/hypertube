@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import ProfilePage from './pages/ProfilePage'
+import UserProfilePage from './pages/UserProfilePage'
 
 /**
  * LoggedUser interface representing the structure of the authenticated user's session profile.
@@ -91,6 +93,43 @@ function AppRoutes({
               lang={lang}
               onLanguageChange={onLanguageChange}
               onUserUpdate={onUserUpdate}
+            />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          isAuthenticated ? (
+            <ProfilePage
+              user={user!}
+              onLogout={() => {
+                onLogout()
+                navigate('/')
+              }}
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onUserUpdate={onUserUpdate}
+            />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route
+        path="/user/:id"
+        element={
+          isAuthenticated ? (
+            <UserProfilePage
+              user={user!}
+              onLogout={() => {
+                onLogout()
+                navigate('/')
+              }}
+              lang={lang}
+              onLanguageChange={onLanguageChange}
             />
           ) : (
             <Navigate to="/" replace />

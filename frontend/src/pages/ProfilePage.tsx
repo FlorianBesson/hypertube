@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { LoggedUser } from '../App'
+import Header from '../components/layout/Header'
+import PageLayout from '../components/layout/PageLayout'
 import Avatar from '../components/ui/Avatar'
 import Toast from '../components/ui/Toast'
 import Button from '../components/ui/Button'
@@ -10,7 +13,7 @@ import { translations } from '../locales/translations'
 
 interface ProfilePageProps {
   user: LoggedUser
-  onBack: () => void
+  onLogout: () => void
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
   onUserUpdate: (user: LoggedUser) => void
@@ -18,12 +21,13 @@ interface ProfilePageProps {
 
 export default function ProfilePage({
   user,
-  onBack,
+  onLogout,
   lang,
   onLanguageChange,
   onUserUpdate
 }: ProfilePageProps) {
   const t = translations[lang].profile
+  const navigate = useNavigate()
   // uploading/deleting: state managers for loading indicators during HTTP requests
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -138,17 +142,29 @@ export default function ProfilePage({
   }
 
   return (
-    <div className="w-full flex flex-col gap-6 relative">
-      {/* Dynamic alert feedback banner */}
-      <Toast message={statusMessage} />
+    <PageLayout
+      header={
+        <Header
+          user={user}
+          onLogout={onLogout}
+          lang={lang}
+          onLanguageChange={onLanguageChange}
+        />
+      }
+      lang={lang}
+      backgroundType="dashboard"
+    >
+      <div className="w-full max-w-4xl flex flex-col gap-6 relative">
+        {/* Dynamic alert feedback banner */}
+        <Toast message={statusMessage} />
 
-      {/* Header section with back button */}
-      <div className="flex items-center gap-4 bg-neutral-900/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
-        <Button
-          variant="icon"
-          size="none"
-          onClick={onBack}
-          className="p-2.5"
+        {/* Header section with back button */}
+        <div className="flex items-center gap-4 bg-neutral-900/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
+          <Button
+            variant="icon"
+            size="none"
+            onClick={() => navigate('/dashboard')}
+            className="p-2.5"
           title={t.backToDashboard}
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
@@ -250,5 +266,6 @@ export default function ProfilePage({
 
       </div>
     </div>
+  </PageLayout>
   )
 }

@@ -1,3 +1,4 @@
+import { Link, useLocation } from 'react-router-dom'
 import type { LoggedUser } from "../../App";
 import Avatar from "../ui/Avatar";
 import LanguageSelector from "../ui/LanguageSelector";
@@ -5,8 +6,6 @@ import { translations } from "../../locales/translations";
 
 interface HeaderProps {
   user?: LoggedUser | null;
-  view?: "dashboard" | "profile" | "user-profile";
-  onViewChange?: (view: "dashboard" | "profile" | "user-profile") => void;
   onLogout?: () => void;
   lang: "en" | "fr";
   onLanguageChange: (lang: "en" | "fr") => void;
@@ -14,43 +13,41 @@ interface HeaderProps {
 
 export default function Header({
   user,
-  view,
-  onViewChange,
   onLogout,
   lang,
   onLanguageChange,
 }: HeaderProps) {
-  const t = translations[lang].header;
-  const showUserSection = !!(user && onViewChange && onLogout && view);
+  const location = useLocation()
+  const t = translations[lang].header
+  const showUserSection = !!(user && onLogout)
 
   return (
     <header className="px-4 sm:px-6 md:px-10 py-4 flex items-center justify-between">
       {/* 
         Logo / Project Name Link: 
-        Clicking on it redirects the user back to the dashboard view if logged in.
+        Clicking on it redirects the user back to the dashboard.
         Note: The project name was renamed from "Hypertube" to "Magneto".
       */}
-      <span
-        onClick={() => onViewChange?.("dashboard")}
-        className={`text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none ${
-          onViewChange ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
-        }`}
+      <Link
+        to={showUserSection ? "/dashboard" : "/"}
+        className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
       >
         Magneto
-      </span>
+      </Link>
       <div className="flex items-center gap-4">
         <LanguageSelector value={lang} onChange={onLanguageChange} />
         {showUserSection && (
           <>
             <div className="flex items-center">
-              <Avatar
-                photo={user.photo}
-                name={user.name}
-                email={user.email}
-                size="sm"
-                active={view === "profile"}
-                onClick={() => onViewChange("profile")}
-              />
+              <Link to="/profile">
+                <Avatar
+                  photo={user.photo}
+                  name={user.name}
+                  email={user.email}
+                  size="sm"
+                  active={location.pathname === "/profile"}
+                />
+              </Link>
             </div>
             <button
               onClick={onLogout}
