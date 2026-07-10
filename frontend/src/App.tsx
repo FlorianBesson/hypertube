@@ -19,6 +19,8 @@ function App() {
     return (localStorage.getItem('lang') as 'en' | 'fr') || 'en'
   })
 
+  const [authLoading, setAuthLoading] = useState(false)
+
   const handleLanguageChange = (newLang: 'en' | 'fr') => {
     localStorage.setItem('lang', newLang)
     setLang(newLang)
@@ -32,6 +34,41 @@ function App() {
       setUser(JSON.parse(savedUser))
     }
     setChecking(false)
+  }, [])
+
+  useEffect(() => {
+    if (window.location.pathname === "/auth/callback/42") {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+
+      if (code) {
+        const auth42 = async () => {
+          setAuthLoading(true)
+          try {
+            const res = await fetch("/api/auth/42", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+            
+            if (res.ok && data.success) {
+              handleLoginSuccess(data.token, data.user)
+            } else {
+              console.error("Erreur de connexion 42:", data.message)
+            }
+          } catch (err) {
+            console.error("Erreur réseau lors de la connexion 42:", err)
+          } finally {
+            setAuthLoading(false)
+            window.history.replaceState({}, document.title, "/")
+          }
+        }
+        auth42()
+      }
+    }
   }, [])
 
   const handleLoginSuccess = (newToken: string, loggedUser: LoggedUser) => {
@@ -57,6 +94,15 @@ function App() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center text-white">
         <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
+        <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+        <p className="text-neutral-400 text-sm font-semibold">Connexion avec 42 en cours...</p>
       </div>
     )
   }
