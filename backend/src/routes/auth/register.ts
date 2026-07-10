@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as z from "zod"
-import { prisma } from '../../server';
+import { prisma } from '../../prisma';
 import bcrypt from 'bcrypt'
 import { HttpError } from '../../errors';
 

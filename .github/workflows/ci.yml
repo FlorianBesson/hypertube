@@ -1,0 +1,57 @@
+name: magneto
+on: 
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+         node-version: 24
+         cache: 'npm'
+         cache-dependency-path: frontend/package-lock.json
+
+      - name: Run Install
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run Lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Run Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Docker Build
+        run: docker build --target prod -t magneto-frontend .
+        working-directory: frontend
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+         node-version: 24
+         cache: 'npm'
+         cache-dependency-path: backend/package-lock.json
+
+      - name: Run Install
+        run: npm ci
+        working-directory: backend
+
+      - name: Generate Prisma
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Run TypeScript Check
+        run: npx tsc --noEmit
+        working-directory: backend
+
+      - name: Docker Build
+        run: docker build --target prod -t magneto-backend .
+        working-directory: backend

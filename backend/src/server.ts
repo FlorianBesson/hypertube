@@ -1,41 +1,56 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
+import path from 'path';
+import { prisma } from './prisma';
 import { HttpError } from './errors';
-import { NextFunction } from 'express';
-
 import { checkDbConnection } from './db/utils';
-// Database + Prisma imports
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
-import "dotenv/config";
 
-// Database connection
-const DATABASE_URL = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@postgres_db:5432/${process.env.POSTGRES_DB}?schema=public`;
-
-const adapter = new PrismaPg({
-    connectionString: DATABASE_URL
-})
-
-export const prisma = new PrismaClient({
-    adapter,
-})
-
-// Routes
-import authRouter from './routes/auth';
-
+// Import router modules for authentication and profile management
+import authRoutes from './routes/auth';
+import userRoutes from './routes/user';
+import usersRoutes from './routes/users';
 
 const PORT = 3000;
 export const app: Application = express();
 
+// Enable JSON body parsing middleware for processing incoming requests
 app.use(express.json());
-app.use("/api/auth", authRouter);
 
+// Serve uploaded user files/avatars statically from the uploads folder
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Register main API endpoints with their mount paths
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/users', usersRoutes);
+
+/**
+ * Health check endpoint for testing database connectivity.
+ * Verifies that the Prisma Client can establish a connection and read from the Postgres database.
+ */
+app.get("/api/db-check", async (req, res) => {
+    try {
+        await prisma.user.count();
+        res.json({ success: true, message: "Database connected to Express !" });
+    } catch (error) {
+        console.error("DB Check error:", error);
+        res.status(500).json({ success: false, message: "DB Error" });
+    }
+});
+
+// Basic server test ping endpoint
+app.get('/api/ping', (req: Request, res: Response) => {
+    res.send('Hello, TypeScript + Express!');
+});
+
+// Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    if (err instanceof HttpError)
-        return res.status(err.status).json({ success: false, message: err.message })
-    res.status(500).json({success: false, message: "Internal Server Error"})
-})
+    if (err instanceof HttpError) {
+        return res.status(err.status).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+});
 
-
+// Start the Express HTTP listener
 app.listen(PORT, async () => {
     console.log(`Server running at http://localhost:${PORT}`);
     await checkDbConnection();

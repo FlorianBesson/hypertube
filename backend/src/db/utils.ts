@@ -1,4 +1,4 @@
-import { prisma } from "../server";
+import { prisma } from "../prisma";
 
 export async function checkDbConnection() {
     try {

@@ -6,12 +6,12 @@ function RegisterForm() {
     const [email, setEmail] = useState('')
     const [error, setError] = useState('')
 
-    async function handleSubmit(e) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         try
         {
             e.preventDefault()
             
-            const form = e.target;
+            const form = e.currentTarget;
             const formData = new FormData(form);            
             const data = Object.fromEntries(formData.entries());
             

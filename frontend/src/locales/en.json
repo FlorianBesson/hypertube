@@ -1,0 +1,95 @@
+{
+  "header": {
+    "logout": "Logout"
+  },
+  "footer": {
+    "allRightsReserved": "All rights reserved."
+  },
+  "login": {
+    "signIn": "Sign In",
+    "or": "Or",
+    "createAccount": "create a new account",
+    "usernameRequired": "Username is required",
+    "passwordRequired": "Password is required",
+    "minCharacters": "Minimum 6 characters",
+    "invalidCredentials": "Wrong credentials",
+    "networkError": "Network error, try again.",
+    "usernamePlaceholder": "Username",
+    "passwordPlaceholder": "Password",
+    "continueButton": "Continue"
+  },
+  "dashboard": {
+    "communityTitle": "Community Members",
+    "communitySubtitle": "Select any member to view their public profile and details",
+    "viewProfile": "View Profile",
+    "noMembers": "No other members registered yet.",
+    "loadingMembers": "Loading community members...",
+    "failedMembers": "Failed to load members.",
+    "notSpecified": "Not specified"
+  },
+  "profile": {
+    "backToDashboard": "Back to dashboard",
+    "myProfile": "My Profile",
+    "changePhoto": "Change photo",
+    "notSpecified": "Not specified",
+    "memberBadge": "Active Account",
+    "photoTooLarge": "File is too large (max 2MB)",
+    "invalidFormat": "Invalid format. Use JPEG, PNG, or WEBP",
+    "uploadFailed": "Upload failed",
+    "networkError": "Network error, try again",
+    "deleteAvatar": "Delete avatar",
+    "avatarDeleted": "Avatar deleted successfully!",
+    "deleteFailed": "Failed to delete avatar",
+    "managePersonalDetails": "Manage your personal details and settings.",
+    "avatarUpdated": "Avatar updated successfully!",
+    "deleteConfirm": "Are you sure you want to delete your avatar?"
+  },
+  "userProfile": {
+    "backToDashboard": "Back to dashboard",
+    "userProfile": "User Profile",
+    "loading": "Loading profile...",
+    "errorLoading": "Failed to load user profile.",
+    "notSpecified": "Not specified",
+    "memberBadge": "Community Member",
+    "memberSince": "Member since",
+    "infoSection": "Public Information",
+    "publicProfileSubtitle": "Consult public information and status of this member.",
+    "biography": "Biography",
+    "lastLogin": "Last Connection",
+    "nameLabel": "Name"
+  },
+  "profileEditForm": {
+    "firstName": "First Name",
+    "emailAddress": "Email Address",
+    "biography": "Biography",
+    "placeholderBio": "Tell us about yourself...",
+    "notSpecified": "Not specified",
+    "editInfo": "Edit Profile",
+    "language": "Language",
+    "personalDetails": "Personal Details",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "placeholderName": "Enter your name",
+    "emailRequired": "Email is required",
+    "profileUpdated": "Profile updated successfully!",
+    "networkError": "Network error, try again",
+    "failedSave": "Failed to save profile"
+  },
+  "passwordChangeForm": {
+    "changePassword": "Change password",
+    "security": "Security & Credentials",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "passwordUpdated": "Password updated successfully!",
+    "passwordsDoNotMatch": "New passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "networkError": "Network error, try again",
+    "fillAllFields": "Please fill in all password fields",
+    "failedChange": "Failed to change password",
+    "passwordLabel": "Password Credentials",
+    "changePasswordSecure": "Change password to secure account"
+  }
+}
