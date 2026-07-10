@@ -52,6 +52,7 @@ export async function registerHandler(req: Request, res: Response) {
         data: {
             username: username,
             email: email,
+            name: username,
             password: hashedPassword
         }
     })

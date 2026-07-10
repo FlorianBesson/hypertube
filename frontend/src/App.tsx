@@ -1,4 +1,4 @@
-import { RegisterView } from "./pages/Register";
+import RegisterPage from "./pages/Register";
 import { useState } from 'react'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -86,7 +86,10 @@ function App() {
 
   if (window.location.pathname === '/register') {
     return (
-      <RegisterView />
+      <RegisterPage
+        lang={lang}
+        onLanguageChange={handleLanguageChange}
+      />
     )
   }
 
