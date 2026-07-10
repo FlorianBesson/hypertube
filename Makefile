@@ -88,6 +88,11 @@ db-status: ## Check database migration status
 	@echo "$(BLUE)Checking database migration status...$(NC)"
 	docker compose -f compose.dev.yml exec api-express npx prisma migrate status
 
+prisma-studio: ## Start Prisma Studio container and print URL
+	@echo "$(BLUE)Starting Prisma Studio...$(NC)"
+	docker compose -f compose.dev.yml up -d prisma-studio
+	@echo "$(GREEN)Prisma Studio is running at:$(NC) http://localhost:5555"
+
 
 build: dev-build ## Alias for dev-build
 up: dev-up ## Alias for dev-up
