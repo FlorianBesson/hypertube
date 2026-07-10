@@ -55,7 +55,7 @@ services:
         command: postgres -c listen_addresses='*'
                 
     prisma-studio:
-        image: node:22
+        image: node:24
         working_dir: /app
         volumes:
             - ./backend/:/app
