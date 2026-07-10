@@ -3,7 +3,9 @@ import * as z from "zod"
 import { prisma } from '../../prisma';
 import bcrypt from 'bcrypt'
 import { HttpError } from '../../errors';
+import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 
 const RegisterSchema = z.object({
     email: z.
@@ -48,7 +50,7 @@ export async function registerHandler(req: Request, res: Response) {
     if (user)
         throw new HttpError(400, "Email already in use");
     
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
         data: {
             username: username,
             email: email,
@@ -57,5 +59,23 @@ export async function registerHandler(req: Request, res: Response) {
         }
     })
             
-    res.status(201).json({ success: true, message: "Succesfully registered" });
+    const token = jwt.sign(
+        { userId: newUser.id, email: newUser.email, name: newUser.name },
+        JWT_SECRET,
+        { expiresIn: '1d' }
+    );
+
+    res.status(201).json({
+        success: true,
+        message: "Succesfully registered",
+        token,
+        user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            photo: newUser.photo,
+            bio: newUser.bio,
+            lastLogin: newUser.lastLogin
+        }
+    });
 }

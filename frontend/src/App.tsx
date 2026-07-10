@@ -89,6 +89,7 @@ function App() {
       <RegisterPage
         lang={lang}
         onLanguageChange={handleLanguageChange}
+        onRegisterSuccess={handleLoginSuccess}
       />
     )
   }

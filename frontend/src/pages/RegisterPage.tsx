@@ -21,11 +21,13 @@ interface RegisterError {
 interface RegisterPageProps {
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
+  onRegisterSuccess: (token: string, user: { id: number; email: string; name: string }) => void
 }
 
 export default function RegisterPage({
   lang,
-  onLanguageChange
+  onLanguageChange,
+  onRegisterSuccess
 }: RegisterPageProps) {
   const t = translations[lang].register
   const [form, setForm] = useState<RegisterFormFields>({ email: '', username: '', password: '' })
@@ -82,9 +84,9 @@ export default function RegisterPage({
         setErrors({ global: data.message || t.networkError })
       } else {
         setSuccess(true)
-        // Redirect to login after 1.5 seconds
         setTimeout(() => {
-          window.location.href = '/'
+          onRegisterSuccess(data.token, data.user)
+          window.history.pushState({}, '', '/')
         }, 1500)
       }
     } catch {
@@ -130,9 +132,6 @@ export default function RegisterPage({
 
           {success ? (
             <div className="bg-emerald-500/10 border border-emerald-500/40 rounded px-4 py-6 text-emerald-300 text-center flex flex-col gap-2">
-              <svg className="w-8 h-8 text-emerald-400 mx-auto animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
               <p className="font-semibold text-sm">
                 {lang === 'fr' ? 'Inscription réussie ! Redirection...' : 'Registration successful! Redirecting...'}
               </p>
