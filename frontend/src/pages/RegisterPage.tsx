@@ -3,6 +3,7 @@ import type { FormEvent } from "react"
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Header from '../components/layout/Header'
+import Footer from '../components/layout/Footer'
 import { translations } from '../locales/translations'
 
 interface RegisterFormFields {
@@ -192,6 +193,9 @@ export default function RegisterPage({
 
         </div>
       </main>
+
+      {/* ── Footer ─────────────────────────────────────────── */}
+      <Footer lang={lang} />
     </div>
   )
 }
