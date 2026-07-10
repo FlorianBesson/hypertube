@@ -2,7 +2,7 @@ import { useState } from "react"
 import type { FormEvent } from "react"
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
-import LanguageSelector from '../components/ui/LanguageSelector'
+import Header from '../components/layout/Header'
 import { translations } from '../locales/translations'
 
 interface RegisterFormFields {
@@ -104,15 +104,7 @@ export default function RegisterPage({
       }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <header className="px-6 sm:px-10 py-6 flex items-center justify-between">
-        <span className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none">
-          Magneto
-        </span>
-        <LanguageSelector value={lang} onChange={onLanguageChange} />
-      </header>
-
-      {/* ── Séparateur ─────────────────────────────────────── */}
-      <div className="h-px bg-white/10 mx-0" />
+      <Header lang={lang} onLanguageChange={onLanguageChange} />
 
       {/* ── Contenu centré ─────────────────────────────────── */}
       <main className="flex-1 flex items-center justify-center px-4 py-16">
