@@ -18,6 +18,23 @@
     "passwordPlaceholder": "Mot de passe",
     "continueButton": "Continuer"
   },
+  "register": {
+    "signUp": "S'inscrire",
+    "or": "Ou",
+    "alreadyHaveAccount": "déjà inscrit ? ",
+    "loginLink": "Se connecter",
+    "emailRequired": "L'adresse email est requise",
+    "usernameRequired": "Le nom d'utilisateur est requis",
+    "passwordRequired": "Le mot de passe est requis",
+    "minCharactersPassword": "Minimum 8 caractères",
+    "minCharactersUsername": "Minimum 3 caractères",
+    "emailPlaceholder": "Adresse email",
+    "usernamePlaceholder": "Nom d'utilisateur",
+    "passwordPlaceholder": "Mot de passe",
+    "registerButton": "S'inscrire",
+    "networkError": "Erreur réseau, réessayez.",
+    "emailInvalid": "Adresse email invalide"
+  },
   "dashboard": {
     "communityTitle": "Membres de la communauté",
     "communitySubtitle": "Sélectionnez un membre pour consulter ses informations publiques",

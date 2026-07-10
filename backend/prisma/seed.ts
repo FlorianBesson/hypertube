@@ -13,10 +13,10 @@ const prisma = new PrismaClient({
 })
 
 const users = [
-  { email: "antoine@magneto.com", name: "Antoine", password: "password" },
-  { email: "florian@magneto.com", name: "Florian", password: "password" },
-  { email: "françois@magneto.com", name: "François", password: "password" },
-  { email: "jutha@magneto.com", name: "Jutha", password: "password" },
+  { email: "antoine@magneto.com", name: "Antoine", username: "antoine", password: "password" },
+  { email: "florian@magneto.com", name: "Florian", username: "florian", password: "password" },
+  { email: "françois@magneto.com", name: "François", username: "francois", password: "password" },
+  { email: "jutha@magneto.com", name: "Jutha", username: "jutha", password: "password" },
 ];
 
 async function main() {
@@ -29,6 +29,7 @@ async function main() {
       },
       create: {
         email: user.email,
+        username: user.username,
         name: user.name,
         password: user.password,
       },

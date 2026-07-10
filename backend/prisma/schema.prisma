@@ -14,11 +14,12 @@ datasource db {
 
 model User { 
   id        Int      @id @default(autoincrement()) 
-  createdAt DateTime @default(now()) 
   email     String   @unique
+  username  String   @unique
   name      String?
   password  String
   photo     String?
   bio       String?
+  createdAt DateTime @default(now())
   lastLogin DateTime?
 } 

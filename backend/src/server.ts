@@ -1,14 +1,16 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import path from 'path';
 import { prisma } from './prisma';
+import { HttpError } from './errors';
+import { checkDbConnection } from './db/utils';
 
 // Import router modules for authentication and profile management
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import usersRoutes from './routes/users';
 
-const app: Application = express();
 const PORT = 3000;
+export const app: Application = express();
 
 // Enable JSON body parsing middleware for processing incoming requests
 app.use(express.json());
@@ -40,7 +42,16 @@ app.get('/api/ping', (req: Request, res: Response) => {
     res.send('Hello, TypeScript + Express!');
 });
 
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof HttpError) {
+        return res.status(err.status).json({ success: false, message: err.message });
+    }
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+});
+
 // Start the Express HTTP listener
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    await checkDbConnection();
 });

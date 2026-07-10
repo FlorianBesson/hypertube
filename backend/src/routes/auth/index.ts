@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../prisma';
+import { prisma } from '../../prisma';
+import { registerHandler } from './register';
 
 const router = Router();
-// Secret key used to sign the JWT token on login success
 const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 
 // Login Endpoint (mounted at /api/auth/login)
@@ -66,5 +66,8 @@ router.post("/login", async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: "Erreur serveur" });
     }
 });
+
+// Register Endpoint (mounted at /api/auth/register)
+router.post("/register", registerHandler);
 
 export default router;
