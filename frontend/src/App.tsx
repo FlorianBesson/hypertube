@@ -1,4 +1,4 @@
-import RegisterPage from "./pages/Register";
+import RegisterPage from "./pages/RegisterPage";
 import { useState } from 'react'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
