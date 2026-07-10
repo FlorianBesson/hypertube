@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
+import { Link } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Header from '../components/layout/Header'
@@ -116,9 +117,12 @@ export default function RegisterPage({
             <h1 className="text-3xl font-bold">{t.signUp}</h1>
             <p className="text-neutral-400 text-sm">
               {t.or}{' '}
-              <a href="/" className="text-white underline hover:text-neutral-300 transition-colors">
+              <Link
+                to="/"
+                className="text-white underline hover:text-neutral-300 transition-colors"
+              >
                 {t.loginLink}
-              </a>
+              </Link>
               .
             </p>
           </div>

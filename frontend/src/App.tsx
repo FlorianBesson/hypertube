@@ -1,5 +1,6 @@
-import RegisterPage from "./pages/RegisterPage";
 import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import RegisterPage from "./pages/RegisterPage";
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 
@@ -13,6 +14,92 @@ export interface LoggedUser {
   photo?: string
   bio?: string
   lastLogin?: string
+}
+
+interface AppRoutesProps {
+  token: string | null
+  user: LoggedUser | null
+  lang: 'en' | 'fr'
+  onLanguageChange: (lang: 'en' | 'fr') => void
+  onLoginSuccess: (token: string, user: LoggedUser) => void
+  onLogout: () => void
+  onUserUpdate: (user: LoggedUser) => void
+}
+
+function AppRoutes({
+  token,
+  user,
+  lang,
+  onLanguageChange,
+  onLoginSuccess,
+  onLogout,
+  onUserUpdate,
+}: AppRoutesProps) {
+  const navigate = useNavigate()
+  const isAuthenticated = !!(token && user)
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onLoginSuccess={(token, user) => {
+                onLoginSuccess(token, user)
+                navigate('/dashboard')
+              }}
+            />
+          )
+        }
+      />
+      <Route
+        path="/login"
+        element={<Navigate to="/" replace />}
+      />
+      <Route
+        path="/register"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <RegisterPage
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onRegisterSuccess={(token, user) => {
+                onLoginSuccess(token, user)
+                navigate('/dashboard')
+              }}
+            />
+          )
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          isAuthenticated ? (
+            <DashboardPage
+              user={user!}
+              onLogout={() => {
+                onLogout()
+                navigate('/')
+              }}
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onUserUpdate={onUserUpdate}
+            />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
 }
 
 function App() {
@@ -71,35 +158,18 @@ function App() {
     setUser(updatedUser)
   }
 
-  // Routing: If user is authenticated, render Dashboard, otherwise render Login Screen or Register Screen
-  if (token && user) {
-    return (
-      <DashboardPage
+  return (
+    <BrowserRouter>
+      <AppRoutes
+        token={token}
         user={user}
-        onLogout={handleLogout}
         lang={lang}
         onLanguageChange={handleLanguageChange}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
         onUserUpdate={handleUserUpdate}
       />
-    )
-  }
-
-  if (window.location.pathname === '/register') {
-    return (
-      <RegisterPage
-        lang={lang}
-        onLanguageChange={handleLanguageChange}
-        onRegisterSuccess={handleLoginSuccess}
-      />
-    )
-  }
-
-  return (
-    <LoginPage
-      lang={lang}
-      onLanguageChange={handleLanguageChange}
-      onLoginSuccess={handleLoginSuccess}
-    />
+    </BrowserRouter>
   )
 }
 
