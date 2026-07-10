@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Header from '../components/layout/Header'
-import Footer from '../components/layout/Footer'
+import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
 
 interface RegisterFormFields {
@@ -88,7 +88,6 @@ export default function RegisterPage({
         setSuccess(true)
         setTimeout(() => {
           onRegisterSuccess(data.token, data.user)
-          window.history.pushState({}, '', '/')
         }, 1500)
       }
     } catch {
@@ -99,107 +98,100 @@ export default function RegisterPage({
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col text-white"
-      style={{
-        background: 'radial-gradient(ellipse 120% 60% at 50% 0%, #5c1010 0%, #2a0505 35%, #0d0000 65%, #000000 100%)',
-      }}
+    <PageLayout
+      header={<Header lang={lang} onLanguageChange={onLanguageChange} />}
+      lang={lang}
+      backgroundType="auth"
     >
-      {/* ── Header ─────────────────────────────────────────── */}
-      <Header lang={lang} onLanguageChange={onLanguageChange} />
+      <div className="w-full max-w-sm flex flex-col gap-5">
 
-      {/* ── Contenu centré ─────────────────────────────────── */}
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm flex flex-col gap-5">
+        {/* Titre */}
+        <div className="flex flex-col gap-1 text-center">
+          <h1 className="text-3xl font-bold">{t.signUp}</h1>
+          <p className="text-neutral-400 text-sm">
+            {t.or}{' '}
+            <Link
+              to="/"
+              className="text-white underline hover:text-neutral-300 transition-colors"
+            >
+              {t.loginLink}
+            </Link>
+            .
+          </p>
+        </div>
 
-          {/* Titre */}
-          <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">{t.signUp}</h1>
-            <p className="text-neutral-400 text-sm">
-              {t.or}{' '}
-              <Link
-                to="/"
-                className="text-white underline hover:text-neutral-300 transition-colors"
-              >
-                {t.loginLink}
-              </Link>
-              .
+        {success ? (
+          <div className="bg-emerald-500/10 border border-emerald-500/40 rounded px-4 py-6 text-emerald-300 text-center flex flex-col gap-2">
+            <svg className="w-8 h-8 text-emerald-400 mx-auto animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <p className="font-semibold text-sm">
+              {lang === 'fr' ? 'Inscription réussie ! Redirection...' : 'Registration successful! Redirecting...'}
             </p>
           </div>
+        ) : (
+          <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
 
-          {success ? (
-            <div className="bg-emerald-500/10 border border-emerald-500/40 rounded px-4 py-6 text-emerald-300 text-center flex flex-col gap-2">
-              <p className="font-semibold text-sm">
-                {lang === 'fr' ? 'Inscription réussie ! Redirection...' : 'Registration successful! Redirecting...'}
-              </p>
-            </div>
-          ) : (
-            <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
+            {/* Erreur globale */}
+            {errors.global && (
+              <div className="bg-amber-500/10 border border-amber-500/40 rounded px-4 py-2.5 text-amber-300 text-sm text-center">
+                {errors.global}
+              </div>
+            )}
 
-              {/* Erreur globale */}
-              {errors.global && (
-                <div className="bg-amber-500/10 border border-amber-500/40 rounded px-4 py-2.5 text-amber-300 text-sm text-center">
-                  {errors.global}
-                </div>
-              )}
+            {/* Email */}
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder={t.emailPlaceholder}
+              value={form.email}
+              disabled={loading}
+              error={errors.email}
+              variant="login"
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            />
 
-              {/* Email */}
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder={t.emailPlaceholder}
-                value={form.email}
-                disabled={loading}
-                error={errors.email}
-                variant="login"
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              />
+            {/* Username */}
+            <Input
+              id="username"
+              type="text"
+              autoComplete="username"
+              placeholder={t.usernamePlaceholder}
+              value={form.username}
+              disabled={loading}
+              error={errors.username}
+              variant="login"
+              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+            />
 
-              {/* Username */}
-              <Input
-                id="username"
-                type="text"
-                autoComplete="username"
-                placeholder={t.usernamePlaceholder}
-                value={form.username}
-                disabled={loading}
-                error={errors.username}
-                variant="login"
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-              />
+            {/* Password */}
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder={t.passwordPlaceholder}
+              value={form.password}
+              disabled={loading}
+              error={errors.password}
+              variant="login"
+              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+            />
 
-              {/* Password */}
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder={t.passwordPlaceholder}
-                value={form.password}
-                disabled={loading}
-                error={errors.password}
-                variant="login"
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              />
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={loading}
+              loading={loading}
+              size="lg"
+              className="w-full mt-1"
+            >
+              {t.registerButton}
+            </Button>
+          </form>
+        )}
 
-              {/* Submit */}
-              <Button
-                type="submit"
-                disabled={loading}
-                loading={loading}
-                size="lg"
-                className="w-full mt-1"
-              >
-                {t.registerButton}
-              </Button>
-            </form>
-          )}
-
-        </div>
-      </main>
-
-      {/* ── Footer ─────────────────────────────────────────── */}
-      <Footer lang={lang} />
-    </div>
+      </div>
+    </PageLayout>
   )
 }

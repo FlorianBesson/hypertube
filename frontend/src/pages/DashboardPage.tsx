@@ -3,7 +3,7 @@ import type { LoggedUser } from '../App'
 import ProfilePage from './ProfilePage'
 import UserProfilePage from './UserProfilePage'
 import Header from '../components/layout/Header'
-import Footer from '../components/layout/Footer'
+import PageLayout from '../components/layout/PageLayout'
 import Avatar from '../components/ui/Avatar'
 import { translations } from '../locales/translations'
 
@@ -65,24 +65,21 @@ export default function DashboardPage({
   const otherUsers = users.filter(u => u.id !== user.id)
 
   return (
-    <div
-      className="min-h-screen flex flex-col text-white"
-      style={{
-        background: 'radial-gradient(ellipse 120% 60% at 50% 0%, #1e0505 0%, #0d0202 35%, #050000 65%, #000000 100%)',
-      }}
+    <PageLayout
+      header={
+        <Header
+          user={user}
+          view={view}
+          onViewChange={setView}
+          onLogout={onLogout}
+          lang={lang}
+          onLanguageChange={onLanguageChange}
+        />
+      }
+      lang={lang}
+      backgroundType="dashboard"
     >
-      {/* ── Header ─────────────────────────────────────────── */}
-      <Header
-        user={user}
-        view={view}
-        onViewChange={setView}
-        onLogout={onLogout}
-        lang={lang}
-        onLanguageChange={onLanguageChange}
-      />
-
-      {/* ── Main Content ─────────────────────────────────── */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 max-w-4xl mx-auto w-full">
+      <div className="max-w-4xl w-full">
         {view === 'dashboard' ? (
           <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-6 sm:p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
             {/* Subtle design gradient glow */}
@@ -160,10 +157,7 @@ export default function DashboardPage({
             lang={lang}
           />
         )}
-      </main>
-
-      {/* ── Footer ─────────────────────────────────────────── */}
-      <Footer lang={lang} />
-    </div>
+      </div>
+    </PageLayout>
   )
 }
