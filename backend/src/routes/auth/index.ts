@@ -62,7 +62,8 @@ router.post("/login", async (req: Request, res: Response) => {
             }
         });
     } catch (error) {
-        console.error("Login error:", error);
+        if (process.env.NODE_ENV === 'dev')
+            console.error("Login error:", error);
         res.status(500).json({ success: false, message: "Erreur serveur" });
     }
 });
