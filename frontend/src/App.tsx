@@ -178,8 +178,34 @@ function App() {
     localStorage.setItem('lang', newLang)
     setLang(newLang)
   }
+  /**
+   * Callback invoked upon successful user authentication.
+   * Persists token and user profile to localStorage for session durability.
+   */
+  const handleLoginSuccess = (newToken: string, loggedUser: LoggedUser) => {
+    localStorage.setItem('token', newToken)
+    localStorage.setItem('user', JSON.stringify(loggedUser))
+    setToken(newToken)
+    setUser(loggedUser)
+  }
 
+  /**
+   * Logs out the user by wiping session storage values and resetting state.
+   */
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setToken(null)
+    setUser(null)
+  }
 
+  /**
+   * Updates cached user profile details in state and local storage.
+   */
+  const handleUserUpdate = (updatedUser: LoggedUser) => {
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+    setUser(updatedUser)
+  }
 
   useEffect(() => {
     if (window.location.pathname === "/auth/callback/42") {
@@ -215,35 +241,6 @@ function App() {
       }
     }
   }, [])
-
-  /**
-   * Callback invoked upon successful user authentication.
-   * Persists token and user profile to localStorage for session durability.
-   */
-  const handleLoginSuccess = (newToken: string, loggedUser: LoggedUser) => {
-    localStorage.setItem('token', newToken)
-    localStorage.setItem('user', JSON.stringify(loggedUser))
-    setToken(newToken)
-    setUser(loggedUser)
-  }
-
-  /**
-   * Logs out the user by wiping session storage values and resetting state.
-   */
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setToken(null)
-    setUser(null)
-  }
-
-  /**
-   * Updates cached user profile details in state and local storage.
-   */
-  const handleUserUpdate = (updatedUser: LoggedUser) => {
-    localStorage.setItem('user', JSON.stringify(updatedUser))
-    setUser(updatedUser)
-  }
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
