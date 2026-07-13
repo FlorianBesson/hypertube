@@ -20,6 +20,23 @@
     "logButton42": "Log in with your 42 account",
     "logButtonGoogle": "Log in with you Google account"
   },
+  "register": {
+    "signUp": "Sign Up",
+    "or": "Or",
+    "alreadyHaveAccount": "already have an account? ",
+    "loginLink": "Sign in",
+    "emailRequired": "Email is required",
+    "usernameRequired": "Username is required",
+    "passwordRequired": "Password is required",
+    "minCharactersPassword": "Minimum 8 characters",
+    "minCharactersUsername": "Minimum 3 characters",
+    "emailPlaceholder": "Email address",
+    "usernamePlaceholder": "Username",
+    "passwordPlaceholder": "Password",
+    "registerButton": "Register",
+    "networkError": "Network error, please try again.",
+    "emailInvalid": "Invalid email address"
+  },
   "dashboard": {
     "communityTitle": "Community Members",
     "communitySubtitle": "Select any member to view their public profile and details",

@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import RegisterPage from "./pages/RegisterPage";
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import ProfilePage from './pages/ProfilePage'
+import UserProfilePage from './pages/UserProfilePage'
 
+/**
+ * LoggedUser interface representing the structure of the authenticated user's session profile.
+ */
 export interface LoggedUser {
   id: number
   email: string
@@ -11,30 +18,168 @@ export interface LoggedUser {
   lastLogin?: string
 }
 
+interface AppRoutesProps {
+  token: string | null
+  user: LoggedUser | null
+  lang: 'en' | 'fr'
+  onLanguageChange: (lang: 'en' | 'fr') => void
+  onLoginSuccess: (token: string, user: LoggedUser) => void
+  onLogout: () => void
+  onUserUpdate: (user: LoggedUser) => void
+}
+
+function AppRoutes({
+  token,
+  user,
+  lang,
+  onLanguageChange,
+  onLoginSuccess,
+  onLogout,
+  onUserUpdate,
+}: AppRoutesProps) {
+  const navigate = useNavigate()
+  const isAuthenticated = !!(token && user)
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onLoginSuccess={(token, user) => {
+                onLoginSuccess(token, user)
+                navigate('/dashboard')
+              }}
+            />
+          )
+        }
+      />
+      <Route
+        path="/login"
+        element={<Navigate to="/" replace />}
+      />
+      <Route
+        path="/auth/callback/42"
+        element={
+          <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
+            <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+            <p className="text-neutral-400 text-sm font-semibold">Connexion avec 42 en cours...</p>
+          </div>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <RegisterPage
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onRegisterSuccess={(token, user) => {
+                onLoginSuccess(token, user)
+                navigate('/dashboard')
+              }}
+            />
+          )
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          isAuthenticated ? (
+            <DashboardPage
+              user={user!}
+              onLogout={() => {
+                onLogout()
+                navigate('/')
+              }}
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onUserUpdate={onUserUpdate}
+            />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          isAuthenticated ? (
+            <ProfilePage
+              user={user!}
+              onLogout={() => {
+                onLogout()
+                navigate('/')
+              }}
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+              onUserUpdate={onUserUpdate}
+            />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route
+        path="/user/:id"
+        element={
+          isAuthenticated ? (
+            <UserProfilePage
+              user={user!}
+              onLogout={() => {
+                onLogout()
+                navigate('/')
+              }}
+              lang={lang}
+              onLanguageChange={onLanguageChange}
+            />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 function App() {
-  const [token, setToken] = useState<string | null>(null)
-  const [user, setUser] = useState<LoggedUser | null>(null)
-  const [checking, setChecking] = useState(true)
+  // Initialize authentication token state directly from localStorage to prevent flash of login screen
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'))
+  
+  // Initialize logged-in user profile state directly from localStorage
+  const [user, setUser] = useState<LoggedUser | null>(() => {
+    const savedUser = localStorage.getItem('user')
+    try {
+      return savedUser ? JSON.parse(savedUser) : null
+    } catch {
+      return null
+    }
+  })
+
+  // Initialize internationalization language state (default: English)
   const [lang, setLang] = useState<'en' | 'fr'>(() => {
     return (localStorage.getItem('lang') as 'en' | 'fr') || 'en'
   })
 
   const [authLoading, setAuthLoading] = useState(false)
 
+  /**
+   * Updates selected UI language and persists choice to localStorage.
+   */
   const handleLanguageChange = (newLang: 'en' | 'fr') => {
     localStorage.setItem('lang', newLang)
     setLang(newLang)
   }
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    if (savedToken && savedUser) {
-      setToken(savedToken)
-      setUser(JSON.parse(savedUser))
-    }
-    setChecking(false)
-  }, [])
+
 
   useEffect(() => {
     if (window.location.pathname === "/auth/callback/42") {
@@ -71,6 +216,10 @@ function App() {
     }
   }, [])
 
+  /**
+   * Callback invoked upon successful user authentication.
+   * Persists token and user profile to localStorage for session durability.
+   */
   const handleLoginSuccess = (newToken: string, loggedUser: LoggedUser) => {
     localStorage.setItem('token', newToken)
     localStorage.setItem('user', JSON.stringify(loggedUser))
@@ -78,6 +227,9 @@ function App() {
     setUser(loggedUser)
   }
 
+  /**
+   * Logs out the user by wiping session storage values and resetting state.
+   */
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -85,19 +237,13 @@ function App() {
     setUser(null)
   }
 
+  /**
+   * Updates cached user profile details in state and local storage.
+   */
   const handleUserUpdate = (updatedUser: LoggedUser) => {
     localStorage.setItem('user', JSON.stringify(updatedUser))
     setUser(updatedUser)
   }
-
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white">
-        <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
-      </div>
-    )
-  }
-
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
@@ -107,24 +253,18 @@ function App() {
     )
   }
 
-  if (token && user) {
-    return (
-      <DashboardPage
+  return (
+    <BrowserRouter>
+      <AppRoutes
+        token={token}
         user={user}
-        onLogout={handleLogout}
         lang={lang}
         onLanguageChange={handleLanguageChange}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
         onUserUpdate={handleUserUpdate}
       />
-    )
-  }
-
-  return (
-    <LoginPage
-      lang={lang}
-      onLanguageChange={handleLanguageChange}
-      onLoginSuccess={handleLoginSuccess}
-    />
+    </BrowserRouter>
   )
 }
 

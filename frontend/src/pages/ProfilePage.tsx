@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { LoggedUser } from '../App'
+import Header from '../components/layout/Header'
+import PageLayout from '../components/layout/PageLayout'
 import Avatar from '../components/ui/Avatar'
 import Toast from '../components/ui/Toast'
 import Button from '../components/ui/Button'
@@ -10,7 +13,7 @@ import { translations } from '../locales/translations'
 
 interface ProfilePageProps {
   user: LoggedUser
-  onBack: () => void
+  onLogout: () => void
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
   onUserUpdate: (user: LoggedUser) => void
@@ -18,17 +21,26 @@ interface ProfilePageProps {
 
 export default function ProfilePage({
   user,
-  onBack,
+  onLogout,
   lang,
   onLanguageChange,
   onUserUpdate
 }: ProfilePageProps) {
   const t = translations[lang].profile
+  const navigate = useNavigate()
+  // uploading/deleting: state managers for loading indicators during HTTP requests
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  
+  // statusMessage: holds transient success or error alert banners (Toast messages)
   const [statusMessage, setStatusMessage] = useState<ToastMessage | null>(null)
+  
+  // fileInputRef: reference to the hidden file input used to trigger avatar selection
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  /**
+   * Triggers a temporary success or error notification banner.
+   */
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text })
     const duration = type === 'success' ? 3500 : 5000
@@ -37,21 +49,28 @@ export default function ProfilePage({
     }, duration)
   }
 
+  // Programmatically click the hidden file input element when avatar image is clicked
   const handlePhotoClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click()
     }
   }
 
+  /**
+   * Event handler triggered when a user selects a file to upload as an avatar.
+   * Enforces 2MB size limit and allowed graphic file types before executing POST request.
+   */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Limit client upload size to 2MB to matching backend restrictions
     if (file.size > 2 * 1024 * 1024) {
       showStatus('error', t.photoTooLarge)
       return
     }
 
+    // Verify format types
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
       showStatus('error', t.invalidFormat)
@@ -77,6 +96,7 @@ export default function ProfilePage({
         throw new Error(data.message || t.uploadFailed)
       }
 
+      // Propagate updated user profile to parent application state
       onUserUpdate(data.user)
       showStatus('success', t.avatarUpdated)
     } catch (err) {
@@ -87,6 +107,10 @@ export default function ProfilePage({
     }
   }
 
+  /**
+   * Deletes the user avatar after explicit confirmation prompt.
+   * Hits DELETE /api/user/avatar to remove file on server disk and nullify db field.
+   */
   const handleDeleteAvatar = async () => {
     if (!window.confirm(t.deleteConfirm)) {
       return
@@ -118,17 +142,29 @@ export default function ProfilePage({
   }
 
   return (
-    <div className="w-full flex flex-col gap-6 relative">
-      {/* Dynamic alert feedback banner */}
-      <Toast message={statusMessage} />
+    <PageLayout
+      header={
+        <Header
+          user={user}
+          onLogout={onLogout}
+          lang={lang}
+          onLanguageChange={onLanguageChange}
+        />
+      }
+      lang={lang}
+      backgroundType="dashboard"
+    >
+      <div className="w-full max-w-4xl flex flex-col gap-6 relative">
+        {/* Dynamic alert feedback banner */}
+        <Toast message={statusMessage} />
 
-      {/* Header section with back button */}
-      <div className="flex items-center gap-4 bg-neutral-900/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
-        <Button
-          variant="icon"
-          size="none"
-          onClick={onBack}
-          className="p-2.5"
+        {/* Header section with back button */}
+        <div className="flex items-center gap-4 bg-neutral-900/40 border border-white/5 rounded-2xl p-4 backdrop-blur-md">
+          <Button
+            variant="icon"
+            size="none"
+            onClick={() => navigate('/dashboard')}
+            className="p-2.5"
           title={t.backToDashboard}
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
@@ -159,16 +195,16 @@ export default function ProfilePage({
               onClick={handlePhotoClick}
             >
               {/* Photo Upload Overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 text-neutral-300">
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 text-neutral-300">
                 {uploading ? (
                   <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <>
+                  <div className="flex flex-col items-center justify-center gap-1.5 transform scale-95 translate-y-1.5 group-hover/avatar:scale-100 group-hover/avatar:translate-y-0 transition-all duration-300 ease-out">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white drop-shadow">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 47.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316Z" />
                     </svg>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-white drop-shadow">{t.changePhoto}</span>
-                  </>
+                    <span className="text-[8px] uppercase font-bold tracking-wider text-white drop-shadow">{t.changePhoto}</span>
+                  </div>
                 )}
               </div>
             </Avatar>
@@ -230,5 +266,6 @@ export default function ProfilePage({
 
       </div>
     </div>
+  </PageLayout>
   )
 }

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
-import LanguageSelector from '../components/ui/LanguageSelector'
+import Header from '../components/layout/Header'
+import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
 
 interface LoginForm {
@@ -66,107 +68,95 @@ export default function LoginPage({
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col text-white"
-      style={{
-        background: 'radial-gradient(ellipse 120% 60% at 50% 0%, #5c1010 0%, #2a0505 35%, #0d0000 65%, #000000 100%)',
-      }}
+    <PageLayout
+      header={<Header lang={lang} onLanguageChange={onLanguageChange} />}
+      lang={lang}
+      backgroundType="auth"
     >
-      {/* ── Header ─────────────────────────────────────────── */}
-      <header className="px-6 sm:px-10 py-6 flex items-center justify-between">
-        <span className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none">
-          Hypertube
-        </span>
-        <LanguageSelector value={lang} onChange={onLanguageChange} />
-      </header>
+      <div className="w-full max-w-sm flex flex-col gap-5">
 
-      {/* ── Séparateur ─────────────────────────────────────── */}
-      <div className="h-px bg-white/10 mx-0" />
+        {/* Titre */}
+        <div className="flex flex-col gap-1 text-center">
+          <h1 className="text-3xl font-bold">{t.signIn}</h1>
+          <p className="text-neutral-400 text-sm">
+            {t.or}{' '}
+            <Link
+              to="/register"
+              className="text-white underline hover:text-neutral-300 transition-colors"
+            >
+              {t.createAccount}
+            </Link>
+            .
+          </p>
+        </div>
 
-      {/* ── Contenu centré ─────────────────────────────────── */}
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm flex flex-col gap-5">
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
 
-          {/* Titre */}
-          <div className="flex flex-col gap-1 text-center">
-            <h1 className="text-3xl font-bold">{t.signIn}</h1>
-            <p className="text-neutral-400 text-sm">
-              {t.or}{' '}
-              <a href="/register" className="text-white underline hover:text-neutral-300 transition-colors">
-                {t.createAccount}
-              </a>
-              .
-            </p>
-          </div>
+          {/* Erreur globale */}
+          {errors.global && (
+            <div className="bg-amber-500/10 border border-amber-500/40 rounded px-4 py-2.5 text-amber-300 text-sm text-center">
+              {errors.global}
+            </div>
+          )}
 
-          <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
+          {/* Username */}
+          <Input
+            id="username"
+            type="text"
+            autoComplete="username"
+            placeholder={t.usernamePlaceholder}
+            value={form.username}
+            disabled={loading}
+            error={errors.username}
+            variant="login"
+            onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+          />
 
-            {/* Erreur globale */}
-            {errors.global && (
-              <div className="bg-amber-500/10 border border-amber-500/40 rounded px-4 py-2.5 text-amber-300 text-sm text-center">
-                {errors.global}
-              </div>
-            )}
+          {/* Password */}
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder={t.passwordPlaceholder}
+            value={form.password}
+            disabled={loading}
+            error={errors.password}
+            variant="login"
+            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+          />
 
-            {/* Username */}
-            <Input
-              id="username"
-              type="text"
-              autoComplete="username"
-              placeholder={t.usernamePlaceholder}
-              value={form.username}
-              disabled={loading}
-              error={errors.username}
-              variant="login"
-              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-            />
+          {/* Submit */}
+          <Button
+            type="submit"
+            disabled={loading}
+            loading={loading}
+            size="lg"
+            className="w-full mt-1"
+          >
+            {t.continueButton}
+          </Button>
 
-            {/* Password */}
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder={t.passwordPlaceholder}
-              value={form.password}
-              disabled={loading}
-              error={errors.password}
-              variant="login"
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-            />
-
-            {/* Submit */}
+          <div className="flex gap-2 w-full">
             <Button
-              type="submit"
+              type="button"
               disabled={loading}
               loading={loading}
-              size="lg"
-              className="w-full mt-1"
-            >
-              {t.continueButton}
+              variant="secondary"
+              className="flex-1"
+              onClick={() => window.location.href = '/api/auth/42'}>
+                {t.logButton42}
             </Button>
+            <Button
+              type="button"
+              disabled={loading}
+              loading={loading}
+              className="flex-1">
+                {t.logButtonGoogle}
+            </Button>
+          </div>
+        </form>
 
-            <div className="flex gap-2 w-full">
-              <Button
-                type="button"
-                disabled={loading}
-                loading={loading}
-                variant="secondary"
-                className="flex-1"
-                onClick={() => window.location.href = '/api/auth/42'}>
-                  {t.logButton42}
-              </Button>
-              <Button
-                type="button"
-                disabled={loading}
-                loading={loading}
-                className="flex-1">
-                  {t.logButtonGoogle}
-              </Button>
-            </div>
-          </form>
-
-        </div>
-      </main>
-    </div>
+      </div>
+    </PageLayout>
   )
 }

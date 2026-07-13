@@ -9,32 +9,34 @@ export default function LanguageSelector({
   onChange,
   className = ''
 }: LanguageSelectorProps) {
+  const toggleLanguage = () => {
+    onChange(value === 'en' ? 'fr' : 'en')
+  }
+
   return (
-    <div 
-      className={`flex items-center bg-neutral-900/60 border border-white/5 rounded-full p-0.5 backdrop-blur-md shadow-lg ${className}`}
+    <button 
+      type="button"
+      onClick={toggleLanguage}
+      className={`flex items-center bg-neutral-900/60 border border-white/5 rounded-full p-0.5 backdrop-blur-md shadow-lg cursor-pointer transition-all duration-300 hover:border-white/10 active:scale-[0.98] select-none ${className}`}
     >
-      <button
-        type="button"
-        onClick={() => onChange('en')}
-        className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
+      <span
+        className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider transition-all duration-300 ${
           value === 'en'
-            ? 'bg-red-600 text-white shadow-[0_0_12px_rgba(220,38,38,0.4)] scale-105'
+            ? 'bg-red-600 text-white scale-105'
             : 'text-neutral-400 hover:text-neutral-200'
         }`}
       >
         EN
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('fr')}
-        className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider transition-all duration-300 cursor-pointer ${
+      </span>
+      <span
+        className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider transition-all duration-300 ${
           value === 'fr'
-            ? 'bg-red-600 text-white shadow-[0_0_12px_rgba(220,38,38,0.4)] scale-105'
+            ? 'bg-red-600 text-white scale-105'
             : 'text-neutral-400 hover:text-neutral-200'
         }`}
       >
         FR
-      </button>
-    </div>
+      </span>
+    </button>
   )
 }

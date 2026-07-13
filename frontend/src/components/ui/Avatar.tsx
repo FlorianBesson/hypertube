@@ -14,16 +14,12 @@ interface AvatarProps {
 export default function Avatar({
   photo,
   name = '',
-  email = '',
   size = 'sm',
   active = false,
   onClick,
   className = '',
   children,
 }: AvatarProps) {
-  const initials = name
-    ? name.slice(0, 2).toUpperCase()
-    : (email ? email.slice(0, 2).toUpperCase() : '??')
 
   const isSm = size === 'sm'
 
@@ -46,10 +42,21 @@ export default function Avatar({
           className={`w-full h-full object-cover ${size === 'lg' ? 'transition-transform duration-500 group-hover:scale-110' : ''}`}
         />
       ) : (
-        <div className={`w-full h-full bg-linear-to-tr from-neutral-950 ${isSm ? 'to-red-600' : 'via-red-950 to-red-600'} flex items-center justify-center`}>
-          <span className={`font-black tracking-wider text-white ${isSm ? '' : 'drop-shadow-md'}`}>
-            {initials}
-          </span>
+        <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-1/2 h-1/2 text-neutral-400 transition-opacity duration-300 ease-in-out group-hover/avatar:opacity-0"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+            />
+          </svg>
         </div>
       )}
       {children}

@@ -1,4 +1,4 @@
-FROM node:22-alpine AS dev
+FROM node:24-alpine AS dev
 WORKDIR /app
 COPY package*.json tsconfig.json /app/
 RUN npm ci
@@ -7,7 +7,7 @@ EXPOSE 3000
 CMD ["sh", "-c", "npm run db:deploy && npm run dev"]
 
 
-FROM node:22-alpine AS prod
+FROM node:24-alpine AS prod
 WORKDIR /app
 COPY package*.json tsconfig.json ./
 RUN npm ci

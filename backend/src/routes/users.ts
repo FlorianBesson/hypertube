@@ -4,7 +4,10 @@ import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
 
-// Helper to mask emails for other users' profiles (retained for compatibility/future use)
+/**
+ * Helper function to obfuscate/mask user email addresses for privacy.
+ * Example: 'antoine@magneto.com' becomes 'a*****e@magneto.com'
+ */
 function maskEmail(email: string): string {
     const [username, domain] = email.split('@');
     if (!username || !domain) return email;
@@ -14,7 +17,11 @@ function maskEmail(email: string): string {
     return `${username[0]}${'*'.repeat(username.length - 2)}${username[username.length - 1]}@${domain}`;
 }
 
-// Get all users (will be mounted at /api/users)
+/**
+ * Route: GET /api/users
+ * Description: Retrieves list of all community members (limited fields: ID, name, photo).
+ * Authenticated: Yes
+ */
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
     try {
         const users = await prisma.user.findMany({
@@ -32,7 +39,11 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
     }
 });
 
-// Get target user details by ID (will be mounted at /api/users/:id)
+/**
+ * Route: GET /api/users/:id
+ * Description: Retrieves public details of a specific community user by their unique database ID.
+ * Authenticated: Yes
+ */
 router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
         const idParam = req.params.id;
@@ -40,6 +51,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
             res.status(400).json({ success: false, message: "Identifiant manquant" });
             return;
         }
+        // Normalize parameter if array, parse to integer ID
         const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
         const targetId = parseInt(idStr, 10);
         if (isNaN(targetId)) {
@@ -47,6 +59,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
             return;
         }
 
+        // Fetch limited set of fields for public safety (no password, no raw email)
         const user = await prisma.user.findUnique({
             where: { id: targetId },
             select: {
