@@ -68,19 +68,97 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.get("/42", (req: Request, res: Response) => {
-        const clientId = process.env.FORTYTWO_CLIENT_ID || '' ;
-        const uriRedirect = process.env.FORTYTWO_REDIRECT_URI || '' ;
+    const clientId = process.env.FORTYTWO_CLIENT_ID || '' ;
+    const uriRedirect = process.env.FORTYTWO_REDIRECT_URI || '' ;
 
-        console.log("GET /api/auth/42 - Redirecting user to 42 Intra. Client ID:", clientId, "Redirect URI:", uriRedirect);
+    console.log("GET /api/auth/42 - Redirecting user to 42 Intra. Client ID:", clientId, "Redirect URI:", uriRedirect);
 
-        const url = new URL("https://api.intra.42.fr/oauth/authorize");
-        url.searchParams.append("client_id", clientId);
-        url.searchParams.append("redirect_uri", uriRedirect);
-        url.searchParams.append("response_type", "code");
-        url.searchParams.append("scope", "public");
+    const url = new URL("https://api.intra.42.fr/oauth/authorize");
+    url.searchParams.append("client_id", clientId);
+    url.searchParams.append("redirect_uri", uriRedirect);
+    url.searchParams.append("response_type", "code");
+    url.searchParams.append("scope", "public");
 
-        res.redirect(url.toString())
+    res.redirect(url.toString());
 });
+
+router.get("/google", (req: Request, res: Response) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID || '' ;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || '';
+
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.searchParams.append("client_id", clientId);
+    url.searchParams.append("redirect_uri", redirectUri);
+    url.searchParams.append("response_type", "code");
+    url.searchParams.append("scope", "openid email profile");
+
+    res.redirect(url.toString());
+});
+
+interface OauthProfile {
+    email: string;
+    name: string;
+    photoUrl: string | null;
+    bio: string;
+    fallbackLogin?: string;
+}
+
+async function findOrCreateOauthUser({ email, name, photoUrl, bio, fallbackLogin }: OauthProfile) {
+    // 1. Recherche de l'utilisateur existant
+    let user = await prisma.user.findUnique({
+        where: { email }
+    });
+
+    // 2. Si l'utilisateur n'existe pas, on le crée avec un pseudo unique
+    if (!user) {
+        let baseUsername = (fallbackLogin || name || "user")
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, ""); // Retire espaces et caractères spéciaux
+        
+        if (!baseUsername) baseUsername = "user";
+
+        let uniqueUsername = baseUsername;
+        let usernameExists = await prisma.user.findUnique({
+            where: { username: uniqueUsername }
+        });
+
+        let counter = 1;
+        while (usernameExists) {
+            uniqueUsername = `${baseUsername}${counter}`;
+            usernameExists = await prisma.user.findUnique({
+                where: { username: uniqueUsername }
+            });
+            counter++;
+        }
+
+        const randomPassword = Math.random().toString(36).slice(-12) + "A1!";
+        user = await prisma.user.create({
+            data: {
+                email,
+                username: uniqueUsername,
+                name,
+                photo: photoUrl,
+                password: randomPassword,
+                bio
+            }
+        });
+    }
+
+    // 3. Mise à jour de la dernière connexion
+    const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+    });
+
+    // 4. Génération du token JWT
+    const token = jwt.sign(
+        { userId: updatedUser.id, email: updatedUser.email, name: updatedUser.name },
+        JWT_SECRET,
+        { expiresIn: '1d' }
+    );
+
+    return { token, user: updatedUser };
+}
 
 // Endpoint to handle the OAuth code exchange, register/login the user and issue a JWT
 router.post("/42", async (req: Request, res: Response) => {
@@ -148,78 +226,115 @@ router.post("/42", async (req: Request, res: Response) => {
             return;
         }
 
-        // 3. Find or create the user in the database
-        let user = await prisma.user.findUnique({
-            where: { email }
+        // 3. Find or create the user in the database (Refactored)
+        const { token, user } = await findOrCreateOauthUser({
+            email,
+            name: displayName,
+            photoUrl,
+            bio: "Étudiant de 42",
+            fallbackLogin: userData.login
         });
-
-        if (!user) {
-            console.log("POST /api/auth/42 - User not found in DB. Creating new user...");
-            
-            // Check if username from 42 login is already taken
-            let uniqueUsername = userData.login || `user_${Math.random().toString(36).slice(-6)}`;
-            let usernameExists = await prisma.user.findUnique({
-                where: { username: uniqueUsername }
-            });
-
-            let counter = 1;
-            while (usernameExists) {
-                uniqueUsername = `${userData.login || 'user'}${counter}`;
-                usernameExists = await prisma.user.findUnique({
-                    where: { username: uniqueUsername }
-                });
-                counter++;
-            }
-
-            console.log("POST /api/auth/42 - Selected unique username:", uniqueUsername);
-
-            // Create user with a random password because password is required in DB schema
-            const randomPassword = Math.random().toString(36).slice(-12) + "A1!";
-            user = await prisma.user.create({
-                data: {
-                    email,
-                    username: uniqueUsername,
-                    name: displayName,
-                    photo: photoUrl,
-                    password: randomPassword,
-                    bio: "Étudiant de 42"
-                }
-            });
-            console.log("POST /api/auth/42 - New user created in DB. ID:", user.id);
-        } else {
-            console.log("POST /api/auth/42 - User found in DB. ID:", user.id);
-        }
-
-        // Update last login
-        const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() }
-        });
-
-        // 4. Generate JWT
-        const token = jwt.sign(
-            { userId: updatedUser.id, email: updatedUser.email, name: updatedUser.name },
-            JWT_SECRET,
-            { expiresIn: '1d' }
-        );
-        console.log("POST /api/auth/42 - Signed JWT generated for user");
 
         res.json({
             success: true,
             message: "Connexion 42 réussie",
             token,
             user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                name: updatedUser.name,
-                photo: updatedUser.photo,
-                bio: updatedUser.bio,
-                lastLogin: updatedUser.lastLogin
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                photo: user.photo,
+                bio: user.bio,
+                lastLogin: user.lastLogin
             }
         });
     } catch (error) {
         console.error("POST /api/auth/42 - 42 login route error:", error);
         res.status(500).json({ success: false, message: "Erreur serveur lors de la connexion 42" });
+    }
+});
+
+router.post("/google", async (req: Request, res: Response) => {
+    try {
+        const { code } = req.body;
+
+        if (!code) {
+            res.status(400).json({ success: false, message: "Code d'autorisation manquant" });
+            return;
+        }
+
+        // ÉTAPE A : Échange du code d'autorisation contre un Access Token chez Google
+        const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                grant_type: "authorization_code",
+                client_id: process.env.GOOGLE_CLIENT_ID || "",
+                client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+                code: code,
+                redirect_uri: process.env.GOOGLE_REDIRECT_URI || ""
+            })
+        });
+
+        const tokenData = await tokenResponse.json() as any;
+        if (!tokenResponse.ok) {
+            console.error("Google token exchange error:", tokenData);
+            res.status(400).json({ success: false, message: "Échec du token Google" });
+            return;
+        }
+
+        const accessToken = tokenData.access_token;
+
+        const userResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+
+        const userData = await userResponse.json() as any;
+        if (!userResponse.ok) {
+            console.error("Google user fetch error:", userData);
+            res.status(400).json({ success: false, message: "Échec récupération profil Google" });
+            return;
+        }
+
+        const email = userData.email?.toLowerCase().trim();
+        const displayName = userData.name || userData.given_name;
+        const photoUrl = userData.picture || null;
+
+        if (!email) {
+            res.status(400).json({ success: false, message: "Email manquant chez Google" });
+            return;
+        }
+
+        // ÉTAPE B : Recherche ou création de l'utilisateur (Refactored)
+        const { token, user } = await findOrCreateOauthUser({
+            email,
+            name: displayName,
+            photoUrl,
+            bio: "Utilisateur Google",
+            fallbackLogin: userData.given_name
+        });
+
+        res.json({
+            success: true,
+            message: "Connexion Google réussie",
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                photo: user.photo,
+                bio: user.bio,
+                lastLogin: user.lastLogin
+            }
+        });
+
+    } catch (error) {
+        console.error("Google login route error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur Google" });
     }
 });
 
