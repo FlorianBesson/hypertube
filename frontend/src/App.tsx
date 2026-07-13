@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
+import AuthenticatedLayout from './components/layout/AuthenticatedLayout'
 
 /**
  * LoggedUser interface representing the structure of the authenticated user's session profile.
@@ -39,6 +40,10 @@ function AppRoutes({
 }: AppRoutesProps) {
   const navigate = useNavigate()
   const isAuthenticated = !!(token && user)
+  const handleAuthenticatedLogout = () => {
+    onLogout()
+    navigate('/')
+  }
 
   return (
     <Routes>
@@ -99,61 +104,33 @@ function AppRoutes({
         }
       />
       <Route
-        path="/dashboard"
         element={
-          isAuthenticated ? (
-            <DashboardPage
-              user={user!}
-              onLogout={() => {
-                onLogout()
-                navigate('/')
-              }}
-              lang={lang}
-              onLanguageChange={onLanguageChange}
-              onUserUpdate={onUserUpdate}
-            />
-          ) : (
-            <Navigate to="/" replace />
-          )
+          <AuthenticatedLayout
+            token={token}
+            user={user}
+            lang={lang}
+            onLanguageChange={onLanguageChange}
+            onLogout={handleAuthenticatedLogout}
+          />
         }
-      />
-      <Route
-        path="/profile"
-        element={
-          isAuthenticated ? (
+      >
+        <Route
+          path="dashboard"
+          element={<DashboardPage user={user!} lang={lang} />}
+        />
+        <Route
+          path="profile"
+          element={
             <ProfilePage
               user={user!}
-              onLogout={() => {
-                onLogout()
-                navigate('/')
-              }}
               lang={lang}
               onLanguageChange={onLanguageChange}
               onUserUpdate={onUserUpdate}
             />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      <Route
-        path="/user/:id"
-        element={
-          isAuthenticated ? (
-            <UserProfilePage
-              user={user!}
-              onLogout={() => {
-                onLogout()
-                navigate('/')
-              }}
-              lang={lang}
-              onLanguageChange={onLanguageChange}
-            />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
+          }
+        />
+        <Route path="user/:id" element={<UserProfilePage lang={lang} />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

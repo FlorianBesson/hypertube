@@ -1,5 +1,6 @@
 import React from 'react'
 import Footer from './Footer'
+import SideBar from './Sidebar'
 
 interface PageLayoutProps {
   children: React.ReactNode
@@ -21,18 +22,34 @@ export default function PageLayout({
 
   return (
     <div
-      className="min-h-screen flex flex-col text-white"
+      className={`min-h-screen flex flex-col text-white ${
+        backgroundType === 'dashboard'
+          ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0'
+          : ''
+      }`}
       style={{ background: bg }}
     >
       {header}
-      
-      {/* ── Main content view area ── */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 w-full">
-        {children}
-      </main>
+
+      <div className="flex flex-1 w-full">
+        {backgroundType === 'dashboard' && (
+          <aside className="hidden md:block w-32 shrink-0 border-r border-white/10 bg-black/20">
+            <SideBar lang={lang} variant="desktop" />
+          </aside>
+        )}
+
+        {/* ── Main content view area ── */}
+        <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 min-w-0">
+          {children}
+        </main>
+      </div>
 
       {/* ── Footer ── */}
       <Footer lang={lang} />
+
+      {backgroundType === 'dashboard' && (
+        <SideBar lang={lang} variant="mobile" />
+      )}
     </div>
   )
 }

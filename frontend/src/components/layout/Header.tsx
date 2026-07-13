@@ -23,16 +23,15 @@ export default function Header({
 
   return (
     <header className="px-4 sm:px-6 md:px-10 py-4 flex items-center justify-between">
-      {/* 
-        Logo / Project Name Link: 
-        Clicking on it redirects the user back to the dashboard.
-        Note: The project name was renamed from "Hypertube" to "Magneto".
-      */}
       <Link
         to={showUserSection ? "/dashboard" : "/"}
-        className="text-red-600 font-black text-2xl sm:text-3xl tracking-widest uppercase select-none cursor-pointer hover:opacity-80 transition-opacity"
+        className="cursor-pointer rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
       >
-        Magneto
+        <img
+          src="/favicon.png"
+          alt="Magneto"
+          className="h-10 w-10 sm:h-12 sm:w-12"
+        />
       </Link>
       <div className="flex items-center gap-4">
         <LanguageSelector value={lang} onChange={onLanguageChange} />

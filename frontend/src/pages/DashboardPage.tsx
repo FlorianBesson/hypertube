@@ -1,24 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { LoggedUser } from '../App'
-import Header from '../components/layout/Header'
-import PageLayout from '../components/layout/PageLayout'
 import Avatar from '../components/ui/Avatar'
 import { translations } from '../locales/translations'
 
 interface DashboardPageProps {
   user: LoggedUser
-  onLogout: () => void
   lang: 'en' | 'fr'
-  onLanguageChange: (lang: 'en' | 'fr') => void
-  onUserUpdate: (user: LoggedUser) => void
 }
 
 export default function DashboardPage({
   user,
-  onLogout,
   lang,
-  onLanguageChange,
 }: DashboardPageProps) {
   const t = translations[lang].dashboard
   const navigate = useNavigate()
@@ -59,19 +52,7 @@ export default function DashboardPage({
   const otherUsers = users.filter(u => u.id !== user.id)
 
   return (
-    <PageLayout
-      header={
-        <Header
-          user={user}
-          onLogout={onLogout}
-          lang={lang}
-          onLanguageChange={onLanguageChange}
-        />
-      }
-      lang={lang}
-      backgroundType="dashboard"
-    >
-      <div className="max-w-4xl w-full">
+    <div className="max-w-4xl w-full">
         <div className="bg-neutral-900/60 border border-white/10 rounded-2xl p-6 sm:p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden">
           {/* Subtle design gradient glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -132,7 +113,6 @@ export default function DashboardPage({
             )}
           </div>
         </div>
-      </div>
-    </PageLayout>
+    </div>
   )
 }

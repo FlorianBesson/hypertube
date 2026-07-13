@@ -18,9 +18,9 @@ router.post("/login", async (req: Request, res: Response) => {
             return;
         }
 
-        // Search for user in database by normalized email
+        // Search for user in database by normalized username
         const user = await prisma.user.findUnique({
-            where: { email: username.toLowerCase().trim() }
+            where: { username: username.toLowerCase().trim() }
         });
 
         // Fail if user is not found
@@ -63,7 +63,8 @@ router.post("/login", async (req: Request, res: Response) => {
             }
         });
     } catch (error) {
-        console.error("Login error:", error);
+        if (process.env.NODE_ENV === 'dev')
+            console.error("Login error:", error);
         res.status(500).json({ success: false, message: "Erreur serveur" });
     }
 });
