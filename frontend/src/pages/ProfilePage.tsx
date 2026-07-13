@@ -1,8 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { LoggedUser } from '../App'
-import Header from '../components/layout/Header'
-import PageLayout from '../components/layout/PageLayout'
 import Avatar from '../components/ui/Avatar'
 import Toast from '../components/ui/Toast'
 import Button from '../components/ui/Button'
@@ -13,7 +11,6 @@ import { translations } from '../locales/translations'
 
 interface ProfilePageProps {
   user: LoggedUser
-  onLogout: () => void
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
   onUserUpdate: (user: LoggedUser) => void
@@ -21,7 +18,6 @@ interface ProfilePageProps {
 
 export default function ProfilePage({
   user,
-  onLogout,
   lang,
   onLanguageChange,
   onUserUpdate
@@ -142,19 +138,7 @@ export default function ProfilePage({
   }
 
   return (
-    <PageLayout
-      header={
-        <Header
-          user={user}
-          onLogout={onLogout}
-          lang={lang}
-          onLanguageChange={onLanguageChange}
-        />
-      }
-      lang={lang}
-      backgroundType="dashboard"
-    >
-      <div className="w-full max-w-4xl flex flex-col gap-6 relative">
+    <div className="w-full max-w-4xl flex flex-col gap-6 relative">
         {/* Dynamic alert feedback banner */}
         <Toast message={statusMessage} />
 
@@ -266,6 +250,5 @@ export default function ProfilePage({
 
       </div>
     </div>
-  </PageLayout>
   )
 }

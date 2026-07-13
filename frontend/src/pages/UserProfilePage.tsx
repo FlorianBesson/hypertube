@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import type { LoggedUser } from '../App'
-import Header from '../components/layout/Header'
-import PageLayout from '../components/layout/PageLayout'
 import Avatar from '../components/ui/Avatar'
 import Button from '../components/ui/Button'
 import Spinner from '../components/ui/Spinner'
 import { translations } from '../locales/translations'
 
 interface UserProfilePageProps {
-  user: LoggedUser
-  onLogout: () => void
   lang: 'en' | 'fr'
-  onLanguageChange: (lang: 'en' | 'fr') => void
 }
 
 interface UserProfile {
@@ -25,10 +19,7 @@ interface UserProfile {
 }
 
 export default function UserProfilePage({
-  user,
-  onLogout,
   lang,
-  onLanguageChange,
 }: UserProfilePageProps) {
   const { id } = useParams<{ id: string }>()
   const targetUserId = parseInt(id || '', 10)
@@ -98,19 +89,7 @@ export default function UserProfilePage({
     : lang === 'fr' ? 'Jamais connecté' : 'Never connected'
 
   return (
-    <PageLayout
-      header={
-        <Header
-          user={user}
-          onLogout={onLogout}
-          lang={lang}
-          onLanguageChange={onLanguageChange}
-        />
-      }
-      lang={lang}
-      backgroundType="dashboard"
-    >
-      <div className="w-full max-w-4xl flex flex-col gap-6 relative">
+    <div className="w-full max-w-4xl flex flex-col gap-6 relative">
         
         {loading ? (
           <div className="w-full min-h-[50vh] flex flex-col items-center justify-center gap-4 bg-neutral-900/20 backdrop-blur-md rounded-2xl border border-white/5 p-12">
@@ -243,7 +222,6 @@ export default function UserProfilePage({
           </div>
         )}
 
-      </div>
-    </PageLayout>
+    </div>
   )
 }
