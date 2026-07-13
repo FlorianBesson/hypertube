@@ -73,6 +73,15 @@ function AppRoutes({
         }
       />
       <Route
+        path="/auth/callback/google"
+        element={
+          <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
+            <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+            <p className="text-neutral-400 text-sm font-semibold">Connexion avec Google en cours...</p>
+          </div>
+        }
+      />
+      <Route
         path="/register"
         element={
           isAuthenticated ? (
@@ -208,15 +217,19 @@ function App() {
   }
 
   useEffect(() => {
-    if (window.location.pathname === "/auth/callback/42") {
+    const isCallback42 = window.location.pathname === "/auth/callback/42";
+    const isCallbackGoogle = window.location.pathname === "/auth/callback/google";
+
+    if (isCallback42 || isCallbackGoogle) {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
+      const provider = isCallback42 ? "42" : "google";
 
       if (code) {
-        const auth42 = async () => {
+        const authOAuth = async () => {
           setAuthLoading(true)
           try {
-            const res = await fetch("/api/auth/42", {
+            const res = await fetch(`/api/auth/${provider}`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json"
@@ -228,16 +241,16 @@ function App() {
             if (res.ok && data.success) {
               handleLoginSuccess(data.token, data.user)
             } else {
-              console.error("Erreur de connexion 42:", data.message)
+              console.error(`Erreur de connexion ${provider}:`, data.message)
             }
           } catch (err) {
-            console.error("Erreur réseau lors de la connexion 42:", err)
+            console.error(`Erreur réseau lors de la connexion ${provider}:`, err)
           } finally {
             setAuthLoading(false)
             window.history.replaceState({}, document.title, "/")
           }
         }
-        auth42()
+        authOAuth()
       }
     }
   }, [])
@@ -245,7 +258,7 @@ function App() {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
         <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
-        <p className="text-neutral-400 text-sm font-semibold">Connexion avec 42 en cours...</p>
+        <p className="text-neutral-400 text-sm font-semibold">Connexion en cours...</p>
       </div>
     )
   }

@@ -150,7 +150,9 @@ export default function LoginPage({
               type="button"
               disabled={loading}
               loading={loading}
-              className="flex-1">
+              variant="secondary"
+              className="flex-1"
+              onClick={() => window.location.href = '/api/auth/google'}>
                 {t.logButtonGoogle}
             </Button>
           </div>
