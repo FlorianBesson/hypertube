@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from './pages/LoginPage'
@@ -69,6 +69,24 @@ function AppRoutes({
         element={<Navigate to="/" replace />}
       />
       <Route
+        path="/auth/callback/42"
+        element={
+          <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
+            <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+            <p className="text-neutral-400 text-sm font-semibold">Connexion avec 42 en cours...</p>
+          </div>
+        }
+      />
+      <Route
+        path="/auth/callback/google"
+        element={
+          <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
+            <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+            <p className="text-neutral-400 text-sm font-semibold">Connexion avec Google en cours...</p>
+          </div>
+        }
+      />
+      <Route
         path="/register"
         element={
           isAuthenticated ? (
@@ -137,6 +155,8 @@ function App() {
     return (localStorage.getItem('lang') as 'en' | 'fr') || 'en'
   })
 
+  const [authLoading, setAuthLoading] = useState(false)
+
   /**
    * Updates selected UI language and persists choice to localStorage.
    */
@@ -144,7 +164,6 @@ function App() {
     localStorage.setItem('lang', newLang)
     setLang(newLang)
   }
-
   /**
    * Callback invoked upon successful user authentication.
    * Persists token and user profile to localStorage for session durability.
@@ -172,6 +191,53 @@ function App() {
   const handleUserUpdate = (updatedUser: LoggedUser) => {
     localStorage.setItem('user', JSON.stringify(updatedUser))
     setUser(updatedUser)
+  }
+
+  useEffect(() => {
+    const isCallback42 = window.location.pathname === "/auth/callback/42";
+    const isCallbackGoogle = window.location.pathname === "/auth/callback/google";
+
+    if (isCallback42 || isCallbackGoogle) {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const provider = isCallback42 ? "42" : "google";
+
+      if (code) {
+        const authOAuth = async () => {
+          setAuthLoading(true)
+          try {
+            const res = await fetch(`/api/auth/${provider}`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+            
+            if (res.ok && data.success) {
+              handleLoginSuccess(data.token, data.user)
+            } else {
+              console.error(`Erreur de connexion ${provider}:`, data.message)
+            }
+          } catch (err) {
+            console.error(`Erreur réseau lors de la connexion ${provider}:`, err)
+          } finally {
+            setAuthLoading(false)
+            window.history.replaceState({}, document.title, "/")
+          }
+        }
+        authOAuth()
+      }
+    }
+  }, [])
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white gap-4">
+        <span className="w-8 h-8 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+        <p className="text-neutral-400 text-sm font-semibold">Connexion en cours...</p>
+      </div>
+    )
   }
 
   return (

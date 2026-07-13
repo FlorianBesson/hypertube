@@ -16,7 +16,9 @@
     "networkError": "Network error, try again.",
     "usernamePlaceholder": "Username",
     "passwordPlaceholder": "Password",
-    "continueButton": "Continue"
+    "continueButton": "Continue",
+    "logButton42": "Log in with your 42 account",
+    "logButtonGoogle": "Log in with you Google account"
   },
   "register": {
     "signUp": "Sign Up",

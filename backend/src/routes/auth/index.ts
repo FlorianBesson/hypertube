@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../prisma';
 import { registerHandler } from './register';
+import oauthRouter from './oauth';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
@@ -70,5 +71,8 @@ router.post("/login", async (req: Request, res: Response) => {
 
 // Register Endpoint (mounted at /api/auth/register)
 router.post("/register", registerHandler);
+
+// OAuth Endpoints (mounted under /api/auth/42, /api/auth/google, etc.)
+router.use("/", oauthRouter);
 
 export default router;
