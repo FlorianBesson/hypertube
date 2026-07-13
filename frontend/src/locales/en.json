@@ -108,5 +108,12 @@
     "failedChange": "Failed to change password",
     "passwordLabel": "Password Credentials",
     "changePasswordSecure": "Change password to secure account"
+  },
+  "sidebar": {
+    "navigationLabel": "Main navigation",
+    "home": "Home",
+    "discover": "Discover",
+    "library": "Library",
+    "settings": "Settings"
   }
 }

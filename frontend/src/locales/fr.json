@@ -108,5 +108,12 @@
     "failedChange": "Erreur de changement de mot de passe",
     "passwordLabel": "Mot de passe",
     "changePasswordSecure": "Dernier changement inconnu"
+  },
+  "sidebar": {
+    "navigationLabel": "Navigation principale",
+    "home": "Accueil",
+    "discover": "Découvrir",
+    "library": "Bibliothèque",
+    "settings": "Paramètres"
   }
 }

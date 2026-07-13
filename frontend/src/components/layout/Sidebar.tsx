@@ -1,5 +1,11 @@
 import { House, Compass, SquareLibrary, Settings } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { translations } from '../../locales/translations'
+import type { Language } from '../../locales/translations'
+
+interface SideBarProps {
+  lang: Language
+}
 
 interface SidebarItemProps {
   icon: LucideIcon
@@ -19,14 +25,16 @@ function SideBarItem({ icon: Icon, label }: SidebarItemProps) {
     )
 }
 
-export default function SideBar() {
+export default function SideBar({ lang }: SideBarProps) {
+  const t = translations[lang].sidebar
+
   return (
-    <nav className="sticky top-0 p-5" aria-label="Main navigation">
+    <nav className="sticky top-0 p-5" aria-label={t.navigationLabel}>
       <ul className="flex flex-col gap-2 text-sm font-medium text-neutral-400">
-        <SideBarItem icon={House} label="Home" />
-        <SideBarItem icon={Compass} label="Discover" />
-        <SideBarItem icon={SquareLibrary} label="Library" />
-        <SideBarItem icon={Settings} label="Settings" />
+        <SideBarItem icon={House} label={t.home} />
+        <SideBarItem icon={Compass} label={t.discover} />
+        <SideBarItem icon={SquareLibrary} label={t.library} />
+        <SideBarItem icon={Settings} label={t.settings} />
       </ul>
     </nav>
   )

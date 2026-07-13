@@ -30,7 +30,7 @@ export default function PageLayout({
       <div className="flex flex-1 w-full">
         {backgroundType === 'dashboard' && (
           <aside className="hidden md:block w-32 shrink-0 border-r border-white/10 bg-black/20">
-            <SideBar />
+            <SideBar lang={lang} />
           </aside>
         )}
 
