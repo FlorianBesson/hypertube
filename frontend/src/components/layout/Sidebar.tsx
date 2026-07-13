@@ -19,7 +19,7 @@ function SideBarItem({ icon: Icon, label, to }: SidebarItemProps) {
         <li>
             <NavLink
                to={to}
-               className={({ isActive, isPending }) =>
+               className={({ isActive }) =>
                     `group flex cursor-pointer flex-col items-center gap-2 rounded-lg px-4 py-3 transition-colors ${
                       isActive
                         ? 'text-red-500'
