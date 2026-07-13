@@ -28,7 +28,7 @@ export default function Header({
         className="cursor-pointer rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
       >
         <img
-          src="/favicon.svg"
+          src="/favicon.png"
           alt="Magneto"
           className="h-10 w-10 sm:h-12 sm:w-12"
         />

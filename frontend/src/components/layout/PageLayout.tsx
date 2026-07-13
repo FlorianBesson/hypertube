@@ -22,7 +22,11 @@ export default function PageLayout({
 
   return (
     <div
-      className="min-h-screen flex flex-col text-white"
+      className={`min-h-screen flex flex-col text-white ${
+        backgroundType === 'dashboard'
+          ? 'pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0'
+          : ''
+      }`}
       style={{ background: bg }}
     >
       {header}
@@ -30,7 +34,7 @@ export default function PageLayout({
       <div className="flex flex-1 w-full">
         {backgroundType === 'dashboard' && (
           <aside className="hidden md:block w-32 shrink-0 border-r border-white/10 bg-black/20">
-            <SideBar lang={lang} />
+            <SideBar lang={lang} variant="desktop" />
           </aside>
         )}
 
@@ -42,6 +46,10 @@ export default function PageLayout({
 
       {/* ── Footer ── */}
       <Footer lang={lang} />
+
+      {backgroundType === 'dashboard' && (
+        <SideBar lang={lang} variant="mobile" />
+      )}
     </div>
   )
 }

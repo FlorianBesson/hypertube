@@ -17,9 +17,9 @@ router.post("/login", async (req: Request, res: Response) => {
             return;
         }
 
-        // Search for user in database by normalized email
+        // Search for user in database by normalized username
         const user = await prisma.user.findUnique({
-            where: { email: username.toLowerCase().trim() }
+            where: { username: username.toLowerCase().trim() }
         });
 
         // Fail if user is not found
