@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import AuthenticatedLayout from './components/layout/AuthenticatedLayout'
 
 /**
@@ -100,6 +102,26 @@ function AppRoutes({
                 navigate('/dashboard')
               }}
             />
+          )
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <ForgotPasswordPage lang={lang} onLanguageChange={onLanguageChange} />
+          )
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <ResetPasswordPage lang={lang} onLanguageChange={onLanguageChange} />
           )
         }
       />

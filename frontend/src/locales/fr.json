@@ -18,7 +18,18 @@
     "passwordPlaceholder": "Mot de passe",
     "continueButton": "Continuer",
     "logButton42": "via 42",
-    "logButtonGoogle": "via Google"
+    "logButtonGoogle": "via Google",
+    "forgotPassword": "Mot de passe oublié ?",
+    "forgotPasswordTitle": "Réinitialiser mot de passe",
+    "forgotPasswordDesc": "Nous vous enverrons un lien pour le réinitialiser.",
+    "sendResetLink": "Envoyer le lien",
+    "backToLogin": "Retour à la connexion",
+    "resetSent": "Nous avons envoyé un lien de réinitialisation.",
+    "resetPasswordTitle": "Nouveau mot de passe",
+    "resetPasswordDesc": "Veuillez entrer votre nouveau mot de passe.",
+    "resetPasswordButton": "Réinitialiser",
+    "resetSuccess": "Mot de passe réinitialisé avec succès.",
+    "invalidToken": "Lien de réinitialisation invalide ou expiré"
   },
   "register": {
     "signUp": "S'inscrire",

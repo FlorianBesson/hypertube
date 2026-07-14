@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { prisma } from '../../prisma';
 
 const router = Router();
@@ -92,8 +93,9 @@ router.post("/login", async (req: Request, res: Response) => {
             return;
         }
 
-        // Verify plain-text password match (simplified authentication for project 42)
-        if (user.password !== password) {
+        // Verify password match using bcrypt
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
             res.status(401).json({ success: false, message: "Identifiants incorrects" });
             return;
         }
