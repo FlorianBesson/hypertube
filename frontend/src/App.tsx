@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from './pages/LoginPage'
@@ -156,6 +156,7 @@ function App() {
   })
 
   const [authLoading, setAuthLoading] = useState(false)
+  const authFetched = useRef(false)
 
   /**
    * Updates selected UI language and persists choice to localStorage.
@@ -202,7 +203,8 @@ function App() {
       const code = params.get('code');
       const provider = isCallback42 ? "42" : "google";
 
-      if (code) {
+      if (code && !authFetched.current) {
+        authFetched.current = true;
         const authOAuth = async () => {
           setAuthLoading(true)
           try {
@@ -217,14 +219,16 @@ function App() {
             
             if (res.ok && data.success) {
               handleLoginSuccess(data.token, data.user)
+              window.history.replaceState({}, document.title, "/dashboard")
             } else {
               console.error(`Erreur de connexion ${provider}:`, data.message)
+              window.history.replaceState({}, document.title, "/")
             }
           } catch (err) {
             console.error(`Erreur réseau lors de la connexion ${provider}:`, err)
+            window.history.replaceState({}, document.title, "/")
           } finally {
             setAuthLoading(false)
-            window.history.replaceState({}, document.title, "/")
           }
         }
         authOAuth()
