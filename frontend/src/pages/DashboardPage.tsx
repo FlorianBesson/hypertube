@@ -153,7 +153,7 @@ export default function DashboardPage({
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white group-hover:text-red-500 transition-colors truncate">
-                          {u.name || t.notSpecified}
+                          {u.name ? u.name.split(' ')[0] : t.notSpecified}
                         </p>
                         <p className="text-[10px] text-neutral-500 uppercase mt-0.5 tracking-wider">
                           {t.viewProfile}

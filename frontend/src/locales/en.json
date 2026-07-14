@@ -43,7 +43,7 @@
     "showCommunity": "Show Community",
     "hideCommunity": "Hide Community",
     "communityTitle": "Community Members",
-    "communitySubtitle": "Select any member to view their public profile and details",
+    "communitySubtitle": "Select any member to view their profile",
     "viewProfile": "View Profile",
     "noMembers": "No other members registered yet.",
     "loadingMembers": "Loading community members...",
