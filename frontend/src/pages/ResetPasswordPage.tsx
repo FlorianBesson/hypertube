@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import Input from '../components/ui/Input'
@@ -27,12 +27,6 @@ export default function ResetPasswordPage({
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!token) {
-      setError(t.invalidToken)
-    }
-  }, [token, t.invalidToken])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -93,7 +87,12 @@ export default function ResetPasswordPage({
         </div>
 
         <form className="flex flex-col gap-4 mt-2" onSubmit={handleSubmit} noValidate>
-          {error && (
+          {(!token && !success) && (
+            <div className="bg-amber-500/10 border border-amber-500/40 rounded px-4 py-2.5 text-amber-300 text-sm text-center">
+              {t.invalidToken}
+            </div>
+          )}
+          {(error && token && !success) && (
             <div className="bg-amber-500/10 border border-amber-500/40 rounded px-4 py-2.5 text-amber-300 text-sm text-center">
               {error}
             </div>
