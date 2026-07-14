@@ -38,6 +38,10 @@
     "emailInvalid": "Invalid email address"
   },
   "dashboard": {
+    "moviesTitle": "Movies",
+    "moviesSubtitle": "Explore and discover films",
+    "showCommunity": "Show Community",
+    "hideCommunity": "Hide Community",
     "communityTitle": "Community Members",
     "communitySubtitle": "Select any member to view their public profile and details",
     "viewProfile": "View Profile",
