@@ -1,9 +1,9 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import Avatar from '../ui/Avatar'
+import type { TranslationType } from '../../locales/translations'
 
 interface DashboardMembersProps {
-  t: any
+  t: TranslationType['dashboard']
   loadingMembers: boolean
   errorMembers: boolean
   otherUsers: Array<{ id: number; name: string | null; photo: string | null }>

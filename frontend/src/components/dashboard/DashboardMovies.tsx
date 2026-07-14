@@ -1,14 +1,14 @@
-import React from 'react'
+import type { TranslationType } from '../../locales/translations'
 
 interface DashboardMoviesProps {
-  t: any
+  t: TranslationType['dashboard']
   showCommunity: boolean
   setShowCommunity: (val: boolean) => void
 }
 
 export default function DashboardMovies({ t, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   return (
-    <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 sm:p-10 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-[500px]">
+    <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-[500px]">
       <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-3 relative z-10">
