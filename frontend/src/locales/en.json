@@ -40,9 +40,9 @@
   "dashboard": {
     "moviesTitle": "Movies",
     "moviesSubtitle": "Explore and discover films",
-    "showCommunity": "Show Community",
-    "hideCommunity": "Hide Community",
-    "communityTitle": "Community Members",
+    "showCommunity": "Show members",
+    "hideCommunity": "Hide members",
+    "communityTitle": "Members",
     "communitySubtitle": "Select any member to view their profile",
     "viewProfile": "View Profile",
     "noMembers": "No other members registered yet.",
