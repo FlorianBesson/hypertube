@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 import "dotenv/config";
+import bcrypt from "bcrypt";
 
 const DATABASE_URL = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@postgres_db:5432/${process.env.POSTGRES_DB}?schema=public`;
 
@@ -22,16 +23,17 @@ const users = [
 async function main() {
   console.log("Seeding database...");
   for (const user of users) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
     const upsertedUser = await prisma.user.upsert({
       where: { email: user.email },
       update: {
-        password: user.password,
+        password: hashedPassword,
       },
       create: {
         email: user.email,
         username: user.username,
         name: user.name,
-        password: user.password,
+        password: hashedPassword,
       },
     });
     console.log(`Upserted user: ${upsertedUser.email}`);
