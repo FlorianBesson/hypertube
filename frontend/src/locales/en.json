@@ -38,8 +38,12 @@
     "emailInvalid": "Invalid email address"
   },
   "dashboard": {
-    "communityTitle": "Community Members",
-    "communitySubtitle": "Select any member to view their public profile and details",
+    "moviesTitle": "Movies",
+    "moviesSubtitle": "Explore and discover films",
+    "showCommunity": "Show members",
+    "hideCommunity": "Hide members",
+    "communityTitle": "Members",
+    "communitySubtitle": "Select any member to view their profile",
     "viewProfile": "View Profile",
     "noMembers": "No other members registered yet.",
     "loadingMembers": "Loading community members...",
