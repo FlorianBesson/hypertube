@@ -17,8 +17,8 @@
     "usernamePlaceholder": "Nom d'utilisateur",
     "passwordPlaceholder": "Mot de passe",
     "continueButton": "Continuer",
-    "logButton42": "Se connecter via 42",
-    "logButtonGoogle": "Se connecter via Google"
+    "logButton42": "via 42",
+    "logButtonGoogle": "via Google"
   },
   "register": {
     "signUp": "S'inscrire",
