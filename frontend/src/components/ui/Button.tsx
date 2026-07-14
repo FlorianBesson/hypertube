@@ -24,7 +24,7 @@ export default function Button({
   const sizeClasses = {
     sm: 'px-4 py-2 rounded-xl text-xs active:scale-95 gap-1.5 font-semibold',
     md: 'px-5 py-3 rounded-xl text-sm active:scale-95 gap-2 font-bold',
-    lg: 'py-4 rounded text-base w-full font-semibold',
+    lg: 'py-4 rounded-xl text-base w-full font-semibold',
     none: '',
   }
 
