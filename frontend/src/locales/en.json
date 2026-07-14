@@ -18,7 +18,18 @@
     "passwordPlaceholder": "Password",
     "continueButton": "Continue",
     "logButton42": "with 42",
-    "logButtonGoogle": "with Google"
+    "logButtonGoogle": "with Google",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset password",
+    "forgotPasswordDesc": "We'll send you a link to reset your password.",
+    "sendResetLink": "Send Reset Link",
+    "backToLogin": "Back to login",
+    "resetSent": "We sent a password reset link.",
+    "resetPasswordTitle": "New Password",
+    "resetPasswordDesc": "Please enter your new password.",
+    "resetPasswordButton": "Reset Password",
+    "resetSuccess": "Password has been reset successfully.",
+    "invalidToken": "Invalid or expired password reset token"
   },
   "register": {
     "signUp": "Sign Up",

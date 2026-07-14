@@ -124,6 +124,15 @@ export default function LoginPage({
             variant="login"
             onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
           />
+          
+          <div className="flex justify-end -mt-1 mb-2">
+            <Link
+              to="/forgot-password"
+              className="text-xs text-neutral-400 hover:text-white transition-colors"
+            >
+              {t.forgotPassword}
+            </Link>
+          </div>
 
           {/* Submit */}
           <Button
