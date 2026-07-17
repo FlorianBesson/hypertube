@@ -1,20 +1,27 @@
 import { Request, Response, RequestHandler } from 'express';
 import bcrypt from 'bcrypt';
 import { prisma } from '../../prisma';
+import * as z from 'zod'
+
+const ResetPasswordSchema = z.object({
+    token: z.string("Token is required").min(1, "Token is required"),
+    password: z
+        .string("New password is required")
+        .min(8, "Le nouveau mot de passe doit faire au moins 8 caractères")
+        .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
+        .regex(/[\p{P}\p{S}]/u, "Le mot de passe doit contenir au moins un caractère spécial")
+})
 
 export const resetPasswordHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { token, password } = req.body;
-
-    if (!token || !password) {
-      res.status(400).json({ success: false, message: 'Token and new password are required' });
-      return;
+    const result = ResetPasswordSchema.safeParse(req.body)
+    if (!result.success)
+    {
+        res.status(400).json({ success: false, message: result.error.issues[0].message })
+        return;
     }
-
-    if (password.length < 6) {
-      res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
-      return;
-    }
+    
+    const { token, password } = result.data
 
     const user = await prisma.user.findFirst({
       where: {
