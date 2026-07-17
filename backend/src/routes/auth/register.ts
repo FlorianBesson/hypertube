@@ -24,13 +24,9 @@ const RegisterSchema = z.object({
     lastName: z.string("Field is required").trim().min(1, "Last name is required"),
     password: z
         .string("Field is required")
-        .min(8, {
-            error: (iss) => {
-                iss.minimum;
-                iss.inclusive;
-                return `Password must have ${iss.minimum} characters or more`
-            }
-        })
+        .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+        .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
+        .regex(/[\p{P}\p{S}]/u, "Le mot de passe doit contenir au moins un caractère spécial")
 })
 
 export async function registerHandler(req: Request, res: Response) {
