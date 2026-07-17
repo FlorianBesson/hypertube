@@ -6,7 +6,7 @@ interface DashboardMembersProps {
   t: TranslationType['dashboard']
   loadingMembers: boolean
   errorMembers: boolean
-  otherUsers: Array<{ id: number; name: string | null; photo: string | null }>
+  otherUsers: Array<{ id: number; username: string; firstName: string; lastName: string; photo: string | null }>
 }
 
 export default function DashboardMembers({ t, loadingMembers, errorMembers, otherUsers }: DashboardMembersProps) {
@@ -54,13 +54,13 @@ export default function DashboardMembers({ t, loadingMembers, errorMembers, othe
               >
                 <Avatar
                   photo={u.photo || undefined}
-                  name={u.name || undefined}
+                  name={u.username}
                   size="sm"
                   className="group-hover:scale-105 transition-transform duration-300 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-white group-hover:text-red-500 transition-colors truncate">
-                    {u.name ? u.name.split(' ')[0] : t.notSpecified}
+                    {u.username || t.notSpecified}
                   </p>
                   <p className="text-[10px] text-neutral-500 uppercase mt-0.5 tracking-wider">
                     {t.viewProfile}

@@ -21,7 +21,8 @@ export default function ProfileEditForm({
 }: ProfileEditFormProps) {
   const t = translations[lang].profileEditForm
   const [isEditing, setIsEditing] = useState(false)
-  const [editName, setEditName] = useState(user.name || '')
+  const [editName, setEditName] = useState(user.firstName || '')
+  const [editLastName, setEditLastName] = useState(user.lastName || '')
   const [editEmail, setEditEmail] = useState(user.email)
   const [editBio, setEditBio] = useState(user.bio || '')
   const [editLang, setEditLang] = useState<'en' | 'fr'>(lang)
@@ -34,14 +35,15 @@ export default function ProfileEditForm({
   if (user !== prevUser || lang !== prevLang) {
     setPrevUser(user)
     setPrevLang(lang)
-    setEditName(user.name || '')
+    setEditName(user.firstName || '')
+    setEditLastName(user.lastName || '')
     setEditEmail(user.email)
     setEditBio(user.bio || '')
     setEditLang(lang)
   }
 
   /**
-   * Submits updated profile information (name, email, bio) to backend profile API.
+   * Submits updated profile information to the backend profile API.
    * On success, updates state in parent App component and shows success notification.
    */
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -62,7 +64,8 @@ export default function ProfileEditForm({
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          name: editName,
+          firstName: editName,
+          lastName: editLastName,
           email: editEmail,
           bio: editBio
         })
@@ -88,7 +91,8 @@ export default function ProfileEditForm({
   }
 
   const handleCancelEditing = () => {
-    setEditName(user.name || '')
+    setEditName(user.firstName || '')
+    setEditLastName(user.lastName || '')
     setEditEmail(user.email)
     setEditBio(user.bio || '')
     setEditLang(lang)
@@ -151,9 +155,31 @@ export default function ProfileEditForm({
                 {t.firstName}
               </label>
               <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium">
-                {user.name || (
+                {user.firstName || (
                   <span className="text-neutral-500 italic">{t.notSpecified}</span>
                 )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Field: Last Name */}
+        <div className="flex flex-col gap-1.5">
+          {isEditing ? (
+            <Input
+              variant="profile"
+              label={t.lastName}
+              type="text"
+              value={editLastName}
+              onChange={(e) => setEditLastName(e.target.value)}
+              placeholder={t.placeholderLastName}
+              required
+            />
+          ) : (
+            <>
+              <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t.lastName}</label>
+              <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium">
+                {user.lastName || <span className="text-neutral-500 italic">{t.notSpecified}</span>}
               </div>
             </>
           )}

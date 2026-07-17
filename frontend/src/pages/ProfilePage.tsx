@@ -173,7 +173,7 @@ export default function ProfilePage({
           <div className="relative group/avatar">
             <Avatar
               photo={user.photo}
-              name={user.name}
+              name={user.username}
               email={user.email}
               size="lg"
               onClick={handlePhotoClick}
@@ -221,7 +221,7 @@ export default function ProfilePage({
           />
 
           <div className="text-center">
-            <h2 className="text-lg font-bold text-white tracking-tight">{user.name || t.notSpecified}</h2>
+            <h2 className="text-lg font-bold text-white tracking-tight">{user.username || t.notSpecified}</h2>
             <p className="text-xs text-neutral-400 mt-0.5 truncate max-w-50">{user.email}</p>
           </div>
 

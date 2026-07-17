@@ -8,13 +8,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 
 interface OauthProfile {
     email: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     photoUrl: string | null;
     bio: string;
     fallbackLogin?: string;
 }
 
-async function findOrCreateOauthUser({ email, name, photoUrl, bio, fallbackLogin }: OauthProfile) {
+async function findOrCreateOauthUser({ email, firstName, lastName, photoUrl, bio, fallbackLogin }: OauthProfile) {
     // 1. Recherche de l'utilisateur existant
     let user = await prisma.user.findUnique({
         where: { email }
@@ -22,7 +23,7 @@ async function findOrCreateOauthUser({ email, name, photoUrl, bio, fallbackLogin
 
     // 2. Si l'utilisateur n'existe pas, on le crée avec un pseudo unique
     if (!user) {
-        let baseUsername = (fallbackLogin || name || "user")
+        let baseUsername = (fallbackLogin || firstName || "user")
             .toLowerCase()
             .replace(/[^a-z0-9]/g, ""); // Retire espaces et caractères spéciaux
         
@@ -47,7 +48,8 @@ async function findOrCreateOauthUser({ email, name, photoUrl, bio, fallbackLogin
             data: {
                 email,
                 username: uniqueUsername,
-                name,
+                firstName,
+                lastName,
                 photo: photoUrl,
                 password: randomPassword,
                 bio
@@ -63,7 +65,7 @@ async function findOrCreateOauthUser({ email, name, photoUrl, bio, fallbackLogin
 
     // 4. Génération du token JWT
     const token = jwt.sign(
-        { userId: updatedUser.id, email: updatedUser.email, name: updatedUser.name },
+        { userId: updatedUser.id, email: updatedUser.email, username: updatedUser.username },
         JWT_SECRET,
         { expiresIn: '1d' }
     );
@@ -108,7 +110,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
         // Sign a new JWT token containing user details, valid for 1 day
         const token = jwt.sign(
-            { userId: updatedUser.id, email: updatedUser.email, name: updatedUser.name },
+            { userId: updatedUser.id, email: updatedUser.email, username: updatedUser.username },
             JWT_SECRET,
             { expiresIn: '1d' }
         );
@@ -121,7 +123,9 @@ router.post("/login", async (req: Request, res: Response) => {
             user: {
                 id: updatedUser.id,
                 email: updatedUser.email,
-                name: updatedUser.name,
+                username: updatedUser.username,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
                 photo: updatedUser.photo,
                 bio: updatedUser.bio,
                 lastLogin: updatedUser.lastLogin
@@ -204,9 +208,10 @@ router.post("/42", async (req: Request, res: Response) => {
         }
 
         const email = userData.email?.toLowerCase().trim();
-        const displayName = userData.displayname || userData.login;
+        const firstName = userData.first_name || userData.displayname || userData.login;
+        const lastName = userData.last_name || '';
         const photoUrl = userData.image?.link || userData.image?.versions?.medium || null;
-        console.log("POST /api/auth/42 - 42 profile fetched. Email:", email, "Name:", displayName);
+        console.log("POST /api/auth/42 - 42 profile fetched. Email:", email);
 
         if (!email) {
             console.error("POST /api/auth/42 - Email field is missing in 42 profile response");
@@ -217,7 +222,8 @@ router.post("/42", async (req: Request, res: Response) => {
         // 3. Find or create the user in the database (Refactored)
         const { token, user } = await findOrCreateOauthUser({
             email,
-            name: displayName,
+            firstName,
+            lastName,
             photoUrl,
             bio: "Étudiant de 42",
             fallbackLogin: userData.login
@@ -230,7 +236,9 @@ router.post("/42", async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
-                name: user.name,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
                 photo: user.photo,
                 bio: user.bio,
                 lastLogin: user.lastLogin
@@ -302,7 +310,8 @@ router.post("/google", async (req: Request, res: Response) => {
         }
 
         const email = userData.email?.toLowerCase().trim();
-        const displayName = userData.name || userData.given_name;
+        const firstName = userData.given_name || userData.name || "Google";
+        const lastName = userData.family_name || '';
         const photoUrl = userData.picture || null;
 
         if (!email) {
@@ -313,7 +322,8 @@ router.post("/google", async (req: Request, res: Response) => {
         // ÉTAPE B : Recherche ou création de l'utilisateur (Refactored)
         const { token, user } = await findOrCreateOauthUser({
             email,
-            name: displayName,
+            firstName,
+            lastName,
             photoUrl,
             bio: "Utilisateur Google",
             fallbackLogin: userData.given_name
@@ -326,7 +336,9 @@ router.post("/google", async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
-                name: user.name,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
                 photo: user.photo,
                 bio: user.bio,
                 lastLogin: user.lastLogin

@@ -4,6 +4,8 @@ import fs from 'fs';
 import { prisma } from '../prisma';
 import { authenticateToken } from '../middlewares/auth';
 import { upload, uploadDirectory } from '../config/multer';
+import * as z from "zod";
+import bcrypt from "bcrypt"
 
 const router = Router();
 
@@ -43,8 +45,12 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
                 user: {
                     id: updatedUser.id,
                     email: updatedUser.email,
-                    name: updatedUser.name,
-                    photo: updatedUser.photo
+                    username: updatedUser.username,
+                    firstName: updatedUser.firstName,
+                    lastName: updatedUser.lastName,
+                    photo: updatedUser.photo,
+                    bio: updatedUser.bio,
+                    lastLogin: updatedUser.lastLogin
                 }
             });
         } catch (error) {
@@ -96,8 +102,12 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
             user: {
                 id: updatedUser.id,
                 email: updatedUser.email,
-                name: updatedUser.name,
-                photo: updatedUser.photo
+                username: updatedUser.username,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                photo: updatedUser.photo,
+                bio: updatedUser.bio,
+                lastLogin: updatedUser.lastLogin
             }
         });
     } catch (error) {
@@ -108,13 +118,22 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
 
 /**
  * Route: PUT /api/user/profile
- * Description: Updates the name, email, or biography for the authenticated user.
+ * Description: Updates the first name, last name, email, or biography for the authenticated user.
  * Authenticated: Yes
  */
 router.put("/profile", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { name, email, bio } = req.body;
+        const { firstName, lastName, email, bio } = req.body;
+
+        if (firstName !== undefined && !firstName.trim()) {
+            res.status(400).json({ success: false, message: "Le prénom est requis" });
+            return;
+        }
+        if (lastName !== undefined && !lastName.trim()) {
+            res.status(400).json({ success: false, message: "Le nom est requis" });
+            return;
+        }
 
         // Validate the email format if provided
         if (email) {
@@ -138,7 +157,8 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                name: name !== undefined ? name : undefined,
+                firstName: firstName !== undefined ? firstName.trim() : undefined,
+                lastName: lastName !== undefined ? lastName.trim() : undefined,
                 email: email !== undefined ? email.toLowerCase().trim() : undefined,
                 bio: bio !== undefined ? bio : undefined,
             }
@@ -150,7 +170,9 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
             user: {
                 id: updatedUser.id,
                 email: updatedUser.email,
-                name: updatedUser.name,
+                username: updatedUser.username,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
                 photo: updatedUser.photo,
                 bio: updatedUser.bio,
                 lastLogin: updatedUser.lastLogin
@@ -167,22 +189,27 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
  * Description: Updates the password of the authenticated user after checking their current password.
  * Authenticated: Yes
  */
+ 
+const PasswordSchema = z.object({
+    currentPassword: z.string().min(1, "L'ancien mot de passe est requis"),
+    newPassword: z
+        .string()
+        .min(8, "Le nouveau mot de passe doit faire au moins 8 caractères")
+        .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
+        .regex(/[\p{P}\p{S}]/u, "Le mot de passe doit contenir au moins un caractère spécial")
+})
+ 
 router.put("/password", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { currentPassword, newPassword } = req.body;
-
-        // Ensure both fields are provided
-        if (!currentPassword || !newPassword) {
-            res.status(400).json({ success: false, message: "Veuillez renseigner l'ancien et le nouveau mot de passe" });
+        
+        const result = PasswordSchema.safeParse(req.body)
+        if (!result.success)
+        {
+            res.status(400).json({ success: false, message: result.error.issues[0].message })
             return;
-        }
-
-        // Enforce password length requirements
-        if (newPassword.length < 6) {
-            res.status(400).json({ success: false, message: "Le nouveau mot de passe doit faire au moins 6 caractères" });
-            return;
-        }
+        }        
+        const { currentPassword, newPassword } = result.data;
 
         const user = await prisma.user.findUnique({
             where: { id: userId }
@@ -192,17 +219,20 @@ router.put("/password", authenticateToken, async (req: Request, res: Response) =
             res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
             return;
         }
-
-        // Validate password match
-        if (user.password !== currentPassword) {
-            res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
+        
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid)
+        {
+            res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect"})
             return;
         }
+        
+        const newPasswordHash = await bcrypt.hash(newPassword, 10)
 
         // Update password in DB
         await prisma.user.update({
             where: { id: userId },
-            data: { password: newPassword }
+            data: { password: newPasswordHash }
         });
 
         res.json({

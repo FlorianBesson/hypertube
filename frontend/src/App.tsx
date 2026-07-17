@@ -15,7 +15,9 @@ import AuthenticatedLayout from './components/layout/AuthenticatedLayout'
 export interface LoggedUser {
   id: number
   email: string
-  name: string
+  username: string
+  firstName: string
+  lastName: string
   photo?: string
   bio?: string
   lastLogin?: string

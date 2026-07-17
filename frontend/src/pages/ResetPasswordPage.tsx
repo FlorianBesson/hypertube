@@ -36,7 +36,7 @@ export default function ResetPasswordPage({
       return
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t.minCharacters)
       return
     }
