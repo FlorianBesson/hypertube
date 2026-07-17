@@ -6,16 +6,21 @@ import Button from '../components/ui/Button'
 import Header from '../components/layout/Header'
 import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
+import type { LoggedUser } from '../App'
 
 interface RegisterFormFields {
   email: string
   username: string
+  firstName: string
+  lastName: string
   password: string
 }
 
 interface RegisterError {
   email?: string
   username?: string
+  firstName?: string
+  lastName?: string
   password?: string
   global?: string
 }
@@ -23,7 +28,7 @@ interface RegisterError {
 interface RegisterPageProps {
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
-  onRegisterSuccess: (token: string, user: { id: number; email: string; name: string }) => void
+  onRegisterSuccess: (token: string, user: LoggedUser) => void
 }
 
 export default function RegisterPage({
@@ -32,7 +37,7 @@ export default function RegisterPage({
   onRegisterSuccess
 }: RegisterPageProps) {
   const t = translations[lang].register
-  const [form, setForm] = useState<RegisterFormFields>({ email: '', username: '', password: '' })
+  const [form, setForm] = useState<RegisterFormFields>({ email: '', username: '', firstName: '', lastName: '', password: '' })
   const [errors, setErrors] = useState<RegisterError>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -53,6 +58,9 @@ export default function RegisterPage({
     } else if (form.username.trim().length < 3) {
       errs.username = t.minCharactersUsername
     }
+
+    if (!form.firstName.trim()) errs.firstName = t.firstNameRequired
+    if (!form.lastName.trim()) errs.lastName = t.lastNameRequired
 
     // Password check
     if (!form.password) {
@@ -164,6 +172,31 @@ export default function RegisterPage({
               variant="login"
               onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
             />
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                id="firstName"
+                type="text"
+                autoComplete="given-name"
+                placeholder={t.firstNamePlaceholder}
+                value={form.firstName}
+                disabled={loading}
+                error={errors.firstName}
+                variant="login"
+                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+              />
+              <Input
+                id="lastName"
+                type="text"
+                autoComplete="family-name"
+                placeholder={t.lastNamePlaceholder}
+                value={form.lastName}
+                disabled={loading}
+                error={errors.lastName}
+                variant="login"
+                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+              />
+            </div>
 
             {/* Password */}
             <Input

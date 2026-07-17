@@ -19,7 +19,7 @@ function maskEmail(email: string): string {
 
 /**
  * Route: GET /api/users
- * Description: Retrieves list of all community members (limited fields: ID, name, photo).
+ * Description: Retrieves list of all community members (limited public fields).
  * Authenticated: Yes
  */
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
@@ -27,7 +27,9 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
         const users = await prisma.user.findMany({
             select: {
                 id: true,
-                name: true,
+                username: true,
+                firstName: true,
+                lastName: true,
                 photo: true
             }
         });
@@ -64,7 +66,9 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
             where: { id: targetId },
             select: {
                 id: true,
-                name: true,
+                username: true,
+                firstName: true,
+                lastName: true,
                 photo: true,
                 createdAt: true,
                 bio: true,
@@ -81,7 +85,9 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
             success: true,
             user: {
                 id: user.id,
-                name: user.name,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
                 photo: user.photo,
                 createdAt: user.createdAt,
                 bio: user.bio,

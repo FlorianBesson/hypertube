@@ -43,8 +43,12 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
                 user: {
                     id: updatedUser.id,
                     email: updatedUser.email,
-                    name: updatedUser.name,
-                    photo: updatedUser.photo
+                    username: updatedUser.username,
+                    firstName: updatedUser.firstName,
+                    lastName: updatedUser.lastName,
+                    photo: updatedUser.photo,
+                    bio: updatedUser.bio,
+                    lastLogin: updatedUser.lastLogin
                 }
             });
         } catch (error) {
@@ -96,8 +100,12 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
             user: {
                 id: updatedUser.id,
                 email: updatedUser.email,
-                name: updatedUser.name,
-                photo: updatedUser.photo
+                username: updatedUser.username,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                photo: updatedUser.photo,
+                bio: updatedUser.bio,
+                lastLogin: updatedUser.lastLogin
             }
         });
     } catch (error) {
@@ -108,13 +116,22 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
 
 /**
  * Route: PUT /api/user/profile
- * Description: Updates the name, email, or biography for the authenticated user.
+ * Description: Updates the first name, last name, email, or biography for the authenticated user.
  * Authenticated: Yes
  */
 router.put("/profile", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { name, email, bio } = req.body;
+        const { firstName, lastName, email, bio } = req.body;
+
+        if (firstName !== undefined && !firstName.trim()) {
+            res.status(400).json({ success: false, message: "Le prénom est requis" });
+            return;
+        }
+        if (lastName !== undefined && !lastName.trim()) {
+            res.status(400).json({ success: false, message: "Le nom est requis" });
+            return;
+        }
 
         // Validate the email format if provided
         if (email) {
@@ -138,7 +155,8 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                name: name !== undefined ? name : undefined,
+                firstName: firstName !== undefined ? firstName.trim() : undefined,
+                lastName: lastName !== undefined ? lastName.trim() : undefined,
                 email: email !== undefined ? email.toLowerCase().trim() : undefined,
                 bio: bio !== undefined ? bio : undefined,
             }
@@ -150,7 +168,9 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
             user: {
                 id: updatedUser.id,
                 email: updatedUser.email,
-                name: updatedUser.name,
+                username: updatedUser.username,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
                 photo: updatedUser.photo,
                 bio: updatedUser.bio,
                 lastLogin: updatedUser.lastLogin

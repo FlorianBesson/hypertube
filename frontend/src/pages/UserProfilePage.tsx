@@ -11,7 +11,9 @@ interface UserProfilePageProps {
 
 interface UserProfile {
   id: number
-  name: string | null
+  username: string
+  firstName: string
+  lastName: string
   photo: string | null
   createdAt: string
   bio: string | null
@@ -155,12 +157,12 @@ export default function UserProfilePage({
                 {/* Avatar Container */}
                 <Avatar
                   photo={profile.photo || undefined}
-                  name={profile.name || undefined}
+                  name={profile.username}
                   size="lg"
                 />
 
                 <div className="text-center">
-                  <h2 className="text-lg font-bold text-white tracking-tight">{profile.name || t.notSpecified}</h2>
+                  <h2 className="text-lg font-bold text-white tracking-tight">{profile.username || t.notSpecified}</h2>
                 </div>
 
                 <div className="w-full border-t border-white/5 pt-4 flex flex-col items-center gap-2">
@@ -185,7 +187,7 @@ export default function UserProfilePage({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-neutral-950/40 border border-white/5 rounded-xl p-4 flex flex-col gap-1">
                       <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">{t.nameLabel}</span>
-                      <span className="text-sm text-white font-medium">{profile.name || t.notSpecified}</span>
+                      <span className="text-sm text-white font-medium">{`${profile.firstName} ${profile.lastName}`.trim() || t.notSpecified}</span>
                     </div>
 
                     <div className="bg-neutral-950/40 border border-white/5 rounded-xl p-4 flex flex-col gap-1">

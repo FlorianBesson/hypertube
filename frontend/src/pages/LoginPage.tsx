@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import Header from '../components/layout/Header'
 import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
+import type { LoggedUser } from '../App'
 
 interface LoginForm {
   username: string
@@ -21,7 +22,7 @@ interface LoginError {
 interface LoginPageProps {
   lang: 'en' | 'fr'
   onLanguageChange: (lang: 'en' | 'fr') => void
-  onLoginSuccess: (token: string, user: { id: number; email: string; name: string }) => void
+  onLoginSuccess: (token: string, user: LoggedUser) => void
 }
 
 export default function LoginPage({

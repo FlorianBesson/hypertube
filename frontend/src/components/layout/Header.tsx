@@ -41,7 +41,7 @@ export default function Header({
               <Link to="/profile">
                 <Avatar
                   photo={user.photo}
-                  name={user.name}
+                  name={user.username}
                   email={user.email}
                   size="sm"
                   active={location.pathname === "/profile"}

@@ -19,7 +19,7 @@ export default function DashboardPage({
   const [showCommunity, setShowCommunity] = useState(true)
 
   // users: list of registered user objects retrieved from database
-  const [users, setUsers] = useState<Array<{ id: number; name: string | null; photo: string | null }>>([])
+  const [users, setUsers] = useState<Array<{ id: number; username: string; firstName: string; lastName: string; photo: string | null }>>([])
   
   // loadingMembers: UI state representing if user fetching is currently in progress
   const [loadingMembers, setLoadingMembers] = useState(true)
