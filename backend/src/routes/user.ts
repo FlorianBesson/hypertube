@@ -199,8 +199,8 @@ router.put("/password", authenticateToken, async (req: Request, res: Response) =
         }
 
         // Enforce password length requirements
-        if (newPassword.length < 6) {
-            res.status(400).json({ success: false, message: "Le nouveau mot de passe doit faire au moins 6 caractères" });
+        if (newPassword.length < 8) {
+            res.status(400).json({ success: false, message: "Le nouveau mot de passe doit faire au moins 8 caractères" });
             return;
         }
 
