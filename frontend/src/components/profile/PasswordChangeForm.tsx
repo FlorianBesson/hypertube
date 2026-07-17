@@ -28,7 +28,7 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
       return
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       showStatus('error', t.passwordTooShort)
       return
     }

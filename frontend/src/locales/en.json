@@ -125,7 +125,7 @@
     "confirmNewPassword": "Confirm New Password",
     "passwordUpdated": "Password updated successfully!",
     "passwordsDoNotMatch": "New passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordTooShort": "Password must be at least 8 characters",
     "networkError": "Network error, try again",
     "fillAllFields": "Please fill in all password fields",
     "failedChange": "Failed to change password",
