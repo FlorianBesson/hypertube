@@ -244,7 +244,7 @@ export default function ProfileEditForm({
                 </svg>
                 {t.biography}
               </label>
-              <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium whitespace-pre-line min-h-[70px]">
+              <div className="bg-neutral-950/30 border border-white/5 rounded-xl px-4 py-3.5 text-neutral-200 text-sm font-medium whitespace-pre-line min-h-17.5">
                 {user.bio || (
                   <span className="text-neutral-500 italic">{t.notSpecified}</span>
                 )}

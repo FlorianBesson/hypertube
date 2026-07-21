@@ -8,7 +8,7 @@ interface DashboardMoviesProps {
 
 export default function DashboardMovies({ t, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   return (
-    <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-[500px]">
+    <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-125">
       <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-3 relative z-10">
@@ -46,7 +46,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
       {/* Placeholders for Movies */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 relative z-10 pt-4">
         {[...Array(10)].map((_, i) => (
-          <div key={i} className="aspect-[2/3] bg-neutral-800/40 rounded-xl border border-white/5 animate-pulse flex items-center justify-center hover:bg-neutral-800/60 transition-colors">
+          <div key={i} className="aspect-2/3 bg-neutral-800/40 rounded-xl border border-white/5 animate-pulse flex items-center justify-center hover:bg-neutral-800/60 transition-colors">
             <svg className="w-8 h-8 text-neutral-700/50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
             </svg>

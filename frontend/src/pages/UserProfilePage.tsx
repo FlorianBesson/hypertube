@@ -211,7 +211,7 @@ export default function UserProfilePage({
                     <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-200">{t.biography}</h3>
                   </div>
 
-                  <div className="bg-neutral-950/40 border border-white/5 rounded-xl p-4 text-neutral-200 text-sm font-medium whitespace-pre-line min-h-[80px]">
+                  <div className="bg-neutral-950/40 border border-white/5 rounded-xl p-4 text-neutral-200 text-sm font-medium whitespace-pre-line min-h-20">
                     {profile.bio || (
                       <span className="text-neutral-500 italic">{t.notSpecified}</span>
                     )}
