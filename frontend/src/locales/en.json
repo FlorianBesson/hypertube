@@ -63,7 +63,9 @@
     "noMembers": "No other members registered yet.",
     "loadingMembers": "Loading community members...",
     "failedMembers": "Failed to load members.",
-    "notSpecified": "Not specified"
+    "notSpecified": "Not specified",
+    "searchPlaceholder": "Search movies by title, genre, year...",
+    "noMoviesFound": "No movies found matching your search."
   },
   "profile": {
     "backToDashboard": "Back to dashboard",
