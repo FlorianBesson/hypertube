@@ -10,6 +10,15 @@ interface Movie {
   image: string
 }
 
+interface YtsRawMovie {
+  id: number | string
+  title: string
+  genres?: string[]
+  year: number | string
+  rating?: number
+  medium_cover_image?: string
+}
+
 interface DashboardMoviesProps {
   t: TranslationType['dashboard']
   showCommunity: boolean
@@ -139,7 +148,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
         let fetchedMovies: Movie[] = []
 
         if (ytsData?.data?.movies) {
-          fetchedMovies = ytsData.data.movies.map((m: any) => ({
+          fetchedMovies = ytsData.data.movies.map((m: YtsRawMovie) => ({
             id: `yts-${m.id}`,
             title: m.title,
             genre: m.genres ? m.genres[0] : 'Movie',
