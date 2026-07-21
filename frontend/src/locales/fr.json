@@ -63,7 +63,9 @@
     "noMembers": "Aucun autre membre inscrit pour le moment.",
     "loadingMembers": "Chargement des membres...",
     "failedMembers": "Erreur lors du chargement des membres.",
-    "notSpecified": "Non renseigné"
+    "notSpecified": "Non renseigné",
+    "searchPlaceholder": "Rechercher des films par titre, genre, année...",
+    "noMoviesFound": "Aucun film ne correspond à votre recherche."
   },
   "profile": {
     "backToDashboard": "Retour au tableau de bord",
