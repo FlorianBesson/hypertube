@@ -481,10 +481,11 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
               className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-28"
             >
               <option value="0">{t.anyRating || "Any Rating"}</option>
-              <option value="5">⭐ 5+</option>
-              <option value="7">⭐ 7+</option>
-              <option value="8">⭐ 8+</option>
-              <option value="9">⭐ 9+</option>
+              <option value="5">5+</option>
+              <option value="6">6+</option>
+              <option value="7">7+</option>
+              <option value="8">8+</option>
+              <option value="9">9+</option>
             </select>
           </div>
 
