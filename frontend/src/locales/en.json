@@ -65,7 +65,9 @@
     "failedMembers": "Failed to load members.",
     "notSpecified": "Not specified",
     "searchPlaceholder": "Search movies by title, genre, year...",
-    "noMoviesFound": "No movies found matching your search."
+    "noMoviesFound": "No movies found matching your search.",
+    "loadingMovies": "Fetching video content from external sources...",
+    "errorLoadingMovies": "Failed to fetch video content from external sources. Please try again."
   },
   "profile": {
     "backToDashboard": "Back to dashboard",
