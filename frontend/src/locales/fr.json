@@ -65,7 +65,9 @@
     "failedMembers": "Erreur lors du chargement des membres.",
     "notSpecified": "Non renseigné",
     "searchPlaceholder": "Rechercher des films par titre, genre, année...",
-    "noMoviesFound": "Aucun film ne correspond à votre recherche."
+    "noMoviesFound": "Aucun film ne correspond à votre recherche.",
+    "loadingMovies": "Récupération du contenu vidéo à partir de sources externes...",
+    "errorLoadingMovies": "Échec de la récupération du contenu vidéo. Veuillez réessayer."
   },
   "profile": {
     "backToDashboard": "Retour au tableau de bord",

@@ -1,97 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { TranslationType } from '../../locales/translations'
 
 interface Movie {
-  id: number
+  id: string
   title: string
   genre: string
-  year: number
-  rating: number
+  year: string | number
+  metric: string
   image: string
 }
-
-const MOCK_MOVIES: Movie[] = [
-  {
-    id: 1,
-    title: "Inception",
-    genre: "Sci-Fi",
-    year: 2010,
-    rating: 8.8,
-    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&fit=crop&q=80",
-  },
-  {
-    id: 2,
-    title: "The Dark Knight",
-    genre: "Action",
-    year: 2008,
-    rating: 9.0,
-    image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&fit=crop&q=80",
-  },
-  {
-    id: 3,
-    title: "Interstellar",
-    genre: "Sci-Fi",
-    year: 2014,
-    rating: 8.6,
-    image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&fit=crop&q=80",
-  },
-  {
-    id: 4,
-    title: "Pulp Fiction",
-    genre: "Crime",
-    year: 1994,
-    rating: 8.9,
-    image: "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?w=400&fit=crop&q=80",
-  },
-  {
-    id: 5,
-    title: "Fight Club",
-    genre: "Drama",
-    year: 1999,
-    rating: 8.8,
-    image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&fit=crop&q=80",
-  },
-  {
-    id: 6,
-    title: "The Matrix",
-    genre: "Sci-Fi",
-    year: 1999,
-    rating: 8.7,
-    image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=400&fit=crop&q=80",
-  },
-  {
-    id: 7,
-    title: "The Shawshank Redemption",
-    genre: "Drama",
-    year: 1994,
-    rating: 9.3,
-    image: "https://images.unsplash.com/photo-1542204172-e7052809f852?w=400&fit=crop&q=80",
-  },
-  {
-    id: 8,
-    title: "Spirited Away",
-    genre: "Animation",
-    year: 2001,
-    rating: 8.6,
-    image: "https://images.unsplash.com/photo-1574267432553-4b4628081c31?w=400&fit=crop&q=80",
-  },
-  {
-    id: 9,
-    title: "Parasite",
-    genre: "Thriller",
-    year: 2019,
-    rating: 8.6,
-    image: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&fit=crop&q=80",
-  },
-  {
-    id: 10,
-    title: "Whiplash",
-    genre: "Drama",
-    year: 2014,
-    rating: 8.5,
-    image: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&fit=crop&q=80",
-  }
-]
 
 interface DashboardMoviesProps {
   t: TranslationType['dashboard']
@@ -99,17 +16,160 @@ interface DashboardMoviesProps {
   setShowCommunity: (val: boolean) => void
 }
 
+function MovieCard({ movie }: { movie: Movie }) {
+  const [imageError, setImageError] = useState(false)
+
+  // Generate a distinct styled gradient as fallback based on movie title length
+  const fallbackGradients = [
+    'from-red-950/40 to-neutral-900/60',
+    'from-blue-950/40 to-neutral-900/60',
+    'from-purple-950/40 to-neutral-900/60',
+    'from-emerald-950/40 to-neutral-900/60',
+    'from-amber-950/40 to-neutral-900/60'
+  ]
+  const gradientIndex = movie.title.length % fallbackGradients.length
+  const fallbackGradient = fallbackGradients[gradientIndex]
+
+  return (
+    <div
+      className="group relative aspect-[2/3] rounded-xl border border-white/5 overflow-hidden bg-neutral-900 hover:bg-neutral-800/40 hover:border-red-600/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer"
+    >
+      {/* Movie Poster Image */}
+      <div className="absolute inset-0 bg-neutral-900">
+        {!imageError && movie.image ? (
+          <img
+            src={movie.image}
+            alt={movie.title}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500"
+            loading="lazy"
+          />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4 text-center`}>
+            <svg
+              className="w-8 h-8 text-neutral-600 mb-2"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 20.25h12m-12-3h12m-12-3h12m-12-3h12m-12-3h12m-12-3h12m-12-3h12" />
+            </svg>
+            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block truncate w-full">
+              {movie.genre}
+            </span>
+          </div>
+        )}
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+      </div>
+
+      {/* Hover Play Button Overlay */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/35 backdrop-blur-[1px] z-10">
+        <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 scale-75 group-hover:scale-100 transition-all duration-300">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            className="w-6 h-6 text-white ml-0.5"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Movie Metadata */}
+      <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-0.5 z-10">
+        <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest truncate">{movie.genre}</span>
+        <h3 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors" title={movie.title}>
+          {movie.title}
+        </h3>
+        <div className="flex items-center justify-between mt-1 text-[11px] text-neutral-400 font-medium">
+          <span>{movie.year}</span>
+          <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
+            {movie.metric}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardMovies({ t, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [movies, setMovies] = useState<Movie[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  const filteredMovies = MOCK_MOVIES.filter(movie => {
-    const q = searchQuery.toLowerCase().trim()
-    return (
-      movie.title.toLowerCase().includes(q) ||
-      movie.genre.toLowerCase().includes(q) ||
-      movie.year.toString().includes(q)
-    )
-  })
+  // Debounce search query to limit external API request frequency
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery)
+    }, 450)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchQuery])
+
+  // Fetch movies from YTS
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchVideos = async () => {
+      setLoading(true)
+      setError(false)
+
+      try {
+        const queryStr = debouncedQuery.trim()
+        
+        // Prepare YTS URL (using public CORS-enabled API)
+        const ytsUrl = queryStr
+          ? `https://movies-api.accel.li/api/v2/list_movies.json?limit=20&query_term=${encodeURIComponent(queryStr)}`
+          : `https://movies-api.accel.li/api/v2/list_movies.json?limit=20&sort_by=download_count`
+
+        const response = await fetch(ytsUrl)
+        if (!response.ok) {
+          throw new Error('YTS API response error')
+        }
+
+        const ytsData = await response.json()
+        let fetchedMovies: Movie[] = []
+
+        if (ytsData?.data?.movies) {
+          fetchedMovies = ytsData.data.movies.map((m: any) => ({
+            id: `yts-${m.id}`,
+            title: m.title,
+            genre: m.genres ? m.genres[0] : 'Movie',
+            year: m.year,
+            metric: `⭐ ${m.rating ? m.rating.toFixed(1) : '0.0'}`,
+            image: m.medium_cover_image || ''
+          }))
+        }
+
+        if (isMounted) {
+          setMovies(fetchedMovies)
+        }
+      } catch (err) {
+        console.error("Fetch YTS videos error:", err)
+        if (isMounted) {
+          setError(true)
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchVideos()
+
+    return () => {
+      isMounted = false
+    }
+  }, [debouncedQuery])
 
   return (
     <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-125 animate-in fade-in duration-300">
@@ -188,79 +248,66 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
         </div>
       </div>
 
-      {/* Movies Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 relative z-10 pt-2">
-        {filteredMovies.map((movie) => (
-          <div
-            key={movie.id}
-            className="group relative aspect-[2/3] rounded-xl border border-white/5 overflow-hidden bg-neutral-800/20 hover:bg-neutral-800/40 hover:border-red-600/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(220,38,38,0.1)] cursor-pointer"
+      {/* Movies Content Section */}
+      {loading ? (
+        <div className="flex flex-col gap-4 relative z-10">
+          <div className="flex items-center gap-2 text-xs text-neutral-500">
+            <span className="w-3 h-3 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+            <p>{t.loadingMovies || "Searching video databases..."}</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="aspect-[2/3] bg-neutral-800/20 rounded-xl border border-white/5 animate-pulse relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+                <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-2">
+                  <div className="h-3 bg-neutral-700/50 rounded w-1/3" />
+                  <div className="h-4 bg-neutral-700/50 rounded w-3/4" />
+                  <div className="flex justify-between mt-1">
+                    <div className="h-3 bg-neutral-700/50 rounded w-1/4" />
+                    <div className="h-3 bg-neutral-700/50 rounded w-1/5" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        <div className="relative z-10 py-16 flex flex-col items-center justify-center text-center">
+          <svg
+            className="w-12 h-12 text-red-500/80 mb-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
           >
-            {/* Movie Poster Image */}
-            <div className="absolute inset-0">
-              <img
-                src={movie.image}
-                alt={movie.title}
-                className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500"
-                loading="lazy"
-              />
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
-            </div>
-
-            {/* Hover Play Button Overlay */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/35 backdrop-blur-[1px]">
-              <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 scale-75 group-hover:scale-100 transition-all duration-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  className="w-6 h-6 text-white ml-0.5"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Movie Metadata */}
-            <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-0.5 z-10">
-              <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest">{movie.genre}</span>
-              <h3 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors" title={movie.title}>
-                {movie.title}
-              </h3>
-              <div className="flex items-center justify-between mt-1 text-[11px] text-neutral-400 font-medium">
-                <span>{movie.year}</span>
-                <span className="flex items-center gap-0.5 text-amber-400 font-semibold">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    className="w-3.5 h-3.5 text-amber-500"
-                  >
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                  </svg>
-                  {movie.rating}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {filteredMovies.length === 0 && (
-          <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-            <svg
-              className="w-12 h-12 text-neutral-600 mb-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
-            <p className="text-neutral-400 text-sm font-semibold">{t.noMoviesFound || "No movies found matching your search."}</p>
-          </div>
-        )}
-      </div>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.008v.008H12v-.008z" />
+          </svg>
+          <p className="text-neutral-400 text-sm font-semibold max-w-sm">
+            {t.errorLoadingMovies || "An error occurred while loading video databases."}
+          </p>
+        </div>
+      ) : movies.length === 0 ? (
+        <div className="relative z-10 py-16 flex flex-col items-center justify-center text-center">
+          <svg
+            className="w-12 h-12 text-neutral-600 mb-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <p className="text-neutral-400 text-sm font-semibold">{t.noMoviesFound || "No films found matching search query."}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 relative z-10 pt-2">
+          {movies.map((movie) => (
+            <MovieCard key={movie.id} movie={movie} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
