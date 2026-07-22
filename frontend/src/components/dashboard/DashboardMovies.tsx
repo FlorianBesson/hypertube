@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import type { TranslationType } from '../../locales/translations'
+import MovieDetailsModal from './MovieDetailsModal'
 
-interface Movie {
+export interface Movie {
   id: string
   title: string
   genre: string
@@ -44,6 +45,7 @@ interface MovieCardProps {
   movie: Movie
   isWatched: boolean
   onToggleWatch: (movieId: string, e: React.MouseEvent) => void
+  onSelectMovie: (movie: Movie) => void
   t: TranslationType['dashboard']
 }
 
@@ -53,8 +55,30 @@ interface DashboardMoviesProps {
   setShowCommunity: (val: boolean) => void
 }
 
-function MovieCard({ movie, isWatched, onToggleWatch, t }: MovieCardProps) {
+function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
+  const [posterUrl, setPosterUrl] = useState(movie.image)
+
+  useEffect(() => {
+    setPosterUrl(movie.image)
+    setImageError(false)
+  }, [movie.image])
+
+  // Auto-recovery: If YTS image domain is DNS-blocked, fetch official poster from OMDb API
+  useEffect(() => {
+    if (imageError && movie.title) {
+      const cleanTitle = movie.title.replace(/\(\d{4}\)/, '').trim()
+      fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=trilogy`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.Poster && data.Poster !== 'N/A') {
+            setPosterUrl(data.Poster)
+            setImageError(false)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [imageError, movie.title])
 
   // Generate fallback gradients
   const fallbackGradients = [
@@ -69,7 +93,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, t }: MovieCardProps) {
 
   return (
     <div
-      onClick={(e) => onToggleWatch(movie.id, e)}
+      onClick={() => onSelectMovie(movie)}
       className={`group relative aspect-[2/3] rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
         isWatched 
           ? 'border-emerald-500/20 opacity-60 hover:opacity-85' 
@@ -78,10 +102,11 @@ function MovieCard({ movie, isWatched, onToggleWatch, t }: MovieCardProps) {
     >
       {/* Movie Poster Image */}
       <div className="absolute inset-0 bg-neutral-900">
-        {!imageError && movie.image ? (
+        {!imageError && posterUrl ? (
           <img
-            src={movie.image}
+            src={posterUrl}
             alt={movie.title}
+            referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
             className="w-full h-full object-cover opacity-70 group-hover:opacity-85 group-hover:scale-105 transition-all duration-500"
             loading="lazy"
@@ -201,6 +226,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [movies, setMovies] = useState<Movie[]>([])
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(false)
@@ -760,6 +786,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
                 movie={movie} 
                 isWatched={watchedMovies.includes(movie.id)}
                 onToggleWatch={handleToggleWatch}
+                onSelectMovie={(m) => setSelectedMovie(m)}
                 t={t}
               />
             ))}
@@ -783,6 +810,15 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
             </div>
           )}
         </>
+      )}
+
+      {/* Render Movie Details Modal when a movie is selected */}
+      {selectedMovie && (
+        <MovieDetailsModal 
+          movie={selectedMovie} 
+          onClose={() => setSelectedMovie(null)} 
+          t={t} 
+        />
       )}
     </div>
   )
