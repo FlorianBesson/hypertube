@@ -33,6 +33,13 @@ interface PopcornRawMovie {
   }
 }
 
+interface ArchiveRawMovie {
+  identifier: string
+  title: string
+  year?: string | number
+  downloads?: number
+}
+
 interface MovieCardProps {
   movie: Movie
   isWatched: boolean
@@ -345,7 +352,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
             const data = await response.json()
             const docs = data?.response?.docs || []
 
-            return docs.map((doc: { identifier: string; title: string; year?: string; downloads?: number }) => ({
+            return docs.map((doc: ArchiveRawMovie) => ({
               id: `archive-${doc.identifier}`,
               title: doc.title,
               genre: selectedGenre ? selectedGenre : 'Classic',
