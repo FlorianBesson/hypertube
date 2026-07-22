@@ -8,6 +8,7 @@ interface Movie {
   year: string | number
   rating: number
   image: string
+  source?: string
 }
 
 interface YtsRawMovie {
@@ -17,6 +18,26 @@ interface YtsRawMovie {
   year: number | string
   rating?: number
   medium_cover_image?: string
+}
+
+interface PopcornRawMovie {
+  _id?: string
+  imdb_id?: string
+  title: string
+  year?: string | number
+  rating?: { percentage?: number } | number
+  genres?: string[]
+  images?: {
+    poster?: string
+    fanart?: string
+  }
+}
+
+interface ArchiveRawMovie {
+  identifier: string
+  title: string
+  year?: string | number
+  downloads?: number
 }
 
 interface MovieCardProps {
@@ -86,8 +107,8 @@ function MovieCard({ movie, isWatched, onToggleWatch, t }: MovieCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
       </div>
 
-      {/* Watched Status Tag */}
-      {isWatched && (
+      {/* Watched Status Tag or Source Tag */}
+      {isWatched ? (
         <div className="absolute top-2 left-2 z-20">
           <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md bg-emerald-600/90 text-white border border-emerald-500/30 flex items-center gap-1 backdrop-blur-sm">
             <svg
@@ -103,7 +124,13 @@ function MovieCard({ movie, isWatched, onToggleWatch, t }: MovieCardProps) {
             {t.watchedBadge || "Watched"}
           </span>
         </div>
-      )}
+      ) : movie.source ? (
+        <div className="absolute top-2 left-2 z-20">
+          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md bg-black/70 text-neutral-300 border border-white/10 backdrop-blur-md">
+            {movie.source}
+          </span>
+        </div>
+      ) : null}
 
       {/* Manual Watch Toggle Button on top right */}
       <button
@@ -223,7 +250,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
     }
   }, [searchQuery])
 
-  // Fetch movies from YTS
+  // Fetch movies from multiple external sources (YTS + Popcorn Time / Archive.org)
   useEffect(() => {
     let isMounted = true
 
@@ -237,41 +264,134 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
 
       try {
         const queryStr = debouncedQuery.trim()
-        const params = new URLSearchParams()
-        params.append('limit', '20')
-        params.append('page', page.toString())
-        params.append('sort_by', sortBy)
-        params.append('order_by', order)
 
-        if (queryStr) {
-          params.append('query_term', queryStr)
-        }
-        if (selectedGenre) {
-          params.append('genre', selectedGenre)
-        }
-        if (selectedMinRating > 0) {
-          params.append('minimum_rating', selectedMinRating.toString())
-        }
+        // 1. Fetch YTS (External Source #1)
+        const fetchYts = async (): Promise<Movie[]> => {
+          const params = new URLSearchParams()
+          params.append('limit', '20')
+          params.append('page', page.toString())
+          params.append('sort_by', sortBy)
+          params.append('order_by', order)
 
-        const ytsUrl = `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`
+          if (queryStr) params.append('query_term', queryStr)
+          if (selectedGenre) params.append('genre', selectedGenre)
+          if (selectedMinRating > 0) params.append('minimum_rating', selectedMinRating.toString())
 
-        const response = await fetch(ytsUrl)
-        if (!response.ok) {
-          throw new Error('YTS API response error')
-        }
+          const ytsUrl = `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`
+          const response = await fetch(ytsUrl)
+          if (!response.ok) return []
 
-        const ytsData = await response.json()
-        let fetchedMovies: Movie[] = []
+          const ytsData = await response.json()
+          if (!ytsData?.data?.movies) return []
 
-        if (ytsData?.data?.movies) {
-          fetchedMovies = ytsData.data.movies.map((m: YtsRawMovie) => ({
+          return ytsData.data.movies.map((m: YtsRawMovie) => ({
             id: `yts-${m.id}`,
             title: m.title,
-            genre: m.genres ? m.genres[0] : 'Movie',
+            genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
             year: m.year,
             rating: m.rating || 0,
-            image: m.medium_cover_image || ''
+            image: m.medium_cover_image || '',
+            source: 'YTS'
           }))
+        }
+
+        // 2. Fetch Popcorn API (External Source #2)
+        const fetchPopcorn = async (): Promise<Movie[]> => {
+          try {
+            const popcornUrl = queryStr
+              ? `https://pop-api.vercel.app/movies/${page}?keywords=${encodeURIComponent(queryStr)}`
+              : `https://pop-api.vercel.app/movies/${page}?sort=seeds`
+
+            const response = await fetch(popcornUrl)
+            if (!response.ok) return await fetchArchiveOrg()
+
+            const data = await response.json()
+            if (!Array.isArray(data)) return await fetchArchiveOrg()
+
+            let filtered = data
+            if (selectedGenre) {
+              filtered = filtered.filter((m: PopcornRawMovie) =>
+                m.genres?.some(g => g.toLowerCase().includes(selectedGenre.toLowerCase()))
+              )
+            }
+
+            return filtered.map((m: PopcornRawMovie) => {
+              const numRating = typeof m.rating === 'object'
+                ? ((m.rating?.percentage || 0) / 10)
+                : (Number(m.rating) || 0)
+
+              return {
+                id: `popcorn-${m._id || m.imdb_id || m.title}`,
+                title: m.title,
+                genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
+                year: m.year || 'N/A',
+                rating: Math.min(10, Math.max(0, numRating)),
+                image: m.images?.poster || m.images?.fanart || '',
+                source: 'Popcorn API'
+              }
+            }).filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
+          } catch {
+            return await fetchArchiveOrg()
+          }
+        }
+
+        // 3. Fallback Source #2: Archive.org Movies API
+        const fetchArchiveOrg = async (): Promise<Movie[]> => {
+          try {
+            let queryParam = queryStr
+              ? ` AND title:(${encodeURIComponent(queryStr)})`
+              : ''
+            if (selectedGenre) {
+              queryParam += ` AND (title:(${encodeURIComponent(selectedGenre)}) OR subject:(${encodeURIComponent(selectedGenre)}))`
+            }
+            const archiveUrl = `https://archive.org/advancedsearch.php?q=mediatype:movies${queryParam}&fl[]=identifier,title,year,downloads&sort[]=downloads+desc&rows=20&page=${page}&output=json`
+
+            const response = await fetch(archiveUrl)
+            if (!response.ok) return []
+
+            const data = await response.json()
+            const docs = data?.response?.docs || []
+
+            return docs.map((doc: ArchiveRawMovie) => ({
+              id: `archive-${doc.identifier}`,
+              title: doc.title,
+              genre: selectedGenre ? selectedGenre : 'Classic',
+              year: doc.year || 'N/A',
+              rating: Math.min(9.9, Math.round(((doc.downloads || 500) / 500) * 10) / 10),
+              image: `https://archive.org/services/img/${doc.identifier}`,
+              source: 'Archive.org'
+            }))
+          } catch {
+            return []
+          }
+        }
+
+        // Execute both external sources in parallel
+        const [ytsResult, popcornResult] = await Promise.allSettled([
+          fetchYts(),
+          fetchPopcorn()
+        ])
+
+        const ytsList = ytsResult.status === 'fulfilled' ? ytsResult.value : []
+        const popcornList = popcornResult.status === 'fulfilled' ? popcornResult.value : []
+
+        // Interleave & merge both sources for balanced presentation
+        const merged: Movie[] = []
+        const maxLen = Math.max(ytsList.length, popcornList.length)
+        for (let i = 0; i < maxLen; i++) {
+          if (i < ytsList.length) merged.push(ytsList[i])
+          if (i < popcornList.length) merged.push(popcornList[i])
+        }
+
+        // Deduplicate movies by normalized title
+        const seenTitles = new Set<string>()
+        const fetchedMovies: Movie[] = []
+        for (const movie of merged) {
+          const normTitle = movie.title.toLowerCase().trim()
+          if (!seenTitles.has(normTitle)) {
+            seenTitles.add(normTitle)
+            fetchedMovies.push(movie)
+          }
         }
 
         if (isMounted) {
@@ -285,15 +405,14 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
             })
           }
 
-          const limit = 20
-          if (fetchedMovies.length < limit) {
+          if (fetchedMovies.length === 0) {
             setHasMore(false)
           } else {
             setHasMore(true)
           }
         }
       } catch (err) {
-        console.error("Fetch YTS movies error:", err)
+        console.error("Fetch external video sources error:", err)
         if (isMounted) {
           setError(true)
         }
@@ -350,13 +469,42 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
     })
   }
 
-  // Filter watched / unwatched client-side
-  const displayedMovies = movies.filter(movie => {
-    const isWatched = watchedMovies.includes(movie.id)
-    if (watchedFilter === 'watched') return isWatched
-    if (watchedFilter === 'unwatched') return !isWatched
-    return true
-  })
+  // Client-side filtering & sorting for genre, rating, watched status, and order
+  const displayedMovies = movies
+    .filter(movie => {
+      // Watched status filter
+      const isWatched = watchedMovies.includes(movie.id)
+      if (watchedFilter === 'watched' && !isWatched) return false
+      if (watchedFilter === 'unwatched' && isWatched) return false
+
+      // Genre filter
+      if (selectedGenre) {
+        const movieGenreLower = (movie.genre || '').toLowerCase()
+        if (!movieGenreLower.includes(selectedGenre.toLowerCase())) {
+          return false
+        }
+      }
+
+      // Minimum rating filter
+      if (selectedMinRating > 0 && movie.rating < selectedMinRating) {
+        return false
+      }
+
+      return true
+    })
+    .sort((a, b) => {
+      let comparison = 0
+      if (sortBy === 'title') {
+        comparison = a.title.localeCompare(b.title)
+      } else if (sortBy === 'year') {
+        const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
+        const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
+        comparison = yearA - yearB
+      } else if (sortBy === 'rating') {
+        comparison = a.rating - b.rating
+      }
+      return order === 'asc' ? comparison : -comparison
+    })
 
   return (
     <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-125 animate-in fade-in duration-300">
