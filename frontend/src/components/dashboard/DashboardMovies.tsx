@@ -57,12 +57,9 @@ interface DashboardMoviesProps {
 
 function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
-  const [posterUrl, setPosterUrl] = useState(movie.image)
+  const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
 
-  useEffect(() => {
-    setPosterUrl(movie.image)
-    setImageError(false)
-  }, [movie.image])
+  const posterUrl = recoveredPoster || movie.image
 
   // Auto-recovery: If YTS image domain is DNS-blocked, fetch official poster from OMDb API
   useEffect(() => {
@@ -72,7 +69,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
         .then(res => res.json())
         .then(data => {
           if (data && data.Poster && data.Poster !== 'N/A') {
-            setPosterUrl(data.Poster)
+            setRecoveredPoster(data.Poster)
             setImageError(false)
           }
         })

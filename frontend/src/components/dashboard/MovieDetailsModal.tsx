@@ -9,6 +9,19 @@ interface MovieDetailsProps {
     t: TranslationType['dashboard']
 }
 
+interface TmdbCrewMember {
+    job?: string
+    name?: string
+}
+
+interface TmdbCastMember {
+    name?: string
+}
+
+interface YtsCastMember {
+    name?: string
+}
+
 interface TmdbDetails {
     overview?: string
     runtime?: number
@@ -17,16 +30,13 @@ interface TmdbDetails {
     cast?: string[]
 }
 
-export default function MovieDetailsModal({ movie, onClose, t: _t }: MovieDetailsProps) {
+export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsProps) {
     const [details, setDetails] = useState<TmdbDetails | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [posterUrl, setPosterUrl] = useState(movie.image)
+    const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
     const [imageError, setImageError] = useState(false)
 
-    useEffect(() => {
-        setPosterUrl(movie.image)
-        setImageError(false)
-    }, [movie])
+    const posterUrl = recoveredPoster || movie.image
 
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -44,7 +54,7 @@ export default function MovieDetailsModal({ movie, onClose, t: _t }: MovieDetail
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.Poster && data.Poster !== 'N/A') {
-                        setPosterUrl(data.Poster)
+                        setRecoveredPoster(data.Poster)
                         setImageError(false)
                     }
                 })
@@ -86,11 +96,11 @@ export default function MovieDetailsModal({ movie, onClose, t: _t }: MovieDetail
                             const creditsRes = await fetch(creditsUrl)
                             if (creditsRes.ok) {
                                 const creditsData = await creditsRes.json()
-                                const directorObj = creditsData.credits?.crew?.find((c: any) => c.job === 'Director')
-                                const castList = creditsData.credits?.cast?.slice(0, 5).map((c: any) => c.name) || []
+                                const directorObj = creditsData.credits?.crew?.find((c: TmdbCrewMember) => c.job === 'Director')
+                                const castList = creditsData.credits?.cast?.slice(0, 5).map((c: TmdbCastMember) => c.name || '') || []
 
                                 if (creditsData.poster_path) {
-                                    setPosterUrl(`https://image.tmdb.org/t/p/w500${creditsData.poster_path}`)
+                                    setRecoveredPoster(`https://image.tmdb.org/t/p/w500${creditsData.poster_path}`)
                                 }
 
                                 setDetails({
@@ -115,7 +125,7 @@ export default function MovieDetailsModal({ movie, onClose, t: _t }: MovieDetail
                         const runtimeNum = parseInt(omdbData.Runtime) || 0
                         const castArray = omdbData.Actors ? omdbData.Actors.split(', ') : []
                         if (omdbData.Poster && omdbData.Poster !== "N/A") {
-                            setPosterUrl(omdbData.Poster)
+                            setRecoveredPoster(omdbData.Poster)
                         }
                         setDetails({
                             overview: omdbData.Plot || "Aucun synopsis disponible.",
@@ -137,7 +147,7 @@ export default function MovieDetailsModal({ movie, onClose, t: _t }: MovieDetail
                         const ytsData = await ytsRes.json()
                         const m = ytsData?.data?.movie
                         if (m) {
-                            const castList = m.cast ? m.cast.map((c: any) => c.name) : []
+                            const castList = m.cast ? m.cast.map((c: YtsCastMember) => c.name || '') : []
                             setDetails({
                                 overview: m.description_full || m.description_intro || "Aucun synopsis disponible.",
                                 runtime: m.runtime || 0,
@@ -188,7 +198,7 @@ export default function MovieDetailsModal({ movie, onClose, t: _t }: MovieDetail
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center border border-white/10 transition-all duration-200 cursor-pointer"
-                    title="Fermer"
+                    title={t.moviesTitle ? "Fermer" : "Close"}
                 >
                     ✕
                 </button>
