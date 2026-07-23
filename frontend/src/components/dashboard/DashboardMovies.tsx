@@ -21,24 +21,36 @@ interface YtsRawMovie {
   medium_cover_image?: string
 }
 
-interface PopcornRawMovie {
-  _id?: string
-  imdb_id?: string
-  title: string
-  year?: string | number
-  rating?: { percentage?: number } | number
-  genres?: string[]
-  images?: {
-    poster?: string
-    fanart?: string
-  }
+
+interface TmdbRawMovie {
+  id: number
+  title?: string
+  genre_ids?: number[]
+  release_date?: string
+  vote_average?: number
+  poster_path?: string
 }
 
-interface ArchiveRawMovie {
-  identifier: string
-  title: string
-  year?: string | number
-  downloads?: number
+const TMDB_GENRE_MAP: Record<number, string> = {
+  28: 'Action',
+  12: 'Adventure',
+  16: 'Animation',
+  35: 'Comedy',
+  80: 'Crime',
+  99: 'Documentary',
+  18: 'Drama',
+  10751: 'Family',
+  14: 'Fantasy',
+  36: 'History',
+  27: 'Horror',
+  10402: 'Music',
+  9648: 'Mystery',
+  10749: 'Romance',
+  878: 'Sci-Fi',
+  10770: 'TV Movie',
+  53: 'Thriller',
+  10752: 'War',
+  37: 'Western',
 }
 
 interface MovieCardProps {
@@ -273,7 +285,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
     }
   }, [searchQuery])
 
-  // Fetch movies from multiple external sources (YTS + Popcorn Time / Archive.org)
+  // Fetch movies from multiple external sources (YTS + Popcorn Time / TMDB)
   useEffect(() => {
     let isMounted = true
 
@@ -290,120 +302,137 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
 
         // 1. Fetch YTS (External Source #1)
         const fetchYts = async (): Promise<Movie[]> => {
-          const params = new URLSearchParams()
-          params.append('limit', '20')
-          params.append('page', page.toString())
-          params.append('sort_by', sortBy)
-          params.append('order_by', order)
-
-          if (queryStr) params.append('query_term', queryStr)
-          if (selectedGenre) params.append('genre', selectedGenre)
-          if (selectedMinRating > 0) params.append('minimum_rating', selectedMinRating.toString())
-
-          const ytsUrl = `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`
-          const response = await fetch(ytsUrl)
-          if (!response.ok) return []
-
-          const ytsData = await response.json()
-          if (!ytsData?.data?.movies) return []
-
-          return ytsData.data.movies.map((m: YtsRawMovie) => ({
-            id: `yts-${m.id}`,
-            title: m.title,
-            genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-            year: m.year,
-            rating: m.rating || 0,
-            image: m.medium_cover_image || '',
-            source: 'YTS'
-          }))
-        }
-
-        // 2. Fetch Popcorn API (External Source #2)
-        const fetchPopcorn = async (): Promise<Movie[]> => {
           try {
-            const popcornUrl = queryStr
-              ? `https://pop-api.vercel.app/movies/${page}?keywords=${encodeURIComponent(queryStr)}`
-              : `https://pop-api.vercel.app/movies/${page}?sort=seeds`
+            const params = new URLSearchParams()
+            params.append('limit', '20')
+            params.append('page', page.toString())
+            params.append('sort_by', sortBy)
+            params.append('order_by', order)
 
-            const response = await fetch(popcornUrl)
-            if (!response.ok) return await fetchArchiveOrg()
+            if (queryStr) params.append('query_term', queryStr)
+            if (selectedGenre) params.append('genre', selectedGenre)
+            if (selectedMinRating > 0) params.append('minimum_rating', selectedMinRating.toString())
 
-            const data = await response.json()
-            if (!Array.isArray(data)) return await fetchArchiveOrg()
+            const mirrors = [
+              `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`,
+              `https://yts.mx/api/v2/list_movies.json?${params.toString()}`
+            ]
 
-            let filtered = data
-            if (selectedGenre) {
-              filtered = filtered.filter((m: PopcornRawMovie) =>
-                m.genres?.some(g => g.toLowerCase().includes(selectedGenre.toLowerCase()))
-              )
-            }
-
-            return filtered.map((m: PopcornRawMovie) => {
-              const numRating = typeof m.rating === 'object'
-                ? ((m.rating?.percentage || 0) / 10)
-                : (Number(m.rating) || 0)
-
-              return {
-                id: `popcorn-${m._id || m.imdb_id || m.title}`,
-                title: m.title,
-                genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-                year: m.year || 'N/A',
-                rating: Math.min(10, Math.max(0, numRating)),
-                image: m.images?.poster || m.images?.fanart || '',
-                source: 'Popcorn API'
+            let ytsData: any = null
+            for (const url of mirrors) {
+              try {
+                const response = await fetch(url)
+                if (response.ok) {
+                  const data = await response.json()
+                  if (data?.data?.movies && data.data.movies.length > 0) {
+                    ytsData = data
+                    break
+                  }
+                }
+              } catch {
+                continue
               }
-            }).filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
-          } catch {
-            return await fetchArchiveOrg()
-          }
-        }
-
-        // 3. Fallback Source #2: Archive.org Movies API
-        const fetchArchiveOrg = async (): Promise<Movie[]> => {
-          try {
-            let queryParam = queryStr
-              ? ` AND title:(${encodeURIComponent(queryStr)})`
-              : ''
-            if (selectedGenre) {
-              queryParam += ` AND (title:(${encodeURIComponent(selectedGenre)}) OR subject:(${encodeURIComponent(selectedGenre)}))`
             }
-            const archiveUrl = `https://archive.org/advancedsearch.php?q=mediatype:movies${queryParam}&fl[]=identifier,title,year,downloads&sort[]=downloads+desc&rows=20&page=${page}&output=json`
 
-            const response = await fetch(archiveUrl)
-            if (!response.ok) return []
+            if (!ytsData?.data?.movies) return []
 
-            const data = await response.json()
-            const docs = data?.response?.docs || []
-
-            return docs.map((doc: ArchiveRawMovie) => ({
-              id: `archive-${doc.identifier}`,
-              title: doc.title,
-              genre: selectedGenre ? selectedGenre : 'Classic',
-              year: doc.year || 'N/A',
-              rating: Math.min(9.9, Math.round(((doc.downloads || 500) / 500) * 10) / 10),
-              image: `https://archive.org/services/img/${doc.identifier}`,
-              source: 'Archive.org'
+            return ytsData.data.movies.map((m: YtsRawMovie) => ({
+              id: `yts-${m.id}`,
+              title: m.title,
+              genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
+              year: m.year,
+              rating: m.rating || 0,
+              image: m.medium_cover_image || '',
+              source: 'YTS'
             }))
           } catch {
             return []
           }
         }
 
-        // Execute both external sources in parallel
-        const [ytsResult, popcornResult] = await Promise.allSettled([
+
+        // 3. Fallback Source #2: TMDB (The Movie Database) API
+        const fetchTmdb = async (): Promise<Movie[]> => {
+          try {
+            const apiKey = import.meta.env.VITE_TMDB_API_KEY
+
+            if (apiKey) {
+              const tmdbUrl = queryStr
+                ? `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(queryStr)}&page=${page}`
+                : `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&page=${page}`
+
+              const response = await fetch(tmdbUrl)
+              if (response.ok) {
+                const data = await response.json()
+                const results: TmdbRawMovie[] = data?.results || []
+
+                if (results.length > 0) {
+                  return results
+                    .filter((m: TmdbRawMovie) => m.poster_path && m.title)
+                    .map((m: TmdbRawMovie) => {
+                      const genres = m.genre_ids
+                        ? m.genre_ids.map(id => TMDB_GENRE_MAP[id]).filter(Boolean).join(', ')
+                        : 'Movie'
+
+                      return {
+                        id: `tmdb-${m.id}`,
+                        title: m.title || '',
+                        genre: genres || 'Movie',
+                        year: m.release_date ? m.release_date.substring(0, 4) : 'N/A',
+                        rating: Math.round((m.vote_average || 0) * 10) / 10,
+                        image: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+                        source: 'TMDB'
+                      }
+                    })
+                    .filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
+                }
+              }
+            }
+
+            // Fallback if TMDB key is missing or request fails: YTS Popular list
+            const params = new URLSearchParams()
+            params.append('limit', '20')
+            params.append('page', page.toString())
+            params.append('sort_by', 'download_count')
+            if (queryStr) params.append('query_term', queryStr)
+            if (selectedGenre) params.append('genre', selectedGenre)
+
+            const ytsFallbackUrl = `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`
+            const res = await fetch(ytsFallbackUrl)
+            if (!res.ok) return []
+
+            const ytsData = await res.json()
+            if (!ytsData?.data?.movies) return []
+
+            return ytsData.data.movies.map((m: YtsRawMovie) => ({
+              id: `tmdb-fallback-${m.id}`,
+              title: m.title,
+              genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
+              year: m.year,
+              rating: m.rating || 0,
+              image: m.medium_cover_image || '',
+              source: 'YTS Popular'
+            }))
+          } catch {
+            return []
+          }
+        }
+
+        // Execute both external sources in parallel (YTS + TMDB)
+        const [ytsResult, tmdbResult] = await Promise.allSettled([
           fetchYts(),
-          fetchPopcorn()
+          fetchTmdb()
         ])
 
         const ytsList = ytsResult.status === 'fulfilled' ? ytsResult.value : []
-        const popcornList = popcornResult.status === 'fulfilled' ? popcornResult.value : []
+        const tmdbList = tmdbResult.status === 'fulfilled' ? tmdbResult.value : []
 
         // Interleave & merge both sources for balanced presentation
         const merged: Movie[] = []
-        const maxLen = Math.max(ytsList.length, popcornList.length)
+        const maxLen = Math.max(ytsList.length, tmdbList.length)
         for (let i = 0; i < maxLen; i++) {
           if (i < ytsList.length) merged.push(ytsList[i])
-          if (i < popcornList.length) merged.push(popcornList[i])
+          if (i < tmdbList.length) merged.push(tmdbList[i])
         }
 
         // Deduplicate movies by normalized title
