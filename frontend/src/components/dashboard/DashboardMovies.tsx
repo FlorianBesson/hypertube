@@ -318,7 +318,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
               `https://yts.mx/api/v2/list_movies.json?${params.toString()}`
             ]
 
-            let ytsData: any = null
+            let ytsData: { data?: { movies?: YtsRawMovie[] } } | null = null
             for (const url of mirrors) {
               try {
                 const response = await fetch(url)
