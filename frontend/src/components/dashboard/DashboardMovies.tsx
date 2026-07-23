@@ -22,36 +22,17 @@ interface YtsRawMovie {
 }
 
 
-interface TmdbRawMovie {
-  id: number
+interface CinemetaRawMovie {
+  id?: string
+  imdb_id?: string
+  name?: string
   title?: string
-  genre_ids?: number[]
-  release_date?: string
-  vote_average?: number
-  poster_path?: string
+  year?: string | number
+  imdbRating?: string | number
+  genres?: string[]
+  poster?: string
 }
 
-const TMDB_GENRE_MAP: Record<number, string> = {
-  28: 'Action',
-  12: 'Adventure',
-  16: 'Animation',
-  35: 'Comedy',
-  80: 'Crime',
-  99: 'Documentary',
-  18: 'Drama',
-  10751: 'Family',
-  14: 'Fantasy',
-  36: 'History',
-  27: 'Horror',
-  10402: 'Music',
-  9648: 'Mystery',
-  10749: 'Romance',
-  878: 'Sci-Fi',
-  10770: 'TV Movie',
-  53: 'Thriller',
-  10752: 'War',
-  37: 'Western',
-}
 
 interface MovieCardProps {
   movie: Movie
@@ -351,45 +332,52 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
         }
 
 
-        // 3. Fallback Source #2: TMDB (The Movie Database) API
-        const fetchTmdb = async (): Promise<Movie[]> => {
+        // 2. Fetch Torrentio / Cinemeta Catalog (External Source #2)
+        const fetchTorrentio = async (): Promise<Movie[]> => {
           try {
-            const apiKey = import.meta.env.VITE_TMDB_API_KEY
+            const url = queryStr
+              ? `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(queryStr)}.json`
+              : `https://cinemeta-catalogs.strem.io/top/catalog/movie/top.json`
 
-            if (apiKey) {
-              const tmdbUrl = queryStr
-                ? `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(queryStr)}&page=${page}`
-                : `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&page=${page}`
+            const response = await fetch(url)
+            if (!response.ok) return await fetchYtsPopular()
 
-              const response = await fetch(tmdbUrl)
-              if (response.ok) {
-                const data = await response.json()
-                const results: TmdbRawMovie[] = data?.results || []
+            const data = await response.json()
+            const metas: CinemetaRawMovie[] = data?.metas || []
+            if (metas.length === 0) return await fetchYtsPopular()
 
-                if (results.length > 0) {
-                  return results
-                    .filter((m: TmdbRawMovie) => m.poster_path && m.title)
-                    .map((m: TmdbRawMovie) => {
-                      const genres = m.genre_ids
-                        ? m.genre_ids.map(id => TMDB_GENRE_MAP[id]).filter(Boolean).join(', ')
-                        : 'Movie'
+            const currentYear = new Date().getFullYear()
+            let filtered = metas.filter((m: CinemetaRawMovie) => {
+              const y = parseInt(String(m.year)) || 0
+              return y > 0 && y <= currentYear
+            })
 
-                      return {
-                        id: `tmdb-${m.id}`,
-                        title: m.title || '',
-                        genre: genres || 'Movie',
-                        year: m.release_date ? m.release_date.substring(0, 4) : 'N/A',
-                        rating: Math.round((m.vote_average || 0) * 10) / 10,
-                        image: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
-                        source: 'TMDB'
-                      }
-                    })
-                    .filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
-                }
-              }
+            if (selectedGenre) {
+              filtered = filtered.filter((m: CinemetaRawMovie) =>
+                m.genres?.some(g => g.toLowerCase().includes(selectedGenre.toLowerCase()))
+              )
             }
 
-            // Fallback if TMDB key is missing or request fails: YTS Popular list
+            return filtered.map((m: CinemetaRawMovie) => {
+              const numRating = Number(m.imdbRating) || 0
+              return {
+                id: `torrentio-${m.imdb_id || m.id || m.name}`,
+                title: m.name || m.title || '',
+                genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
+                year: m.year || 'N/A',
+                rating: Math.min(10, Math.max(0, numRating)),
+                image: m.poster || '',
+                source: 'Torrentio'
+              }
+            }).filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
+          } catch {
+            return await fetchYtsPopular()
+          }
+        }
+
+        // 3. Fallback Source: YTS Popular list
+        const fetchYtsPopular = async (): Promise<Movie[]> => {
+          try {
             const params = new URLSearchParams()
             params.append('limit', '20')
             params.append('page', page.toString())
@@ -405,7 +393,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
             if (!ytsData?.data?.movies) return []
 
             return ytsData.data.movies.map((m: YtsRawMovie) => ({
-              id: `tmdb-fallback-${m.id}`,
+              id: `yts-popular-${m.id}`,
               title: m.title,
               genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
               year: m.year,
@@ -418,21 +406,21 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
           }
         }
 
-        // Execute both external sources in parallel (YTS + TMDB)
-        const [ytsResult, tmdbResult] = await Promise.allSettled([
+        // Execute both external video sources in parallel (YTS + Torrentio)
+        const [ytsResult, torrentioResult] = await Promise.allSettled([
           fetchYts(),
-          fetchTmdb()
+          fetchTorrentio()
         ])
 
         const ytsList = ytsResult.status === 'fulfilled' ? ytsResult.value : []
-        const tmdbList = tmdbResult.status === 'fulfilled' ? tmdbResult.value : []
+        const torrentioList = torrentioResult.status === 'fulfilled' ? torrentioResult.value : []
 
         // Interleave & merge both sources for balanced presentation
         const merged: Movie[] = []
-        const maxLen = Math.max(ytsList.length, tmdbList.length)
+        const maxLen = Math.max(ytsList.length, torrentioList.length)
         for (let i = 0; i < maxLen; i++) {
           if (i < ytsList.length) merged.push(ytsList[i])
-          if (i < tmdbList.length) merged.push(tmdbList[i])
+          if (i < torrentioList.length) merged.push(torrentioList[i])
         }
 
         // Deduplicate movies by normalized title
