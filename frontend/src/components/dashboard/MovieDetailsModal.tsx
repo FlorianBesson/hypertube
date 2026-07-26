@@ -30,13 +30,38 @@ interface TmdbDetails {
     cast?: string[]
 }
 
+// Helper function to upgrade poster / cover images to higher resolution
+const getHighQualityUrl = (url: string | null): string => {
+    if (!url) return ''
+    
+    // TMDb poster path: upgrade w500 to w780
+    if (url.includes('image.tmdb.org/t/p/w500')) {
+        return url.replace('/t/p/w500', '/t/p/w780')
+    }
+
+    // YTS medium cover: upgrade to large cover
+    if (url.includes('medium-cover.jpg')) {
+        return url.replace('medium-cover.jpg', 'large-cover.jpg')
+    }
+
+    // OMDb / IMDb: upgrade SX300 to SX900/original
+    if (url.includes('._V1_SX300')) {
+        return url.replace('._V1_SX300', '._V1_SX900')
+    }
+    if (url.includes('_SX300.')) {
+        return url.replace('_SX300.', '_SX900.')
+    }
+    
+    return url
+}
+
 export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsProps) {
     const [details, setDetails] = useState<TmdbDetails | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
     const [imageError, setImageError] = useState(false)
 
-    const posterUrl = recoveredPoster || movie.image
+    const posterUrl = getHighQualityUrl(recoveredPoster || movie.image)
 
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -100,7 +125,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                                 const castList = creditsData.credits?.cast?.slice(0, 5).map((c: TmdbCastMember) => c.name || '') || []
 
                                 if (creditsData.poster_path) {
-                                    setRecoveredPoster(`https://image.tmdb.org/t/p/w500${creditsData.poster_path}`)
+                                    setRecoveredPoster(`https://image.tmdb.org/t/p/w780${creditsData.poster_path}`)
                                 }
 
                                 setDetails({
@@ -203,24 +228,8 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                     ✕
                 </button>
 
-                {/* Bannière d'arrière-plan HD (Backdrop) */}
-                <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-neutral-950 shrink-0">
-                    {details?.backdrop_path || posterUrl ? (
-                        <img
-                            src={details?.backdrop_path || posterUrl}
-                            alt={movie.title}
-                            referrerPolicy="no-referrer"
-                            onError={() => setImageError(true)}
-                            className="w-full h-full object-cover opacity-40 blur-[2px]"
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-red-950 to-neutral-900 opacity-60" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/50 to-transparent" />
-                </div>
-
                 {/* Contenu principal */}
-                <div className="p-6 sm:p-8 -mt-24 relative z-10 flex flex-col md:flex-row gap-6">
+                <div className="p-6 sm:p-8 relative z-10 flex flex-col md:flex-row gap-6">
                     {/* Affiche du film */}
                     <div className="w-36 sm:w-48 aspect-[2/3] rounded-xl border border-white/10 overflow-hidden shrink-0 shadow-xl bg-neutral-950">
                         {posterUrl ? (
@@ -241,7 +250,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                     {/* Informations textuelles */}
                     <div className="flex-1 flex flex-col gap-4 text-neutral-200">
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 pr-12">
                                 <span className="text-xs font-extrabold text-red-500 uppercase tracking-widest">{movie.genre}</span>
                                 {movie.source && (
                                     <span className="text-[10px] bg-white/10 text-neutral-300 px-2 py-0.5 rounded border border-white/10 font-mono">
@@ -249,7 +258,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                                     </span>
                                 )}
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">{movie.title}</h1>
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 pr-12">{movie.title}</h1>
                             
                             {/* Badges Année, Durée, Note */}
                             <div className="flex flex-wrap items-center gap-4 mt-2 text-xs font-semibold text-neutral-400">
