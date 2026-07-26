@@ -7,6 +7,7 @@ import ProfilePage from './pages/ProfilePage'
 import UserProfilePage from './pages/UserProfilePage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import WatchPage from './pages/WatchPage'
 import AuthenticatedLayout from './components/layout/AuthenticatedLayout'
 
 /**
@@ -155,6 +156,16 @@ function AppRoutes({
         />
         <Route path="user/:id" element={<UserProfilePage lang={lang} />} />
       </Route>
+      <Route
+        path="watch/:id"
+        element={
+          isAuthenticated ? (
+            <WatchPage lang={lang} user={user} />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

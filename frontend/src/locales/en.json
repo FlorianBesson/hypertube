@@ -159,5 +159,18 @@
     "discover": "Discover",
     "library": "Library",
     "settings": "Settings"
+  },
+  "watch": {
+    "backToCatalog": "Back to movies",
+    "fakePlayerNotice": "Development Mock Player & Streaming Environment",
+    "commentsTitle": "Comments",
+    "addCommentPlaceholder": "Write a comment...",
+    "sendButton": "Post",
+    "collapseComments": "Hide comments",
+    "expandComments": "Show comments",
+    "torrentSpeed": "Streaming BitTorrent: 3.4 MB/s (28 seeds)",
+    "noComments": "No comments yet. Be the first to share your thoughts!",
+    "movieNotFound": "Movie not found",
+    "quality": "1080p Web-DL"
   }
 }
