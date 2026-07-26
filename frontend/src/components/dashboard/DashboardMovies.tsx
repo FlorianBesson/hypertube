@@ -83,8 +83,8 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
 
   return (
     <div
-      onClick={() => onSelectMovie(movie)}
-      className={`group relative aspect-[2/3] rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
+      onClick={() => onSelectMovie(recoveredPoster ? { ...movie, image: recoveredPoster } : movie)}
+      className={`group relative aspect-[2/3] rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
         isWatched 
           ? 'border-emerald-500/20 opacity-60 hover:opacity-85' 
           : 'border-white/5 hover:border-red-600/30'
@@ -98,7 +98,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
             alt={movie.title}
             referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
-            className="w-full h-full object-cover opacity-70 group-hover:opacity-85 group-hover:scale-105 transition-all duration-500"
+            className="w-full h-full object-cover opacity-70 group-hover:opacity-85 transition-all duration-500"
             loading="lazy"
           />
         ) : (

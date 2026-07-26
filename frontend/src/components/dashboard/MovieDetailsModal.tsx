@@ -30,38 +30,13 @@ interface TmdbDetails {
     cast?: string[]
 }
 
-// Helper function to upgrade poster / cover images to higher resolution
-const getHighQualityUrl = (url: string | null): string => {
-    if (!url) return ''
-    
-    // TMDb poster path: upgrade w500 to w780
-    if (url.includes('image.tmdb.org/t/p/w500')) {
-        return url.replace('/t/p/w500', '/t/p/w780')
-    }
-
-    // YTS medium cover: upgrade to large cover
-    if (url.includes('medium-cover.jpg')) {
-        return url.replace('medium-cover.jpg', 'large-cover.jpg')
-    }
-
-    // OMDb / IMDb: upgrade SX300 to SX900/original
-    if (url.includes('._V1_SX300')) {
-        return url.replace('._V1_SX300', '._V1_SX900')
-    }
-    if (url.includes('_SX300.')) {
-        return url.replace('_SX300.', '_SX900.')
-    }
-    
-    return url
-}
-
 export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsProps) {
     const [details, setDetails] = useState<TmdbDetails | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
     const [imageError, setImageError] = useState(false)
 
-    const posterUrl = getHighQualityUrl(recoveredPoster || movie.image)
+    const posterUrl = recoveredPoster || movie.image
 
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -123,10 +98,8 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                                 const creditsData = await creditsRes.json()
                                 const directorObj = creditsData.credits?.crew?.find((c: TmdbCrewMember) => c.job === 'Director')
                                 const castList = creditsData.credits?.cast?.slice(0, 5).map((c: TmdbCastMember) => c.name || '') || []
+                                // Restored consistency: keep the same poster as dashboard instead of overwriting with TMDB poster
 
-                                if (creditsData.poster_path) {
-                                    setRecoveredPoster(`https://image.tmdb.org/t/p/w780${creditsData.poster_path}`)
-                                }
 
                                 setDetails({
                                     overview: creditsData.overview || "Aucun synopsis disponible.",
@@ -149,9 +122,8 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                     if (omdbData.Response !== "False") {
                         const runtimeNum = parseInt(omdbData.Runtime) || 0
                         const castArray = omdbData.Actors ? omdbData.Actors.split(', ') : []
-                        if (omdbData.Poster && omdbData.Poster !== "N/A") {
-                            setRecoveredPoster(omdbData.Poster)
-                        }
+                        // Restored consistency: keep the same poster as dashboard instead of overwriting with OMDb poster
+
                         setDetails({
                             overview: omdbData.Plot || "Aucun synopsis disponible.",
                             runtime: runtimeNum,
