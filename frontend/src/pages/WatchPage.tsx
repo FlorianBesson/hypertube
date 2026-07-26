@@ -24,7 +24,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
     return null
   })
 
-  const [isCommentsCollapsed, setIsCommentsCollapsed] = useState(false)
+  const [isCommentsCollapsed, setIsCommentsCollapsed] = useState(true)
   const [isLoading, setIsLoading] = useState(!movie)
 
   // Fetch movie details if accessed directly by URL
