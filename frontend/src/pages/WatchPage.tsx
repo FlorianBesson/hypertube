@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Film } from 'lucide-react'
+import { useParams, useLocation } from 'react-router-dom'
 import VideoPlayer from '../components/watch/VideoPlayer'
 import CommentsSection from '../components/watch/CommentsSection'
 import { translations } from '../locales/translations'
@@ -15,7 +14,6 @@ interface WatchPageProps {
 export default function WatchPage({ lang, user }: WatchPageProps) {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
-  const navigate = useNavigate()
   const t = translations[lang].watch
 
   const [movie, setMovie] = useState<Movie | null>(() => {
@@ -79,46 +77,27 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
   }, [id, movie, lang])
 
   return (
-    <div className="min-h-screen bg-black text-neutral-100 flex flex-col p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
-      {/* Top Header Navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-xs font-bold text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/10 transition-all cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4 text-red-500" />
-          {t.backToCatalog}
-        </button>
-
-        {movie && (
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-neutral-400 bg-neutral-900/60 px-3 py-1.5 rounded-xl border border-white/5">
-            <Film className="w-3.5 h-3.5 text-red-500" />
-            <span>{movie.title}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Main Watch Layout Container */}
+    <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden flex flex-row">
       {isLoading ? (
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
-          <span className="w-10 h-10 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin mb-4" />
-          <p className="text-sm font-semibold text-neutral-400">Chargement de la vidéo...</p>
+        <div className="flex-1 flex flex-col items-center justify-center h-full w-full bg-black">
+          <span className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin mb-4" />
+          <p className="text-sm font-semibold text-neutral-400">Chargement du lecteur vidéo...</p>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col lg:flex-row gap-6 items-start">
-          {/* Left Column: Video Player */}
-          <div className="flex-1 w-full min-w-0">
+        <>
+          {/* Main Full-Screen Video Player Area */}
+          <div className="flex-1 h-full min-w-0 relative">
             <VideoPlayer movie={movie} t={t} />
           </div>
 
-          {/* Right Column: Comments Section (Collapsible) */}
+          {/* Right Side Comments Section (Full Window Height) */}
           <CommentsSection
             isCollapsed={isCommentsCollapsed}
             onToggleCollapse={() => setIsCommentsCollapsed(!isCommentsCollapsed)}
             t={t}
             user={user}
           />
-        </div>
+        </>
       )}
     </div>
   )

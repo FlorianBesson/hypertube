@@ -155,8 +155,17 @@ function AppRoutes({
           }
         />
         <Route path="user/:id" element={<UserProfilePage lang={lang} />} />
-        <Route path="watch/:id" element={<WatchPage lang={lang} user={user} />} />
       </Route>
+      <Route
+        path="watch/:id"
+        element={
+          isAuthenticated ? (
+            <WatchPage lang={lang} user={user} />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
