@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
 import type { Movie } from './DashboardMovies'
 
@@ -31,6 +32,7 @@ interface TmdbDetails {
 }
 
 export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsProps) {
+    const navigate = useNavigate()
     const [details, setDetails] = useState<TmdbDetails | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
@@ -271,7 +273,10 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                         {/* Bouton de Lancement Vidéo */}
                         <div className="pt-4 flex items-center gap-4">
                             <button 
-                                onClick={() => alert("Le lecteur vidéo BitTorrent sera lancé à l'étape suivante !")}
+                                onClick={() => {
+                                    onClose()
+                                    navigate(`/watch/${movie.id}`, { state: { movie: recoveredPoster ? { ...movie, image: recoveredPoster } : movie } })
+                                }}
                                 className="bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer hover:scale-105"
                             >
                                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
