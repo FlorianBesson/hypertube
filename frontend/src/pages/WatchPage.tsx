@@ -77,20 +77,20 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
   }, [id, movie, lang])
 
   return (
-    <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden flex flex-row">
+    <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden relative">
       {isLoading ? (
-        <div className="flex-1 flex flex-col items-center justify-center h-full w-full bg-black">
+        <div className="flex flex-col items-center justify-center h-full w-full bg-black">
           <span className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin mb-4" />
           <p className="text-sm font-semibold text-neutral-400">Chargement du lecteur vidéo...</p>
         </div>
       ) : (
         <>
           {/* Main Full-Screen Video Player Area */}
-          <div className="flex-1 h-full min-w-0 relative">
+          <div className="w-full h-full">
             <VideoPlayer movie={movie} t={t} />
           </div>
 
-          {/* Right Side Comments Section (Full Window Height) */}
+          {/* Right Side Overlay Comments Section */}
           <CommentsSection
             isCollapsed={isCommentsCollapsed}
             onToggleCollapse={() => setIsCommentsCollapsed(!isCommentsCollapsed)}

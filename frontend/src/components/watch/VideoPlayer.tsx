@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize, Film, Download, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Film, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
 import type { Movie } from '../dashboard/DashboardMovies'
@@ -46,40 +46,16 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       </div>
 
       {/* Top Floating Overlay (Header over video) */}
-      <div className="relative z-10 p-4 sm:p-6 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+      <div className="relative z-10 p-4 sm:p-6 pr-16 sm:pr-20 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-black/80 via-black/40 to-transparent">
         <div className="flex items-center gap-3">
-          {/* Back to Catalog Button */}
+          {/* Back to Catalog Button (Icon only) */}
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-xs font-bold text-neutral-200 hover:text-white bg-black/60 hover:bg-black/80 px-4 py-2 rounded-xl border border-white/15 backdrop-blur-md transition-all cursor-pointer shadow-lg"
+            className="p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/15 backdrop-blur-md transition-all cursor-pointer shadow-lg hover:scale-105"
+            title={t.backToCatalog}
           >
-            <ArrowLeft className="w-4 h-4 text-red-500" />
-            {t.backToCatalog}
+            <ArrowLeft className="w-5 h-5 text-red-500" />
           </button>
-
-          {movie && (
-            <div className="hidden md:flex items-center gap-2.5 text-xs font-bold text-white bg-black/50 px-3.5 py-2 rounded-xl border border-white/10 backdrop-blur-md">
-              <Film className="w-4 h-4 text-red-500" />
-              <span>{movie.title}</span>
-              <span className="text-neutral-400">({movie.year})</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Dev Mode Badge */}
-          <span className="hidden sm:flex items-center gap-1.5 bg-amber-500/20 text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-xl border border-amber-500/30 backdrop-blur-md">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            {t.fakePlayerNotice}
-          </span>
-
-          <span className="bg-red-600 text-white text-[10px] font-extrabold uppercase px-2.5 py-1.5 rounded-lg tracking-wider shadow">
-            {t.quality}
-          </span>
-          <span className="hidden lg:flex text-xs font-mono text-neutral-300 bg-black/60 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-md items-center gap-2">
-            <Download className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
-            {t.torrentSpeed}
-          </span>
         </div>
       </div>
 
@@ -152,7 +128,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
           <div className="flex items-center gap-4">
             {movie && (
               <span className="hidden sm:inline text-xs font-semibold text-neutral-300">
-                {movie.title} • <span className="text-amber-400">★ {movie.rating.toFixed(1)}</span>
+                {movie.title}
               </span>
             )}
 

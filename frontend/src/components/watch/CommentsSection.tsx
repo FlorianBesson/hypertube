@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageSquare, Send, PanelRightClose, PanelRightOpen, ThumbsUp, User } from 'lucide-react'
+import { MessageSquare, Send, PanelRightClose, ThumbsUp, User } from 'lucide-react'
 import type { TranslationType } from '../../locales/translations'
 import type { LoggedUser } from '../../App'
 
@@ -77,32 +77,21 @@ export default function CommentsSection({
     )
   }
 
-  // When collapsed, render a minimal vertical bar with expand button
+  // When collapsed, only render the floating reopen button over the video
   if (isCollapsed) {
     return (
-      <div className="flex flex-col items-center py-4 px-2 bg-neutral-950/90 border-l border-white/10 w-12 h-screen shrink-0 shadow-2xl backdrop-blur-md z-20 justify-between">
-        <button
-          onClick={onToggleCollapse}
-          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white transition-all cursor-pointer border border-white/10"
-          title={t.expandComments}
-        >
-          <PanelRightOpen className="w-5 h-5" />
-        </button>
-
-        <div className="flex flex-col items-center gap-2 text-neutral-400">
-          <MessageSquare className="w-5 h-5 text-red-500" />
-          <span className="text-xs font-mono font-bold writing-mode-vertical rotate-180 tracking-wider">
-            {comments.length}
-          </span>
-        </div>
-
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-      </div>
+      <button
+        onClick={onToggleCollapse}
+        className="absolute top-4 right-4 z-40 p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-200 cursor-pointer hover:scale-110 flex items-center justify-center group"
+        title={t.expandComments}
+      >
+        <MessageSquare className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+      </button>
     )
   }
 
   return (
-    <div className="w-full sm:w-80 lg:w-96 h-screen flex flex-col bg-neutral-950/95 border-l border-white/10 p-4 sm:p-5 shadow-2xl backdrop-blur-xl shrink-0 z-20 transition-all duration-300">
+    <div className="absolute top-0 right-0 z-40 w-full sm:w-80 lg:w-96 h-full flex flex-col bg-neutral-950/95 border-l border-white/10 p-4 sm:p-5 shadow-2xl backdrop-blur-xl transition-all duration-300 animate-in slide-in-from-right">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-2.5">
