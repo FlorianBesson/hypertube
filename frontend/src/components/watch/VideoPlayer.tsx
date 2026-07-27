@@ -16,8 +16,27 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const [progress, setProgress] = useState(24) // Mock progress percentage
   const [volume, setVolume] = useState(80)
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying)
+
+    async function startTorrentDownload() {
+        console.log(`start torrent download for movie: `, movie)
+
+        if (!movie?.torrents?.length) {
+            console.warn('No torrent source is attached to this TMDb movie yet')
+            return
+        }
+
+        const response = await fetch("/api/torrent", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({torrents: movie.torrents})
+        })
+        const resData = await response.json()
+        console.log(resData)
+    }
+    
+    const togglePlay = () => {
+        setIsPlaying(!isPlaying)
+        startTorrentDownload()
   }
 
   const toggleMute = () => {

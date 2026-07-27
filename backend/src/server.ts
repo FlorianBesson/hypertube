@@ -8,6 +8,7 @@ import { checkDbConnection } from './db/utils';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import usersRoutes from './routes/users';
+import torrentRoutes from './routes/torrent'
 
 const PORT = 3000;
 export const app: Application = express();
@@ -22,6 +23,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/torrent', torrentRoutes)
 
 /**
  * Health check endpoint for testing database connectivity.

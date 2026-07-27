@@ -56,7 +56,8 @@ export default function DashboardPage({
   return (
     <div className="max-w-[1400px] w-full mx-auto flex flex-col lg:flex-row gap-6 items-start justify-center">
       <DashboardMovies 
-        t={t} 
+        t={t}
+        lang={lang}
         showCommunity={showCommunity} 
         setShowCommunity={setShowCommunity} 
       />

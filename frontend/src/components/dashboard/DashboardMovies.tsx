@@ -10,29 +10,65 @@ export interface Movie {
   rating: number
   image: string
   source?: string
+  torrents?: Torrent[]
 }
 
-interface YtsRawMovie {
-  id: number | string
-  title: string
-  genres?: string[]
-  year: number | string
-  rating?: number
-  medium_cover_image?: string
+export interface Torrent {
+  url: string
+  hash: string
+  quality: string
+  type: string
+  is_repack?: string
+  video_codec?: string
+  bit_depth?: string
+  audio_channels?: string
+  seeds?: number
+  peers?: number
+  size?: string
+  size_bytes?: number
+  date_uploaded?: string
+  date_uploaded_unix?: number
 }
 
-
-interface CinemetaRawMovie {
-  id?: string
-  imdb_id?: string
-  name?: string
+interface TmdbRawMovie {
+  id: number
   title?: string
-  year?: string | number
-  imdbRating?: string | number
-  genres?: string[]
-  poster?: string
+  original_title?: string
+  genre_ids?: number[]
+  release_date?: string
+  vote_average?: number
+  poster_path?: string | null
 }
 
+interface TmdbMovieResponse {
+  page: number
+  total_pages: number
+  results?: TmdbRawMovie[]
+}
+
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
+
+const TMDB_GENRES: Record<number, string> = {
+  28: 'Action',
+  12: 'Adventure',
+  16: 'Animation',
+  35: 'Comedy',
+  80: 'Crime',
+  99: 'Documentary',
+  18: 'Drama',
+  10751: 'Family',
+  14: 'Fantasy',
+  36: 'History',
+  27: 'Horror',
+  10402: 'Music',
+  9648: 'Mystery',
+  10749: 'Romance',
+  878: 'Sci-Fi',
+  10770: 'TV Movie',
+  53: 'Thriller',
+  10752: 'War',
+  37: 'Western'
+}
 
 interface MovieCardProps {
   movie: Movie
@@ -44,31 +80,13 @@ interface MovieCardProps {
 
 interface DashboardMoviesProps {
   t: TranslationType['dashboard']
+  lang: 'en' | 'fr'
   showCommunity: boolean
   setShowCommunity: (val: boolean) => void
 }
 
 function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
-  const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
-
-  const posterUrl = recoveredPoster || movie.image
-
-  // Auto-recovery: If YTS image domain is DNS-blocked, fetch official poster from OMDb API
-  useEffect(() => {
-    if (imageError && movie.title) {
-      const cleanTitle = movie.title.replace(/\(\d{4}\)/, '').trim()
-      fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=trilogy`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.Poster && data.Poster !== 'N/A') {
-            setRecoveredPoster(data.Poster)
-            setImageError(false)
-          }
-        })
-        .catch(() => {})
-    }
-  }, [imageError, movie.title])
 
   // Generate fallback gradients
   const fallbackGradients = [
@@ -83,7 +101,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
 
   return (
     <div
-      onClick={() => onSelectMovie(recoveredPoster ? { ...movie, image: recoveredPoster } : movie)}
+      onClick={() => onSelectMovie(movie)}
       className={`group relative aspect-[2/3] rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
         isWatched 
           ? 'border-emerald-500/20 opacity-60 hover:opacity-85' 
@@ -92,9 +110,9 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
     >
       {/* Movie Poster Image */}
       <div className="absolute inset-0 bg-neutral-900">
-        {!imageError && posterUrl ? (
+        {!imageError && movie.image ? (
           <img
-            src={posterUrl}
+            src={movie.image}
             alt={movie.title}
             referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
@@ -212,7 +230,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
   )
 }
 
-export default function DashboardMovies({ t, showCommunity, setShowCommunity }: DashboardMoviesProps) {
+export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [movies, setMovies] = useState<Movie[]>([])
@@ -266,7 +284,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
     }
   }, [searchQuery])
 
-  // Fetch movies from multiple external sources (YTS + Popcorn Time / TMDB)
+  // Fetch thumbnails exclusively from TMDb.
   useEffect(() => {
     let isMounted = true
 
@@ -279,160 +297,64 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
       setError(false)
 
       try {
+        const apiKey = import.meta.env.VITE_TMDB_API_KEY
+        if (!apiKey) {
+          throw new Error('VITE_TMDB_API_KEY is not configured')
+        }
+
         const queryStr = debouncedQuery.trim()
+        const language = lang === 'fr' ? 'fr-FR' : 'en-US'
+        const params = new URLSearchParams({
+          api_key: apiKey,
+          language,
+          page: page.toString(),
+          include_adult: 'false'
+        })
 
-        // 1. Fetch YTS (External Source #1)
-        const fetchYts = async (): Promise<Movie[]> => {
-          try {
-            const params = new URLSearchParams()
-            params.append('limit', '20')
-            params.append('page', page.toString())
-            params.append('sort_by', sortBy)
-            params.append('order_by', order)
+        let endpoint = 'discover/movie'
+        if (queryStr) {
+          endpoint = 'search/movie'
+          params.set('query', queryStr)
+        } else {
+          const sortField = {
+            download_count: 'popularity',
+            title: 'original_title',
+            year: 'primary_release_date',
+            rating: 'vote_average'
+          }[sortBy]
 
-            if (queryStr) params.append('query_term', queryStr)
-            if (selectedGenre) params.append('genre', selectedGenre)
-            if (selectedMinRating > 0) params.append('minimum_rating', selectedMinRating.toString())
+          params.set('sort_by', `${sortField}.${order}`)
+          params.set('vote_count.gte', '25')
 
-            const mirrors = [
-              `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`,
-              `https://yts.mx/api/v2/list_movies.json?${params.toString()}`
-            ]
+          if (selectedMinRating > 0) {
+            params.set('vote_average.gte', selectedMinRating.toString())
+          }
 
-            let ytsData: { data?: { movies?: YtsRawMovie[] } } | null = null
-            for (const url of mirrors) {
-              try {
-                const response = await fetch(url)
-                if (response.ok) {
-                  const data = await response.json()
-                  if (data?.data?.movies && data.data.movies.length > 0) {
-                    ytsData = data
-                    break
-                  }
-                }
-              } catch {
-                continue
-              }
-            }
-
-            if (!ytsData?.data?.movies) return []
-
-            return ytsData.data.movies.map((m: YtsRawMovie) => ({
-              id: `yts-${m.id}`,
-              title: m.title,
-              genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-              year: m.year,
-              rating: m.rating || 0,
-              image: m.medium_cover_image || '',
-              source: 'YTS'
-            }))
-          } catch {
-            return []
+          if (selectedGenre) {
+            const genreId = Object.entries(TMDB_GENRES)
+              .find(([, name]) => name.toLowerCase() === selectedGenre.toLowerCase())?.[0]
+            if (genreId) params.set('with_genres', genreId)
           }
         }
 
-
-        // 2. Fetch Torrentio / Cinemeta Catalog (External Source #2)
-        const fetchTorrentio = async (): Promise<Movie[]> => {
-          try {
-            const url = queryStr
-              ? `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(queryStr)}.json`
-              : `https://cinemeta-catalogs.strem.io/top/catalog/movie/top.json`
-
-            const response = await fetch(url)
-            if (!response.ok) return await fetchYtsPopular()
-
-            const data = await response.json()
-            const metas: CinemetaRawMovie[] = data?.metas || []
-            if (metas.length === 0) return await fetchYtsPopular()
-
-            const currentYear = new Date().getFullYear()
-            let filtered = metas.filter((m: CinemetaRawMovie) => {
-              const y = parseInt(String(m.year)) || 0
-              return y > 0 && y <= currentYear
-            })
-
-            if (selectedGenre) {
-              filtered = filtered.filter((m: CinemetaRawMovie) =>
-                m.genres?.some(g => g.toLowerCase().includes(selectedGenre.toLowerCase()))
-              )
-            }
-
-            return filtered.map((m: CinemetaRawMovie) => {
-              const numRating = Number(m.imdbRating) || 0
-              return {
-                id: `torrentio-${m.imdb_id || m.id || m.name}`,
-                title: m.name || m.title || '',
-                genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-                year: m.year || 'N/A',
-                rating: Math.min(10, Math.max(0, numRating)),
-                image: m.poster || '',
-                source: 'Torrentio'
-              }
-            }).filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
-          } catch {
-            return await fetchYtsPopular()
-          }
+        const response = await fetch(`https://api.themoviedb.org/3/${endpoint}?${params.toString()}`)
+        if (!response.ok) {
+          throw new Error(`TMDb returned ${response.status}`)
         }
 
-        // 3. Fallback Source: YTS Popular list
-        const fetchYtsPopular = async (): Promise<Movie[]> => {
-          try {
-            const params = new URLSearchParams()
-            params.append('limit', '20')
-            params.append('page', page.toString())
-            params.append('sort_by', 'download_count')
-            if (queryStr) params.append('query_term', queryStr)
-            if (selectedGenre) params.append('genre', selectedGenre)
-
-            const ytsFallbackUrl = `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`
-            const res = await fetch(ytsFallbackUrl)
-            if (!res.ok) return []
-
-            const ytsData = await res.json()
-            if (!ytsData?.data?.movies) return []
-
-            return ytsData.data.movies.map((m: YtsRawMovie) => ({
-              id: `yts-popular-${m.id}`,
-              title: m.title,
-              genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-              year: m.year,
-              rating: m.rating || 0,
-              image: m.medium_cover_image || '',
-              source: 'YTS Popular'
-            }))
-          } catch {
-            return []
-          }
-        }
-
-        // Execute both external video sources in parallel (YTS + Torrentio)
-        const [ytsResult, torrentioResult] = await Promise.allSettled([
-          fetchYts(),
-          fetchTorrentio()
-        ])
-
-        const ytsList = ytsResult.status === 'fulfilled' ? ytsResult.value : []
-        const torrentioList = torrentioResult.status === 'fulfilled' ? torrentioResult.value : []
-
-        // Interleave & merge both sources for balanced presentation
-        const merged: Movie[] = []
-        const maxLen = Math.max(ytsList.length, torrentioList.length)
-        for (let i = 0; i < maxLen; i++) {
-          if (i < ytsList.length) merged.push(ytsList[i])
-          if (i < torrentioList.length) merged.push(torrentioList[i])
-        }
-
-        // Deduplicate movies by normalized title
-        const seenTitles = new Set<string>()
-        const fetchedMovies: Movie[] = []
-        for (const movie of merged) {
-          const normTitle = movie.title.toLowerCase().trim()
-          if (!seenTitles.has(normTitle)) {
-            seenTitles.add(normTitle)
-            fetchedMovies.push(movie)
-          }
-        }
+        const data = await response.json() as TmdbMovieResponse
+        const fetchedMovies: Movie[] = (data.results || []).map(movie => ({
+          id: movie.id.toString(),
+          title: movie.title || movie.original_title || 'Untitled',
+          genre: movie.genre_ids
+            ?.map(genreId => TMDB_GENRES[genreId])
+            .filter((genre): genre is string => Boolean(genre))
+            .join(', ') || 'Movie',
+          year: movie.release_date?.slice(0, 4) || 'N/A',
+          rating: movie.vote_average || 0,
+          image: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : '',
+          source: 'TMDb'
+        }))
 
         if (isMounted) {
           if (page === 1) {
@@ -445,14 +367,10 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
             })
           }
 
-          if (fetchedMovies.length === 0) {
-            setHasMore(false)
-          } else {
-            setHasMore(true)
-          }
+          setHasMore(data.page < data.total_pages)
         }
       } catch (err) {
-        console.error("Fetch external video sources error:", err)
+        console.error('TMDb catalog fetch error:', err)
         if (isMounted) {
           setError(true)
         }
@@ -469,7 +387,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
     return () => {
       isMounted = false
     }
-  }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page])
+  }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page, lang])
 
   // Set up IntersectionObserver for infinite scrolling
   useEffect(() => {
@@ -831,7 +749,8 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
         <MovieDetailsModal 
           movie={selectedMovie} 
           onClose={() => setSelectedMovie(null)} 
-          t={t} 
+          t={t}
+          lang={lang}
         />
       )}
     </div>
