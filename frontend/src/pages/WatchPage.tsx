@@ -18,8 +18,9 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
 
   const [movie, setMovie] = useState<Movie | null>(() => {
     // If movie passed via location state from MovieDetailsModal
-    if (location.state && (location.state as any).movie) {
-      return (location.state as any).movie as Movie
+    const state = location.state as { movie?: Movie } | null
+    if (state?.movie) {
+      return state.movie
     }
     return null
   })
