@@ -39,7 +39,7 @@ interface MovieCardProps {
   isWatched: boolean
   onToggleWatch: (movieId: string, e: React.MouseEvent) => void
   onSelectMovie: (movie: Movie) => void
-  t: TranslationType['dashboard']
+t: TranslationType['dashboard']
 }
 
 interface DashboardMoviesProps {
