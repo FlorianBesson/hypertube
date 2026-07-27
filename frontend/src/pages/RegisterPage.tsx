@@ -111,7 +111,7 @@ export default function RegisterPage({
       lang={lang}
       backgroundType="auth"
     >
-      <div className="w-full max-w-sm flex flex-col gap-5">
+      <div className="w-full max-w-sm flex flex-col gap-5 my-auto">
 
         {/* Titre */}
         <div className="flex flex-col gap-1 text-center">
