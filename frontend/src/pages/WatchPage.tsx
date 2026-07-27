@@ -97,6 +97,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
             onToggleCollapse={() => setIsCommentsCollapsed(!isCommentsCollapsed)}
             t={t}
             user={user}
+            imdbId={id || movie?.id}
           />
         </>
       )}
