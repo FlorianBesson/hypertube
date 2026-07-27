@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -25,4 +23,27 @@ model User {
   lastLogin            DateTime?
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
+  comments             Comment[]
 } 
+
+model Movie {
+  id            Int      @id @default(autoincrement())
+  imdbId        String   @unique
+  hash          String?
+  filePath      String?
+  fileSize      BigInt?
+  isCompleted   Boolean  @default(false)
+  lastWatchedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  imdbId    String
+  content   String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([imdbId])
+}
