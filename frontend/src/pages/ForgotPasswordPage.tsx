@@ -60,7 +60,7 @@ export default function ForgotPasswordPage({
       lang={lang}
       backgroundType="auth"
     >
-      <div className="w-full max-w-sm flex flex-col gap-5">
+      <div className="w-full max-w-sm flex flex-col gap-5 my-auto">
         <div className="flex flex-col gap-2 text-center">
           <h1 className="text-3xl font-bold">{t.forgotPasswordTitle}</h1>
           <p className="text-neutral-400 text-sm px-4">
