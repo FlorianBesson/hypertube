@@ -4,10 +4,11 @@ import { prisma } from './prisma';
 import { HttpError } from './errors';
 import { checkDbConnection } from './db/utils';
 
-// Import router modules for authentication and profile management
+// Import router modules for authentication, profile management, and movies
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import usersRoutes from './routes/users';
+import movieRoutes from './routes/movies';
 
 const PORT = 3000;
 export const app: Application = express();
@@ -22,6 +23,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/movies', movieRoutes);
 
 /**
  * Health check endpoint for testing database connectivity.
