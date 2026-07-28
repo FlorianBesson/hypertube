@@ -23,6 +23,7 @@ model User {
   lastLogin            DateTime?
   resetPasswordToken   String?
   resetPasswordExpires DateTime?
+  preferredLanguage    String    @default("en")
   comments             Comment[]
 } 
 
