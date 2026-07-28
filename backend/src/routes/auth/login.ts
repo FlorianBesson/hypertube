@@ -142,8 +142,6 @@ router.get("/42", (req: Request, res: Response) => {
     const clientId = process.env.FORTYTWO_CLIENT_ID || '' ;
     const uriRedirect = process.env.FORTYTWO_REDIRECT_URI || '' ;
 
-    console.log("GET /api/auth/42 - Redirecting user to 42 Intra. Client ID:", clientId, "Redirect URI:", uriRedirect);
-
     const url = new URL("https://api.intra.42.fr/oauth/authorize");
     url.searchParams.append("client_id", clientId);
     url.searchParams.append("redirect_uri", uriRedirect);
@@ -156,7 +154,6 @@ router.get("/42", (req: Request, res: Response) => {
 router.post("/42", async (req: Request, res: Response) => {
     try {
         const { code } = req.body;
-        console.log("POST /api/auth/42 - Received code from frontend:", code);
 
         if (!code) {
             console.error("POST /api/auth/42 - Missing authorization code");
@@ -165,7 +162,6 @@ router.post("/42", async (req: Request, res: Response) => {
         }
 
         // 1. Exchange authorization code for access token
-        console.log("POST /api/auth/42 - Exchanging code for access token...");
         const tokenResponse = await fetch("https://api.intra.42.fr/oauth/token", {
             method: "POST",
             headers: {
@@ -189,10 +185,8 @@ router.post("/42", async (req: Request, res: Response) => {
         }
 
         const accessToken = tokenData.access_token;
-        console.log("POST /api/auth/42 - Access token successfully retrieved");
 
         // 2. Fetch user information from 42 API
-        console.log("POST /api/auth/42 - Fetching user profile from 42 /v2/me...");
         const userResponse = await fetch("https://api.intra.42.fr/v2/me", {
             headers: {
                 "Authorization": `Bearer ${accessToken}`
@@ -211,7 +205,6 @@ router.post("/42", async (req: Request, res: Response) => {
         const firstName = userData.first_name || userData.displayname || userData.login;
         const lastName = userData.last_name || '';
         const photoUrl = userData.image?.link || userData.image?.versions?.medium || null;
-        console.log("POST /api/auth/42 - 42 profile fetched. Email:", email);
 
         if (!email) {
             console.error("POST /api/auth/42 - Email field is missing in 42 profile response");

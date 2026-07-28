@@ -27,3 +27,4 @@ dist-ssr
 .claude
 
 backend/uploads/avatars
+backend/torrent-stream/

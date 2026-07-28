@@ -8,6 +8,7 @@ import { checkDbConnection } from './db/utils';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import usersRoutes from './routes/users';
+import torrentRoutes from './routes/torrent'
 import movieRoutes from './routes/movies';
 
 import { initCronJobs } from './services/cron_cleanup';
@@ -25,6 +26,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/torrent', torrentRoutes)
 app.use('/api/movies', movieRoutes);
 
 /**
@@ -48,8 +50,9 @@ app.get('/api/ping', (req: Request, res: Response) => {
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV === 'dev')
-        console.log(err)
+    if (process.env.NODE_ENV === 'dev') {
+        console.error(err);
+    }
     
     if (err instanceof HttpError) {
         return res.status(err.status).json({ success: false, message: err.message });
@@ -59,7 +62,6 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 // Start the Express HTTP listener
 app.listen(PORT, async () => {
-    console.log(`Server running at http://localhost:${PORT}`);        
     await checkDbConnection();
     initCronJobs();
 });
