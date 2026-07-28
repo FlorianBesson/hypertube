@@ -91,7 +91,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
         onError={(e) => {
           console.error('Video stream error:', e)
           setIsBuffering(false)
-          setStreamError(t.errorLoadingMovies || 'Erreur lors du chargement de la vidéo.')
+          setStreamError(t.errorLoadingVideo)
         }}
         onTimeUpdate={() => {
           if (videoRef.current) {

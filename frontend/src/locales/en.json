@@ -171,6 +171,7 @@
     "torrentSpeed": "Streaming BitTorrent: 3.4 MB/s (28 seeds)",
     "noComments": "No comments yet. Be the first to share your thoughts!",
     "movieNotFound": "Movie not found",
-    "quality": "1080p Web-DL"
+    "quality": "1080p Web-DL",
+    "errorLoadingVideo": "Error loading video stream."
   }
 }
