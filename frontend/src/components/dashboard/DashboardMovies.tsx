@@ -230,6 +230,19 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
   )
 }
 
+// Testing function to search for torrents on a given movie
+async function searchTorrents(movie: Movie) {
+    console.log("started torrents search for : ", movie)
+
+    const response = await fetch("/api/torrent/search", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({title: movie.title})
+    })
+    const resData = await response.json()
+    console.log(resData)
+}
+
 export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
@@ -260,7 +273,12 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     }
   })
 
-  const observerTarget = useRef<HTMLDivElement>(null)
+    if (selectedMovie)
+    {
+        searchTorrents(selectedMovie)
+    }
+
+    const observerTarget = useRef<HTMLDivElement>(null)
 
   // Debounce search input and set search-related page/sort values inside the async callback
   useEffect(() => {

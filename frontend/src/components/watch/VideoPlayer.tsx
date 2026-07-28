@@ -17,26 +17,30 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const [volume, setVolume] = useState(80)
 
 
+
+    
     async function startTorrentDownload() {
-        console.log(`start torrent download for movie: `, movie)
+        
+        
+        // console.log(`start torrent download for movie: `, movie)
 
-        if (!movie?.torrents?.length) {
-            console.warn('No torrent source is attached to this TMDb movie yet')
-            return
-        }
+        // if (!movie?.torrents?.length) {
+        //     console.warn('No torrent source is attached to this TMDb movie yet')
+        //     return
+        // }
 
-        const response = await fetch("/api/torrent", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({torrents: movie.torrents})
-        })
-        const resData = await response.json()
-        console.log(resData)
+        // const response = await fetch("/api/torrent/download", {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({torrents: movie.torrents})
+        // })
+        // const resData = await response.json()
+        // console.log(resData)
     }
     
     const togglePlay = () => {
         setIsPlaying(!isPlaying)
-        startTorrentDownload()
+        // startTorrentDownload()
   }
 
   const toggleMute = () => {

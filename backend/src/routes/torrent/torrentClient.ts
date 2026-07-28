@@ -73,3 +73,33 @@ export async function torrentHandler(req: Request, res: Response) {
     
     res.json({success: true, message: "Torrent download started !"})
 }
+
+export async function searchTorrents(req: Request, res: Response) {
+    const apiKey = process.env.JACKETT_API_KEY;
+    const jackettUrl = process.env.JACKETT_URL ?? "http://jackett:9117";
+
+    if (!apiKey)
+        throw new Error("Missing Jackett API KEY")
+
+    const movieTitle = req.body.title
+    console.log(movieTitle)
+    const query = movieTitle || "avengers"
+
+    
+    const endpoint = new URL("/api/v2.0/indexers/all/results/torznab/api", jackettUrl);
+    endpoint.searchParams.set("apikey", apiKey);
+    endpoint.searchParams.set("t", "movie");
+    endpoint.searchParams.set("cat", "2000");
+    endpoint.searchParams.set("q", query);
+    // endpoint.searchParams.set("imdbid", "tt1254207")
+
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(`Jackett a répondu HTTP ${response.status}`);
+    }
+  
+    const xml = await response.text();
+    console.log(xml)
+    
+    res.json({success: true, message: "Torrent search working !"})
+}
