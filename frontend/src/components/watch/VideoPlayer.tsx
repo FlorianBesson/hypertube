@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
 import type { Movie } from '../dashboard/DashboardMovies'
@@ -9,24 +9,138 @@ interface VideoPlayerProps {
   t: TranslationType['watch']
 }
 
+function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return '00:00'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
+
+  if (h > 0) {
+    return `${pad(h)}:${pad(m)}:${pad(s)}`
+  }
+  return `${pad(m)}:${pad(s)}`
+}
+
 export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const navigate = useNavigate()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
-  const [progress, setProgress] = useState(24) // Mock progress percentage
   const [volume, setVolume] = useState(80)
+  const [progress, setProgress] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [isBuffering, setIsBuffering] = useState(true)
+  const [streamError, setStreamError] = useState<string | null>(null)
+
+  // Construct backend video stream URL based on torrent hash or movie info
+  const torrentHash = movie?.torrents?.[0]?.hash || (movie as any)?.hash || movie?.id || 'sample'
+  const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}${movie?.id ? `?imdbId=${encodeURIComponent(movie.id)}` : ''}`
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = volume / 100
+    }
+  }, [volume])
+
   const togglePlay = () => {
-    setIsPlaying(!isPlaying)
+    if (!videoRef.current) return
+    if (isPlaying) {
+      videoRef.current.pause()
+    } else {
+      videoRef.current.play().catch((err) => {
+        console.error('Play error:', err)
+      })
+    }
   }
 
   const toggleMute = () => {
+    if (!videoRef.current) return
+    videoRef.current.muted = !isMuted
     setIsMuted(!isMuted)
+  }
+
+  const handleSeek = (posPercentage: number) => {
+    if (!videoRef.current || !duration) return
+    const newTime = (posPercentage / 100) * duration
+    videoRef.current.currentTime = newTime
+    setCurrentTime(newTime)
+    setProgress(posPercentage)
   }
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-between group">
-      {/* Fake Video Canvas (Solid Gray) */}
-      <div className="absolute inset-0 z-0 bg-neutral-900" />
+      {/* HTML5 Video Element connected to torrent stream API */}
+      <video
+        ref={videoRef}
+        src={streamUrl}
+        className="absolute inset-0 z-0 w-full h-full object-contain bg-black"
+        playsInline
+        autoPlay
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => {
+          setIsBuffering(false)
+          setStreamError(null)
+        }}
+        onCanPlay={() => setIsBuffering(false)}
+        onError={(e) => {
+          console.error('Video stream error:', e)
+          setIsBuffering(false)
+          setStreamError(t.errorLoadingMovies || 'Erreur lors du chargement de la vidéo.')
+        }}
+        onTimeUpdate={() => {
+          if (videoRef.current) {
+            const cur = videoRef.current.currentTime
+            const dur = videoRef.current.duration || 0
+            setCurrentTime(cur)
+            setDuration(dur)
+            if (dur > 0) {
+              setProgress((cur / dur) * 100)
+            }
+          }
+        }}
+        onLoadedMetadata={() => {
+          if (videoRef.current) {
+            setDuration(videoRef.current.duration || 0)
+            setIsBuffering(false)
+          }
+        }}
+      />
+
+      {/* Buffering Spinner / Overlay */}
+      {isBuffering && !streamError && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs pointer-events-none">
+          <Loader2 className="w-12 h-12 text-red-600 animate-spin mb-3" />
+          <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
+            Bufferisation du flux vidéo...
+          </span>
+        </div>
+      )}
+
+      {/* Error Overlay */}
+      {streamError && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 p-6 text-center">
+          <p className="text-red-500 font-semibold text-sm mb-4">{streamError}</p>
+          <button
+            onClick={() => {
+              setStreamError(null)
+              setIsBuffering(true)
+              if (videoRef.current) {
+                videoRef.current.load()
+                videoRef.current.play().catch(() => {})
+              }
+            }}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full text-xs font-bold transition-all"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {/* Top Floating Overlay (Header over video) */}
       <div className="relative z-10 p-4 sm:p-6 pr-16 sm:pr-20 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-black/80 via-black/40 to-transparent">
@@ -53,7 +167,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect()
             const pos = (e.clientX - rect.left) / rect.width
-            setProgress(Math.round(pos * 100))
+            handleSeek(pos * 100)
           }}
         >
           <div
@@ -84,15 +198,20 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
                 max="100"
                 value={isMuted ? 0 : volume}
                 onChange={(e) => {
-                  setVolume(Number(e.target.value))
-                  if (isMuted) setIsMuted(false)
+                  const newVol = Number(e.target.value)
+                  setVolume(newVol)
+                  if (videoRef.current) {
+                    videoRef.current.volume = newVol / 100
+                    videoRef.current.muted = newVol === 0
+                  }
+                  if (isMuted && newVol > 0) setIsMuted(false)
                 }}
                 className="w-20 h-1.5 accent-red-600 bg-white/20 rounded cursor-pointer"
               />
             </div>
 
             <span className="text-neutral-400 font-mono text-xs">
-              {Math.floor((progress * 120) / 100)}:15 / 120:00
+              {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
 
@@ -123,3 +242,4 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
     </div>
   )
 }
+

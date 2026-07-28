@@ -62,7 +62,7 @@ export async function torrentHandler(req: Request, res: Response) {
     engine.on('ready', () => {
         console.log("Torrent Metadata : ")
         
-        engine.files.forEach((file) => {
+        engine.files.forEach((file: any) => {
             console.log({
                 filename: file.name,
                 path: file.path,
