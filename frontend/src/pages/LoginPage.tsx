@@ -8,6 +8,7 @@ import AuthHeader from '../components/ui/AuthHeader'
 import Header from '../components/layout/Header'
 import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
+import { updateFormField } from '../utils/form'
 import type { LoggedUser } from '../App'
 
 interface LoginForm {
@@ -106,12 +107,7 @@ export default function LoginPage({
             disabled={loading}
             error={errors.username}
             variant="login"
-            onChange={e => {
-              setForm(f => ({ ...f, username: e.target.value }))
-              if (errors.username || errors.global) {
-                setErrors(errs => ({ ...errs, username: undefined, global: undefined }))
-              }
-            }}
+            onChange={e => updateFormField('username', e.target.value, setForm, setErrors)}
           />
 
           {/* Password */}
@@ -124,12 +120,7 @@ export default function LoginPage({
             disabled={loading}
             error={errors.password}
             variant="login"
-            onChange={e => {
-              setForm(f => ({ ...f, password: e.target.value }))
-              if (errors.password || errors.global) {
-                setErrors(errs => ({ ...errs, password: undefined, global: undefined }))
-              }
-            }}
+            onChange={e => updateFormField('password', e.target.value, setForm, setErrors)}
             rightElement={
               <button
                 type="button"
