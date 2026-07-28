@@ -28,54 +28,50 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
   const [isCommentsCollapsed, setIsCommentsCollapsed] = useState(true)
   const [isLoading, setIsLoading] = useState(!movie)
 
-  // Fetch movie details if accessed directly by URL
+  // Recover the Internet Archive item if the page is opened directly by URL.
   useEffect(() => {
     if (movie || !id) return
 
     const fetchMovieFallback = async () => {
       setIsLoading(true)
       try {
-        const apiKey = import.meta.env.VITE_TMDB_API_KEY
-        if (apiKey) {
-          const res = await fetch(
-            `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=${lang}`
-          )
-          if (res.ok) {
-            const data = await res.json()
-            setMovie({
-              id: data.id.toString(),
-              title: data.title || data.original_title,
-              genre: data.genres?.[0]?.name || 'Film',
-              year: data.release_date ? data.release_date.split('-')[0] : '2024',
-              rating: data.vote_average || 7.5,
-              image: data.poster_path
-                ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
-                : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80',
-              source: 'TMDB'
-            })
-            setIsLoading(false)
-            return
-          }
+        const response = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`)
+        if (!response.ok) {
+          throw new Error(`Internet Archive returned ${response.status}`)
         }
-        // Fallback default mock movie object
+
+        const data = await response.json()
+        const metadata = data.metadata || {}
+        const text = (value: unknown): string => {
+          const values = Array.isArray(value) ? value : value == null ? [] : [value]
+          return values.map(String).join(', ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        }
+        const date = text(metadata.year) || text(metadata.date)
+        const year = date.match(/\b(?:18|19|20)\d{2}\b/)?.[0] || 'N/A'
+
         setMovie({
-          id: id,
-          title: `Film #${id}`,
-          genre: 'Action',
-          year: 2024,
-          rating: 8.2,
-          image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=80',
-          source: 'BitTorrent'
+          id,
+          title: text(metadata.title) || id,
+          genre: text(metadata.subject) || 'Movie',
+          year,
+          rating: Math.min(10, Math.max(0, Number(metadata.avg_rating || 0) * 2)),
+          image: `https://archive.org/services/img/${encodeURIComponent(id)}`,
+          source: 'Internet Archive',
+          description: text(metadata.description),
+          creator: text(metadata.creator),
+          language: text(metadata.language),
+          torrentUrl: `https://archive.org/download/${encodeURIComponent(id)}/${encodeURIComponent(id)}_archive.torrent`,
+          detailsUrl: `https://archive.org/details/${encodeURIComponent(id)}`
         })
       } catch (err) {
-        console.error('Error fetching movie details for watch page:', err)
+        console.error('Error fetching Internet Archive item:', err)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchMovieFallback()
-  }, [id, movie, lang])
+  }, [id, movie])
 
   return (
     <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden relative">

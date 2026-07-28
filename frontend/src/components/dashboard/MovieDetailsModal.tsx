@@ -8,30 +8,10 @@ interface MovieDetailsProps {
     movie: Movie
     onClose: () => void
     t: TranslationType['dashboard']
-    lang: 'en' | 'fr'
 }
 
-interface TmdbCrewMember {
-    job?: string
-    name?: string
-}
-
-interface TmdbCastMember {
-    name?: string
-}
-
-interface TmdbDetails {
-    overview?: string
-    runtime?: number
-    backdrop_path?: string
-    director?: string
-    cast?: string[]
-}
-
-export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDetailsProps) {
+export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsProps) {
     const navigate = useNavigate()
-    const [details, setDetails] = useState<TmdbDetails | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
     const [imageError, setImageError] = useState(false)
 
     const posterUrl = movie.image
@@ -58,68 +38,6 @@ export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDeta
         }
 
     }, [onClose])
-
-    useEffect(() => {
-        const fetchMovieDetails = async () => {
-            setIsLoading(true)
-            try {
-                const apiKey = import.meta.env.VITE_TMDB_API_KEY
-                if (!apiKey) {
-                    throw new Error('VITE_TMDB_API_KEY is not configured')
-                }
-
-                const language = lang === 'fr' ? 'fr-FR' : 'en-US'
-                const params = new URLSearchParams({
-                    api_key: apiKey,
-                    language,
-                    append_to_response: 'credits'
-                })
-                const response = await fetch(
-                    `https://api.themoviedb.org/3/movie/${movie.id}?${params.toString()}`
-                )
-                if (!response.ok) {
-                    throw new Error(`TMDb returned ${response.status}`)
-                }
-
-                const data = await response.json()
-                const director = data.credits?.crew?.find(
-                    (member: TmdbCrewMember) => member.job === 'Director'
-                )
-                const cast = data.credits?.cast
-                    ?.slice(0, 5)
-                    .map((member: TmdbCastMember) => member.name || '') || []
-
-                setDetails({
-                    overview: data.overview || 'Aucun synopsis disponible.',
-                    runtime: data.runtime || 0,
-                    backdrop_path: data.backdrop_path
-                        ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}`
-                        : undefined,
-                    director: director?.name || 'Inconnu',
-                    cast
-                })
-            } catch (err) {
-                console.error('Erreur lors de la récupération des détails TMDb :', err)
-                setDetails({
-                    overview: 'Aucune information détaillée disponible pour ce film.',
-                    director: 'Inconnu',
-                    cast: []
-                })
-            } finally {
-                setIsLoading(false)
-            }
-        }
-
-        fetchMovieDetails()
-    }, [movie, lang])
-
-    // Helper pour formater la durée (ex: 124 min -> 2h 04m)
-    const formatRuntime = (minutes?: number) => {
-        if (!minutes || minutes === 0) return 'Durée inconnue'
-        const h = Math.floor(minutes / 60)
-        const m = minutes % 60
-        return `${h}h ${m < 10 ? '0' : ''}${m}m`
-    }
 
     return createPortal(
         <div 
@@ -175,36 +93,38 @@ export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDeta
                             {/* Badges Année, Durée, Note */}
                             <div className="flex flex-wrap items-center gap-4 mt-2 text-xs font-semibold text-neutral-400">
                                 <span>{movie.year}</span>
-                                <span>•</span>
-                                <span>{formatRuntime(details?.runtime)}</span>
-                                <span>•</span>
+                                {movie.downloads !== undefined && (
+                                    <>
+                                        <span>•</span>
+                                        <span>{movie.downloads.toLocaleString()} téléchargements</span>
+                                    </>
+                                )}
+                                {movie.rating > 0 && <span>•</span>}
+                                {movie.rating > 0 && (
                                 <span className="flex items-center gap-1 text-amber-400 font-bold">
                                     ★ {movie.rating.toFixed(1)} / 10
                                 </span>
+                                )}
                             </div>
                         </div>
 
                         {/* Synopsis */}
                         <div>
-                            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Synopsis</h3>
-                            {isLoading ? (
-                                <div className="h-16 bg-neutral-800/40 rounded animate-pulse" />
-                            ) : (
-                                <p className="text-sm text-neutral-300 leading-relaxed">{details?.overview}</p>
-                            )}
+                            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Description</h3>
+                            <p className="text-sm text-neutral-300 leading-relaxed">
+                                {movie.description || 'Aucune description disponible.'}
+                            </p>
                         </div>
 
-                        {/* Casting & Réalisateur */}
+                        {/* Internet Archive metadata */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10 text-xs">
                             <div>
-                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">Réalisateur</span>
-                                <span className="text-white font-medium">{isLoading ? "..." : details?.director}</span>
+                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">Créateur</span>
+                                <span className="text-white font-medium">{movie.creator || 'Non renseigné'}</span>
                             </div>
                             <div>
-                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">Casting principal</span>
-                                <span className="text-white font-medium">
-                                    {isLoading ? "..." : details?.cast && details.cast.length > 0 ? details.cast.join(', ') : "Non renseigné"}
-                                </span>
+                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">Langue</span>
+                                <span className="text-white font-medium">{movie.language || 'Non renseignée'}</span>
                             </div>
                         </div>
 

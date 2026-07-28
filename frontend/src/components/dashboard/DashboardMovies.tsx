@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { TranslationType } from '../../locales/translations'
 import MovieDetailsModal from './MovieDetailsModal'
+import { enrichInternetArchiveMoviesWithTmdb } from './internetArchiveTmdb'
 
 export interface Movie {
   id: string
@@ -11,6 +12,13 @@ export interface Movie {
   image: string
   source?: string
   torrents?: Torrent[]
+  description?: string
+  creator?: string
+  language?: string
+  downloads?: number
+  torrentUrl?: string
+  detailsUrl?: string
+  tmdbId?: number
 }
 
 export interface Torrent {
@@ -30,44 +38,61 @@ export interface Torrent {
   date_uploaded_unix?: number
 }
 
-interface TmdbRawMovie {
-  id: number
-  title?: string
-  original_title?: string
-  genre_ids?: number[]
-  release_date?: string
-  vote_average?: number
-  poster_path?: string | null
+type ArchiveMetadataValue = string | number | Array<string | number>
+
+interface InternetArchiveRawMovie {
+  identifier: string
+  title?: ArchiveMetadataValue
+  description?: ArchiveMetadataValue
+  creator?: ArchiveMetadataValue
+  date?: ArchiveMetadataValue
+  year?: ArchiveMetadataValue
+  subject?: ArchiveMetadataValue
+  language?: ArchiveMetadataValue
+  downloads?: number
+  avg_rating?: number
 }
 
-interface TmdbMovieResponse {
-  page: number
-  total_pages: number
-  results?: TmdbRawMovie[]
+interface InternetArchiveSearchResponse {
+  response?: {
+    numFound?: number
+    start?: number
+    docs?: InternetArchiveRawMovie[]
+  }
 }
 
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'
+const INTERNET_ARCHIVE_PAGE_SIZE = 20
+const INTERNET_ARCHIVE_BASE_QUERY = [
+  'collection:feature_films',
+  'mediatype:movies',
+  'format:"Archive BitTorrent"'
+]
 
-const TMDB_GENRES: Record<number, string> = {
-  28: 'Action',
-  12: 'Adventure',
-  16: 'Animation',
-  35: 'Comedy',
-  80: 'Crime',
-  99: 'Documentary',
-  18: 'Drama',
-  10751: 'Family',
-  14: 'Fantasy',
-  36: 'History',
-  27: 'Horror',
-  10402: 'Music',
-  9648: 'Mystery',
-  10749: 'Romance',
-  878: 'Sci-Fi',
-  10770: 'TV Movie',
-  53: 'Thriller',
-  10752: 'War',
-  37: 'Western'
+function metadataValues(value?: ArchiveMetadataValue): string[] {
+  if (value === undefined || value === null) return []
+  return (Array.isArray(value) ? value : [value])
+    .map(item => String(item).trim())
+    .filter(Boolean)
+}
+
+function metadataText(value?: ArchiveMetadataValue): string {
+  return metadataValues(value)
+    .join(', ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function metadataYear(movie: InternetArchiveRawMovie): string | number {
+  const explicitYear = metadataValues(movie.year)[0]
+  if (explicitYear) return explicitYear
+
+  const date = metadataValues(movie.date)[0]
+  return date?.match(/\b(?:18|19|20)\d{2}\b/)?.[0] || 'N/A'
+}
+
+function escapeInternetArchiveQuery(value: string): string {
+  return value.replace(/([+\-!(){}[\]^"~*?:\\/]|&&|\|\|)/g, '\\$1')
 }
 
 interface MovieCardProps {
@@ -213,34 +238,25 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
         </h3>
         <div className="flex items-center justify-between mt-1 text-[11px] text-neutral-400 font-medium">
           <span>{movie.year}</span>
-          <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              className="w-3.5 h-3.5 text-amber-500"
-            >
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>
-            {movie.rating.toFixed(1)}
-          </span>
+          {movie.rating > 0 ? (
+            <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                className="w-3.5 h-3.5 text-amber-500"
+              >
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
+              {movie.rating.toFixed(1)}
+            </span>
+          ) : (
+            <span>{(movie.downloads || 0).toLocaleString()} téléchargements</span>
+          )}
         </div>
       </div>
     </div>
   )
-}
-
-// Testing function to search for torrents on a given movie
-async function searchTorrents(movie: Movie) {
-    console.log("started torrents search for : ", movie)
-
-    const response = await fetch("/api/torrent/search", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({title: movie.title})
-    })
-    const resData = await response.json()
-    console.log(resData)
 }
 
 export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
@@ -273,12 +289,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     }
   })
 
-    if (selectedMovie)
-    {
-        searchTorrents(selectedMovie)
-    }
-
-    const observerTarget = useRef<HTMLDivElement>(null)
+  const observerTarget = useRef<HTMLDivElement>(null)
 
   // Debounce search input and set search-related page/sort values inside the async callback
   useEffect(() => {
@@ -302,9 +313,10 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     }
   }, [searchQuery])
 
-  // Fetch thumbnails exclusively from TMDb.
+  // Fetch the movie catalogue from Internet Archive's Advanced Search API.
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
 
     const fetchVideos = async () => {
       if (page === 1) {
@@ -315,64 +327,80 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
       setError(false)
 
       try {
-        const apiKey = import.meta.env.VITE_TMDB_API_KEY
-        if (!apiKey) {
-          throw new Error('VITE_TMDB_API_KEY is not configured')
-        }
-
         const queryStr = debouncedQuery.trim()
-        const language = lang === 'fr' ? 'fr-FR' : 'en-US'
-        const params = new URLSearchParams({
-          api_key: apiKey,
-          language,
-          page: page.toString(),
-          include_adult: 'false'
-        })
+        const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
 
-        let endpoint = 'discover/movie'
         if (queryStr) {
-          endpoint = 'search/movie'
-          params.set('query', queryStr)
-        } else {
-          const sortField = {
-            download_count: 'popularity',
-            title: 'original_title',
-            year: 'primary_release_date',
-            rating: 'vote_average'
-          }[sortBy]
-
-          params.set('sort_by', `${sortField}.${order}`)
-          params.set('vote_count.gte', '25')
-
-          if (selectedMinRating > 0) {
-            params.set('vote_average.gte', selectedMinRating.toString())
-          }
-
-          if (selectedGenre) {
-            const genreId = Object.entries(TMDB_GENRES)
-              .find(([, name]) => name.toLowerCase() === selectedGenre.toLowerCase())?.[0]
-            if (genreId) params.set('with_genres', genreId)
-          }
+          queryParts.push(`(${escapeInternetArchiveQuery(queryStr)})`)
         }
 
-        const response = await fetch(`https://api.themoviedb.org/3/${endpoint}?${params.toString()}`)
+        if (selectedGenre) {
+          queryParts.push(`subject:"${escapeInternetArchiveQuery(selectedGenre)}"`)
+        }
+
+        if (selectedMinRating > 0) {
+          queryParts.push(`avg_rating:[${selectedMinRating / 2} TO *]`)
+        }
+
+        const sortField = {
+          download_count: 'downloads',
+          title: 'titleSorter',
+          year: 'date',
+          rating: 'avg_rating'
+        }[sortBy]
+
+        const params = new URLSearchParams({
+          q: queryParts.join(' AND '),
+          rows: INTERNET_ARCHIVE_PAGE_SIZE.toString(),
+          page: page.toString(),
+          output: 'json'
+        })
+        params.append('sort[]', `${sortField} ${order}`)
+        const fields = [
+          'identifier',
+          'title',
+          'description',
+          'creator',
+          'date',
+          'year',
+          'subject',
+          'language',
+          'downloads',
+          'avg_rating'
+        ]
+        fields.forEach(field => params.append('fl[]', field))
+
+        const response = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`, {
+          signal: controller.signal
+        })
         if (!response.ok) {
-          throw new Error(`TMDb returned ${response.status}`)
+          throw new Error(`Internet Archive returned ${response.status}`)
         }
 
-        const data = await response.json() as TmdbMovieResponse
-        const fetchedMovies: Movie[] = (data.results || []).map(movie => ({
-          id: movie.id.toString(),
-          title: movie.title || movie.original_title || 'Untitled',
-          genre: movie.genre_ids
-            ?.map(genreId => TMDB_GENRES[genreId])
-            .filter((genre): genre is string => Boolean(genre))
-            .join(', ') || 'Movie',
-          year: movie.release_date?.slice(0, 4) || 'N/A',
-          rating: movie.vote_average || 0,
-          image: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : '',
-          source: 'TMDb'
+        const data = await response.json() as InternetArchiveSearchResponse
+        const docs = data.response?.docs || []
+        const archiveMovies: Movie[] = docs.map(movie => ({
+          id: movie.identifier,
+          title: metadataText(movie.title) || movie.identifier,
+          genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
+          year: metadataYear(movie),
+          // Internet Archive ratings use a five-star scale; normalize to the UI's /10 scale.
+          rating: Math.min(10, Math.max(0, Number(movie.avg_rating || 0) * 2)),
+          image: `https://archive.org/services/img/${encodeURIComponent(movie.identifier)}`,
+          source: 'Internet Archive',
+          description: metadataText(movie.description),
+          creator: metadataText(movie.creator),
+          language: metadataText(movie.language),
+          downloads: Number(movie.downloads || 0),
+          torrentUrl: `https://archive.org/download/${encodeURIComponent(movie.identifier)}/${encodeURIComponent(movie.identifier)}_archive.torrent`,
+          detailsUrl: `https://archive.org/details/${encodeURIComponent(movie.identifier)}`
         }))
+        const fetchedMovies = await enrichInternetArchiveMoviesWithTmdb(archiveMovies, {
+          apiKey: import.meta.env.VITE_TMDB_API_KEY,
+          lang,
+          concurrency: 4,
+          signal: controller.signal
+        })
 
         if (isMounted) {
           if (page === 1) {
@@ -385,10 +413,13 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
             })
           }
 
-          setHasMore(data.page < data.total_pages)
+          const start = data.response?.start || 0
+          const total = data.response?.numFound || 0
+          setHasMore(start + docs.length < Math.min(total, 10_000))
         }
       } catch (err) {
-        console.error('TMDb catalog fetch error:', err)
+        if (controller.signal.aborted) return
+        console.error('Internet Archive catalog fetch error:', err)
         if (isMounted) {
           setError(true)
         }
@@ -404,6 +435,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
 
     return () => {
       isMounted = false
+      controller.abort()
     }
   }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page, lang])
 
@@ -768,7 +800,6 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           movie={selectedMovie} 
           onClose={() => setSelectedMovie(null)} 
           t={t}
-          lang={lang}
         />
       )}
     </div>
