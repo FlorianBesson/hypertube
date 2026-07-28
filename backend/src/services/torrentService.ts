@@ -3,6 +3,7 @@ import fs from 'fs';
 import { prisma } from '../prisma';
 
 const torrentStream = require('torrent-stream');
+const DEFAULT_USER_AGENT = 'Hypertube/1.0 (Node.js Video Streaming)';
 
 export interface TorrentStreamFile {
   name: string;
@@ -106,7 +107,8 @@ class TorrentService {
    * Streams an Internet Archive movie using HTTP 206 Partial Content directly from Archive.org CDN,
    * while triggering background download for local disk caching.
    */
-  public async streamArchiveMovie(identifier: string, rangeHeader: string | undefined, res: any): Promise<void> {
+  public async streamArchiveMovie(identifier: string, rangeHeader: string | undefined, res: any, clientUserAgent?: string): Promise<void> {
+    const activeUserAgent = clientUserAgent || DEFAULT_USER_AGENT;
     const normalized = identifier.toLowerCase();
     const downloadFolder = path.join(this.downloadsBaseDir, normalized);
     if (!fs.existsSync(downloadFolder)) {
@@ -114,7 +116,9 @@ class TorrentService {
     }
 
     // 1. Fetch metadata to find the primary .mp4 file
-    const metaRes = await fetch(`https://archive.org/metadata/${encodeURIComponent(identifier)}`);
+    const metaRes = await fetch(`https://archive.org/metadata/${encodeURIComponent(identifier)}`, {
+      headers: { 'User-Agent': activeUserAgent }
+    });
     if (!metaRes.ok) {
       throw new Error(`Internet Archive item metadata not found: HTTP ${metaRes.status}`);
     }
@@ -161,7 +165,9 @@ class TorrentService {
 
     // 2. Stream directly from Archive.org direct CDN URL following redirects
     const archiveDirectUrl = `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(filename)}`;
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'User-Agent': activeUserAgent,
+    };
     if (rangeHeader) {
       headers['Range'] = rangeHeader;
     }
@@ -205,18 +211,21 @@ class TorrentService {
     }
 
     // Trigger non-blocking background download to local disk
-    this.backgroundDownloadArchiveMovie(identifier, archiveDirectUrl, targetFilePath, mainFile?.size ? BigInt(mainFile.size) : null).catch((err) => {
+    this.backgroundDownloadArchiveMovie(identifier, archiveDirectUrl, targetFilePath, mainFile?.size ? BigInt(mainFile.size) : null, activeUserAgent).catch((err) => {
       console.error(`[TorrentService] Background download error for ${identifier}:`, err);
     });
   }
 
-  private async backgroundDownloadArchiveMovie(identifier: string, directUrl: string, targetPath: string, fileSize: bigint | null): Promise<void> {
+  private async backgroundDownloadArchiveMovie(identifier: string, directUrl: string, targetPath: string, fileSize: bigint | null, userAgent?: string): Promise<void> {
     if (fs.existsSync(targetPath) && fileSize && BigInt(fs.statSync(targetPath).size) >= fileSize) {
       return;
     }
     try {
       console.log(`[TorrentService] Starting background download for IA movie ${identifier}...`);
-      const res = await fetch(directUrl, { redirect: 'follow' });
+      const res = await fetch(directUrl, {
+        headers: { 'User-Agent': userAgent || DEFAULT_USER_AGENT },
+        redirect: 'follow'
+      });
       if (!res.ok || !res.body) return;
 
       const fileStream = fs.createWriteStream(targetPath);

@@ -75,7 +75,8 @@ router.get("/stream/:torrentHash", async (req: Request, res: Response) => {
 
         // 3. Internet Archive instant progressive stream & background disk caching
         if (torrentService.isArchiveIdentifier(torrentHash)) {
-            await torrentService.streamArchiveMovie(torrentHash, req.headers.range, res);
+            const userAgent = req.headers['user-agent'];
+            await torrentService.streamArchiveMovie(torrentHash, req.headers.range, res, userAgent);
             return;
         }
 
