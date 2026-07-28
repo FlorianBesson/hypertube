@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Header from '../components/layout/Header'
@@ -34,6 +35,7 @@ export default function LoginPage({
   const [form, setForm]       = useState<LoginForm>({ username: '', password: '' })
   const [errors, setErrors]   = useState<LoginError>({})
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   function validate(): LoginError {
     const errs: LoginError = {}
@@ -110,20 +112,46 @@ export default function LoginPage({
             disabled={loading}
             error={errors.username}
             variant="login"
-            onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, username: e.target.value }))
+              if (errors.username || errors.global) {
+                setErrors(errs => ({ ...errs, username: undefined, global: undefined }))
+              }
+            }}
           />
 
           {/* Password */}
           <Input
             id="password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder={t.passwordPlaceholder}
             value={form.password}
             disabled={loading}
             error={errors.password}
             variant="login"
-            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, password: e.target.value }))
+              if (errors.password || errors.global) {
+                setErrors(errs => ({ ...errs, password: undefined, global: undefined }))
+              }
+            }}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                className="p-1 text-neutral-400 hover:text-white transition-colors focus:outline-none"
+                title={showPassword ? (lang === 'fr' ? 'Masquer le mot de passe' : 'Hide password') : (lang === 'fr' ? 'Afficher le mot de passe' : 'Show password')}
+                aria-label={showPassword ? (lang === 'fr' ? 'Masquer le mot de passe' : 'Hide password') : (lang === 'fr' ? 'Afficher le mot de passe' : 'Show password')}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            }
           />
           
           <div className="flex justify-end -mt-1 mb-2">

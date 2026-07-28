@@ -4,6 +4,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: React.ReactNode
   error?: string
   variant?: 'login' | 'profile'
+  rightElement?: React.ReactNode
 }
 
 export default function Input({
@@ -13,6 +14,7 @@ export default function Input({
   className = '',
   disabled,
   id,
+  rightElement,
   ...props
 }: InputProps) {
   const isLogin = variant === 'login'
@@ -39,7 +41,19 @@ export default function Input({
           {label}
         </label>
       )}
-      <input id={id} disabled={disabled} className={`${inputClasses} ${className}`} {...props} />
+      <div className="relative flex items-center w-full">
+        <input
+          id={id}
+          disabled={disabled}
+          className={`${inputClasses} ${rightElement ? 'pr-11' : ''} ${className}`}
+          {...props}
+        />
+        {rightElement && (
+          <div className="absolute right-3 flex items-center justify-center">
+            {rightElement}
+          </div>
+        )}
+      </div>
       {error && (
         <span className={`text-xs text-red-400 ${isLogin ? 'px-1' : 'mt-0.5 px-0.5'}`}>{error}</span>
       )}
