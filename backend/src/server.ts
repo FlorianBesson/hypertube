@@ -4,11 +4,14 @@ import { prisma } from './prisma';
 import { HttpError } from './errors';
 import { checkDbConnection } from './db/utils';
 
-// Import router modules for authentication and profile management
+// Import router modules for authentication, profile management, and movies
 import authRoutes from './routes/auth';
 import userRoutes from './routes/user';
 import usersRoutes from './routes/users';
 import torrentRoutes from './routes/torrent'
+import movieRoutes from './routes/movies';
+
+import { initCronJobs } from './services/cron_cleanup';
 
 const PORT = 3000;
 export const app: Application = express();
@@ -24,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/torrent', torrentRoutes)
+app.use('/api/movies', movieRoutes);
 
 /**
  * Health check endpoint for testing database connectivity.
@@ -59,4 +63,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 app.listen(PORT, async () => {
     console.log(`Server running at http://localhost:${PORT}`);        
     await checkDbConnection();
+    initCronJobs();
 });

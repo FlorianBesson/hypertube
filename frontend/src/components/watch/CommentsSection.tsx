@@ -1,15 +1,19 @@
-import { useState } from 'react'
-import { MessageSquare, Send, PanelRightClose, ThumbsUp, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MessageSquare, Send, PanelRightClose, User } from 'lucide-react'
 import type { TranslationType } from '../../locales/translations'
 import type { LoggedUser } from '../../App'
 
-interface Comment {
-  id: string
-  username: string
-  userPhoto?: string
-  text: string
+export interface ApiComment {
+  id: number
+  content: string
   createdAt: string
-  likes: number
+  user: {
+    id: number
+    username: string
+    firstName: string
+    lastName: string
+    photo?: string | null
+  }
 }
 
 interface CommentsSectionProps {
@@ -17,64 +21,82 @@ interface CommentsSectionProps {
   onToggleCollapse: () => void
   t: TranslationType['watch']
   user: LoggedUser | null
+  imdbId?: string
 }
-
-const INITIAL_COMMENTS: Comment[] = [
-  {
-    id: '1',
-    username: 'alex_cinema',
-    userPhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-    text: 'La qualité du débit torrent est excellente ! Pas de buffering.',
-    createdAt: 'Il y a 10 min',
-    likes: 4
-  },
-  {
-    id: '2',
-    username: 'sophie_42',
-    userPhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    text: 'Superbe réalisation et la VF/VOSTFR se synchronise très bien.',
-    createdAt: 'Il y a 25 min',
-    likes: 2
-  },
-  {
-    id: '3',
-    username: 'marvin_hitch',
-    text: 'Un grand classique, je recommande de le regarder avec des écouteurs.',
-    createdAt: 'Il y a 1 heure',
-    likes: 1
-  }
-]
 
 export default function CommentsSection({
   isCollapsed,
   onToggleCollapse,
   t,
-  user
+  user,
+  imdbId = 'default'
 }: CommentsSectionProps) {
-  const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS)
+  const [comments, setComments] = useState<ApiComment[]>([])
   const [newCommentText, setNewCommentText] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newCommentText.trim()) return
+  // Fetch comments from backend API
+  useEffect(() => {
+    if (!imdbId) return
 
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      username: user?.username || 'Anonyme',
-      userPhoto: user?.photo || undefined,
-      text: newCommentText.trim(),
-      createdAt: "À l'instant",
-      likes: 0
+    const fetchComments = async () => {
+      setIsLoading(true)
+      try {
+        const token = localStorage.getItem('token')
+        const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}/comments`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && Array.isArray(data.comments)) {
+            setComments(data.comments)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching comments:', err)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    setComments([newComment, ...comments])
-    setNewCommentText('')
-  }
+    fetchComments()
+  }, [imdbId])
 
-  const handleLike = (commentId: string) => {
-    setComments(prev =>
-      prev.map(c => (c.id === commentId ? { ...c, likes: c.likes + 1 } : c))
-    )
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newCommentText.trim() || isSubmitting) return
+
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: newCommentText.trim() })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.comment) {
+          setComments(prev => [data.comment, ...prev])
+          setNewCommentText('')
+        }
+      } else {
+        const errorData = await res.json()
+        console.error('Failed to post comment:', errorData.message)
+      }
+    } catch (err) {
+      console.error('Error posting comment:', err)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // When collapsed, only render the floating reopen button over the video
@@ -136,18 +158,22 @@ export default function CommentsSection({
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={!newCommentText.trim()}
+            disabled={!newCommentText.trim() || isSubmitting}
             className="bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:hover:bg-red-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
           >
             <Send className="w-3 h-3" />
-            {t.sendButton}
+            {isSubmitting ? '...' : t.sendButton}
           </button>
         </div>
       </form>
 
       {/* Comments List */}
       <div className="flex-1 overflow-y-auto pt-4 space-y-3 pr-1 custom-scrollbar min-h-0">
-        {comments.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <span className="w-6 h-6 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+          </div>
+        ) : comments.length === 0 ? (
           <p className="text-xs text-neutral-500 text-center py-6">{t.noComments}</p>
         ) : (
           comments.map((comment) => (
@@ -157,11 +183,11 @@ export default function CommentsSection({
             >
               {/* Commenter Avatar */}
               <div className="w-7 h-7 rounded-full bg-neutral-800 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center mt-0.5">
-                {comment.userPhoto ? (
-                  <img src={comment.userPhoto} alt={comment.username} className="w-full h-full object-cover" />
+                {comment.user?.photo ? (
+                  <img src={comment.user.photo} alt={comment.user.username} className="w-full h-full object-cover" />
                 ) : (
                   <span className="font-bold text-neutral-400 uppercase text-[10px]">
-                    {comment.username.slice(0, 2)}
+                    {(comment.user?.username || 'AN').slice(0, 2)}
                   </span>
                 )}
               </div>
@@ -169,19 +195,14 @@ export default function CommentsSection({
               {/* Comment Content */}
               <div className="flex-1 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white text-[11px]">{comment.username}</span>
-                  <span className="text-[10px] text-neutral-500">{comment.createdAt}</span>
+                  <span className="font-bold text-white text-[11px]">
+                    {comment.user?.username || 'Utilisateur'}
+                  </span>
+                  <span className="text-[10px] text-neutral-500">
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
-                <p className="text-neutral-300 leading-relaxed text-[11px] font-normal">{comment.text}</p>
-                <div className="flex items-center gap-2 pt-1 text-[10px] text-neutral-400">
-                  <button
-                    onClick={() => handleLike(comment.id)}
-                    className="flex items-center gap-1 hover:text-red-400 transition-colors cursor-pointer"
-                  >
-                    <ThumbsUp className="w-3 h-3" />
-                    <span>{comment.likes}</span>
-                  </button>
-                </div>
+                <p className="text-neutral-300 leading-relaxed text-[11px] font-normal">{comment.content}</p>
               </div>
             </div>
           ))
