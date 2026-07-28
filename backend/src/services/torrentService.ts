@@ -109,13 +109,12 @@ class TorrentService {
    */
   public async streamArchiveMovie(identifier: string, rangeHeader: string | undefined, res: any, clientUserAgent?: string): Promise<void> {
     const activeUserAgent = clientUserAgent || DEFAULT_USER_AGENT;
-    const normalized = identifier.toLowerCase();
-    const downloadFolder = path.join(this.downloadsBaseDir, normalized);
+    const downloadFolder = path.join(this.downloadsBaseDir, identifier.toLowerCase());
     if (!fs.existsSync(downloadFolder)) {
       fs.mkdirSync(downloadFolder, { recursive: true });
     }
 
-    // 1. Fetch metadata to find the primary .mp4 file
+    // 1. Fetch metadata using exact identifier case
     const metaRes = await fetch(`https://archive.org/metadata/${encodeURIComponent(identifier)}`, {
       headers: { 'User-Agent': activeUserAgent }
     });

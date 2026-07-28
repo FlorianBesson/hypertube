@@ -29,7 +29,7 @@ router.get("/stream/:torrentHash", async (req: Request, res: Response) => {
             return;
         }
 
-        const torrentHash = rawTorrentHash.toLowerCase();
+        const torrentHash = torrentService.isArchiveIdentifier(rawTorrentHash) ? rawTorrentHash : rawTorrentHash.toLowerCase();
 
         // 1. Update lastWatchedAt timestamp in DB asynchronously
         torrentService.updateLastWatched(torrentHash, imdbId).catch((err) => {
