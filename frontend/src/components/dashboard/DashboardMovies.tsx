@@ -260,6 +260,19 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
   )
 }
 
+const NON_MOVIE_TITLE_RE = /\b(trailer|teaser|commercial|promo|clip|vhs|raw footage|home video|newsreel|advertisement|test|episode|b-roll)\b/i
+
+function isLikelyMovie(movie: InternetArchiveRawMovie): boolean {
+  const title = metadataText(movie.title)
+  if (!title || title.trim().length < 2) return false
+  if (NON_MOVIE_TITLE_RE.test(title)) return false
+
+  const subject = metadataText(movie.subject)
+  if (/\b(commercials|home movies|promos|newsreels)\b/i.test(subject)) return false
+
+  return true
+}
+
 export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
@@ -350,9 +363,12 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           rating: 'avg_rating'
         }[sortBy]
 
+        // Fetch extra rows to account for non-movies and TMDb filter drops
+        const FETCH_ROWS = 35
+
         const params = new URLSearchParams({
           q: queryParts.join(' AND '),
-          rows: INTERNET_ARCHIVE_PAGE_SIZE.toString(),
+          rows: FETCH_ROWS.toString(),
           page: page.toString(),
           output: 'json'
         })
@@ -378,15 +394,17 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           throw new Error(`Internet Archive returned ${response.status}`)
         }
 
-          const data = await response.json() as InternetArchiveSearchResponse
-          console.log(data)
-        const docs = data.response?.docs || []
+        const data = await response.json() as InternetArchiveSearchResponse
+        const rawDocs = data.response?.docs || []
+
+        // Pre-filter out non-movies (trailers, commercials, home videos, clips)
+        const docs = rawDocs.filter(isLikelyMovie)
+
         const archiveMovies: Movie[] = docs.map(movie => ({
           id: movie.identifier,
           title: metadataText(movie.title) || movie.identifier,
           genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
           year: metadataYear(movie),
-          // Internet Archive ratings use a five-star scale; normalize to the UI's /10 scale.
           rating: Math.min(10, Math.max(0, Number(movie.avg_rating || 0) * 2)),
           image: `https://archive.org/services/img/${encodeURIComponent(movie.identifier)}`,
           source: 'Internet Archive',
@@ -397,12 +415,16 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           torrentUrl: `https://archive.org/download/${encodeURIComponent(movie.identifier)}/${encodeURIComponent(movie.identifier)}_archive.torrent`,
           detailsUrl: `https://archive.org/details/${encodeURIComponent(movie.identifier)}`
         }))
-        const fetchedMovies = await enrichInternetArchiveMoviesWithTmdb(archiveMovies, {
+
+        const enrichedMovies = await enrichInternetArchiveMoviesWithTmdb(archiveMovies, {
           apiKey: import.meta.env.VITE_TMDB_API_KEY,
           lang,
           concurrency: 4,
           signal: controller.signal
         })
+
+        // Limit to target page size (20 movies)
+        const fetchedMovies = enrichedMovies.slice(0, INTERNET_ARCHIVE_PAGE_SIZE)
 
         if (isMounted) {
           if (page === 1) {
@@ -417,7 +439,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
 
           const start = data.response?.start || 0
           const total = data.response?.numFound || 0
-          setHasMore(start + docs.length < Math.min(total, 10_000))
+          setHasMore(start + rawDocs.length < Math.min(total, 10_000))
         }
       } catch (err) {
         if (controller.signal.aborted) return
