@@ -76,6 +76,10 @@ prod-logs: ## Show all container logs
 # Database commands
 # =============================================================================
 
+db-migrate: ## Run database migrations
+	@echo "$(BLUE)Running database migrations...$(NC)"
+	docker compose -f compose.dev.yml exec api-express npx prisma migrate dev
+
 db-seed: ## Seed the database with initial data
 	@echo "$(BLUE)Seeding database...$(NC)"
 	docker compose -f compose.dev.yml exec api-express npx prisma db seed
