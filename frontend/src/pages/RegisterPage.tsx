@@ -1,11 +1,13 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
-import { Link } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import AuthHeader from '../components/ui/AuthHeader'
 import Header from '../components/layout/Header'
 import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
+import { updateFormField } from '../utils/form'
 import type { LoggedUser } from '../App'
 
 interface RegisterFormFields {
@@ -41,6 +43,7 @@ export default function RegisterPage({
   const [errors, setErrors] = useState<RegisterError>({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   function validate(): RegisterError {
     const errs: RegisterError = {}
@@ -114,19 +117,12 @@ export default function RegisterPage({
       <div className="w-full max-w-sm flex flex-col gap-5 my-auto">
 
         {/* Titre */}
-        <div className="flex flex-col gap-1 text-center">
-          <h1 className="text-3xl font-bold">{t.signUp}</h1>
-          <p className="text-neutral-400 text-sm">
-            {t.or}{' '}
-            <Link
-              to="/"
-              className="text-white underline hover:text-neutral-300 transition-colors"
-            >
-              {t.loginLink}
-            </Link>
-            .
-          </p>
-        </div>
+        <AuthHeader
+          title={t.signUp}
+          subtitle={t.or}
+          linkText={t.loginLink}
+          linkTo="/"
+        />
 
         {success ? (
           <div className="bg-emerald-500/10 border border-emerald-500/40 rounded px-4 py-6 text-emerald-300 text-center flex flex-col gap-2">
@@ -157,7 +153,7 @@ export default function RegisterPage({
               disabled={loading}
               error={errors.email}
               variant="login"
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              onChange={e => updateFormField('email', e.target.value, setForm, setErrors)}
             />
 
             {/* Username */}
@@ -170,7 +166,7 @@ export default function RegisterPage({
               disabled={loading}
               error={errors.username}
               variant="login"
-              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+              onChange={e => updateFormField('username', e.target.value, setForm, setErrors)}
             />
 
             <div className="grid grid-cols-2 gap-3">
@@ -183,7 +179,7 @@ export default function RegisterPage({
                 disabled={loading}
                 error={errors.firstName}
                 variant="login"
-                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                onChange={e => updateFormField('firstName', e.target.value, setForm, setErrors)}
               />
               <Input
                 id="lastName"
@@ -194,21 +190,37 @@ export default function RegisterPage({
                 disabled={loading}
                 error={errors.lastName}
                 variant="login"
-                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                onChange={e => updateFormField('lastName', e.target.value, setForm, setErrors)}
               />
             </div>
 
             {/* Password */}
             <Input
               id="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               placeholder={t.passwordPlaceholder}
               value={form.password}
               disabled={loading}
               error={errors.password}
               variant="login"
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              onChange={e => updateFormField('password', e.target.value, setForm, setErrors)}
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="p-1 text-neutral-400 hover:text-white transition-colors focus:outline-none"
+                  title={showPassword ? (lang === 'fr' ? 'Masquer le mot de passe' : 'Hide password') : (lang === 'fr' ? 'Afficher le mot de passe' : 'Show password')}
+                  aria-label={showPassword ? (lang === 'fr' ? 'Masquer le mot de passe' : 'Hide password') : (lang === 'fr' ? 'Afficher le mot de passe' : 'Show password')}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              }
             />
 
             {/* Submit */}
