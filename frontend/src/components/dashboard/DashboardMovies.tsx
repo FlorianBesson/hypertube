@@ -377,7 +377,8 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           throw new Error(`Internet Archive returned ${response.status}`)
         }
 
-        const data = await response.json() as InternetArchiveSearchResponse
+          const data = await response.json() as InternetArchiveSearchResponse
+          console.log(data)
         const docs = data.response?.docs || []
         const archiveMovies: Movie[] = docs.map(movie => ({
           id: movie.identifier,
