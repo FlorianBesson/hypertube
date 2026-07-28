@@ -75,6 +75,14 @@ export class BitTorrentService {
       rejectReady = reject;
     });
 
+    // Timeout protection for 0-seeder BitTorrent swarms
+    const metadataTimer = setTimeout(() => {
+      if (!activeEngine.isReady) {
+        this.activeEngines.delete(normalizedHash);
+        rejectReady(new Error("Aucun seeder actif trouvé pour ce torrent. Le film ne peut pas être téléchargé."));
+      }
+    }, 15000);
+
     const engine = torrentStream(torrentSource, {
       path: downloadFolder,
       verify: false,
@@ -93,6 +101,7 @@ export class BitTorrentService {
     this.activeEngines.set(normalizedHash, activeEngine);
 
     engine.on('ready', () => {
+      clearTimeout(metadataTimer);
       console.log(`[BitTorrentService] Torrent engine metadata ready for ${normalizedHash}`);
 
       const videoExtensions = ['.mp4', '.webm', '.mkv', '.avi', '.mov', '.m4v'];
