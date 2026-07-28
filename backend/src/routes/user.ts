@@ -124,7 +124,7 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
 router.put("/profile", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { firstName, lastName, email, bio } = req.body;
+        const { firstName, lastName, email, bio, preferredLanguage } = req.body;
 
         if (firstName !== undefined && !firstName.trim()) {
             res.status(400).json({ success: false, message: "Le prénom est requis" });
@@ -153,6 +153,14 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
             }
         }
 
+        // Validate preferred language code format if provided (e.g. 2-letter ISO code)
+        if (preferredLanguage !== undefined) {
+            if (typeof preferredLanguage !== 'string' || !/^[a-z]{2,3}$/i.test(preferredLanguage.trim())) {
+                res.status(400).json({ success: false, message: "Code langue préféré invalide (ex: 'fr', 'en', 'es')" });
+                return;
+            }
+        }
+
         // Update the user properties in Postgres via Prisma
         const updatedUser = await prisma.user.update({
             where: { id: userId },
@@ -161,6 +169,7 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
                 lastName: lastName !== undefined ? lastName.trim() : undefined,
                 email: email !== undefined ? email.toLowerCase().trim() : undefined,
                 bio: bio !== undefined ? bio : undefined,
+                preferredLanguage: preferredLanguage !== undefined ? preferredLanguage.trim().toLowerCase() : undefined,
             }
         });
 
@@ -175,6 +184,7 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
                 lastName: updatedUser.lastName,
                 photo: updatedUser.photo,
                 bio: updatedUser.bio,
+                preferredLanguage: updatedUser.preferredLanguage,
                 lastLogin: updatedUser.lastLogin
             }
         });

@@ -1,7 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import path from 'path';
+import fs from 'fs';
 import { prisma } from '../prisma';
 import { authenticateToken } from '../middlewares/auth';
+import { SubtitleService, normalizeImdbId } from '../services/subtitle';
 
 const router = Router();
 
@@ -117,6 +120,111 @@ router.post("/:imdbId/comments", authenticateToken, async (req: Request, res: Re
     } catch (error) {
         console.error("Create comment error:", error);
         res.status(500).json({ success: false, message: "Erreur serveur lors de la création du commentaire" });
+    }
+});
+
+/**
+ * Route: GET /api/movies/:imdbId/subtitles/:lang
+ * Description: Serves the WebVTT subtitle file for a given movie IMDb ID and language.
+ * Access: Authenticated users only
+ */
+router.get("/:imdbId/subtitles/:lang", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const rawImdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
+        const rawLang = Array.isArray(req.params.lang) ? req.params.lang[0] : req.params.lang;
+
+        if (!rawImdbId || !rawLang) {
+            res.status(400).json({ success: false, message: "IMDb ID et langue requis" });
+            return;
+        }
+
+        const imdbId = normalizeImdbId(rawImdbId);
+        const lang = rawLang.toLowerCase().trim();
+
+        // 1. If file already exists, serve it immediately
+        let filePath = SubtitleService.getSubtitleFilePath(imdbId, lang);
+
+        if (!fs.existsSync(filePath)) {
+            // 2. Fetch/convert on the fly if not cached yet
+            const savedPath = await SubtitleService.fetchAndSaveSubtitle(imdbId, lang);
+            if (savedPath && fs.existsSync(savedPath)) {
+                filePath = savedPath;
+            }
+        }
+
+        if (!fs.existsSync(filePath)) {
+            res.status(404).json({ success: false, message: `Sous-titres indisponibles en ${lang} pour ce film` });
+            return;
+        }
+
+        // 3. Set headers for WebVTT format
+        res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.sendFile(path.resolve(filePath));
+    } catch (error) {
+        console.error("Fetch subtitle file error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération des sous-titres" });
+    }
+});
+
+/**
+ * Route: GET /api/movies/:imdbId/subtitles
+ * Description: Triggers background download of English + user's preferred language subtitles, and lists available languages.
+ * Access: Authenticated users only
+ */
+router.get("/:imdbId/subtitles", authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const rawImdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
+        const userId = (req as any).user?.userId || (req as any).user?.id;
+
+        if (!rawImdbId) {
+            res.status(400).json({ success: false, message: "Identifiant IMDb manquant" });
+            return;
+        }
+
+        const imdbId = normalizeImdbId(rawImdbId);
+
+        // Fetch user's preferred language from DB
+        let userLang = 'en';
+        if (userId) {
+            const user = await prisma.user.findUnique({
+                where: { id: Number(userId) },
+                select: { preferredLanguage: true }
+            });
+            if (user?.preferredLanguage) {
+                userLang = user.preferredLanguage;
+            }
+        }
+
+        // Trigger background download (non-blocking)
+        SubtitleService.downloadSubtitlesForMovie(imdbId, userLang).catch((err) => {
+            console.error(`Background subtitle download failed for ${imdbId}:`, err);
+        });
+
+        // List existing local subtitle languages
+        const subDir = path.join(process.cwd(), 'uploads', 'subtitles', imdbId);
+        let availableLanguages: string[] = [];
+
+        if (fs.existsSync(subDir)) {
+            const files = fs.readdirSync(subDir);
+            availableLanguages = files
+                .filter(f => f.endsWith('.vtt'))
+                .map(f => f.replace('.vtt', ''));
+        }
+
+        res.json({
+            success: true,
+            imdbId,
+            userPreferredLanguage: userLang,
+            availableLanguages,
+            subtitlesUrls: availableLanguages.map(l => ({
+                lang: l,
+                url: `/api/movies/${imdbId}/subtitles/${l}`
+            }))
+        });
+    } catch (error) {
+        console.error("List subtitles error:", error);
+        res.status(500).json({ success: false, message: "Erreur serveur lors du listing des sous-titres" });
     }
 });
 
