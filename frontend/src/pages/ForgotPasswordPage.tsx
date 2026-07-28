@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import AuthHeader from '../components/ui/AuthHeader'
 import Header from '../components/layout/Header'
 import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
@@ -61,12 +62,10 @@ export default function ForgotPasswordPage({
       backgroundType="auth"
     >
       <div className="w-full max-w-sm flex flex-col gap-5 my-auto">
-        <div className="flex flex-col gap-2 text-center">
-          <h1 className="text-3xl font-bold">{t.forgotPasswordTitle}</h1>
-          <p className="text-neutral-400 text-sm px-4">
-            {t.forgotPasswordDesc}
-          </p>
-        </div>
+        <AuthHeader
+          title={t.forgotPasswordTitle}
+          subtitle={t.forgotPasswordDesc}
+        />
 
         <form className="flex flex-col gap-4 mt-2" onSubmit={handleSubmit} noValidate>
           {error && (

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import AuthHeader from '../components/ui/AuthHeader'
 import Header from '../components/layout/Header'
 import PageLayout from '../components/layout/PageLayout'
 import { translations } from '../locales/translations'
@@ -79,19 +80,12 @@ export default function LoginPage({
       <div className="w-full max-w-sm flex flex-col gap-5 my-auto">
 
         {/* Titre */}
-        <div className="flex flex-col gap-1 text-center">
-          <h1 className="text-3xl font-bold">{t.signIn}</h1>
-          <p className="text-neutral-400 text-sm">
-            {t.or}{' '}
-            <Link
-              to="/register"
-              className="text-white underline hover:text-neutral-300 transition-colors"
-            >
-              {t.createAccount}
-            </Link>
-            .
-          </p>
-        </div>
+        <AuthHeader
+          title={t.signIn}
+          subtitle={t.or}
+          linkText={t.createAccount}
+          linkTo="/register"
+        />
 
         <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
 
