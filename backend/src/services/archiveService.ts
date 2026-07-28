@@ -96,7 +96,6 @@ export class ArchiveService {
       const targetFilePath = path.join(downloadFolder, candidate.name);
 
       if (fs.existsSync(targetFilePath) && candidate.size && Number(candidate.size) > 0 && fs.statSync(targetFilePath).size >= Number(candidate.size)) {
-        console.log(`[ArchiveService] Serving IA movie ${identifier} from local disk cache (${targetFilePath})`);
         this.streamLocalFile(targetFilePath, rangeHeader, res, candidate.name);
         return;
       }
@@ -113,14 +112,12 @@ export class ArchiveService {
         }
 
         try {
-          console.log(`[ArchiveService] Testing IA candidate stream URL: ${archiveDirectUrl}`);
           const cdnRes = await this.fetchWithTimeout(archiveDirectUrl, { headers, redirect: 'follow' }, 4000);
           if (cdnRes.ok || cdnRes.status === 206) {
             activeRes = cdnRes;
             selectedFilename = candidate.name;
             selectedFileSize = candidate.size ? BigInt(candidate.size) : null;
             selectedDirectUrl = archiveDirectUrl;
-            console.log(`[ArchiveService] Connected to candidate: ${candidate.name} via ${archiveDirectUrl} (Status ${cdnRes.status})`);
             break;
           }
         } catch (err: any) {
@@ -211,7 +208,6 @@ export class ArchiveService {
       return;
     }
     try {
-      console.log(`[ArchiveService] Starting background download for IA movie ${identifier}...`);
       const res = await fetch(directUrl, {
         headers: { 'User-Agent': userAgent || DEFAULT_USER_AGENT },
         redirect: 'follow'
@@ -229,7 +225,6 @@ export class ArchiveService {
       fileStream.end();
 
       const finalSize = fs.existsSync(targetPath) ? BigInt(fs.statSync(targetPath).size) : (fileSize || BigInt(0));
-      console.log(`[ArchiveService] IA Movie background download finished: ${targetPath}`);
 
       await movieDbService.markMovieCompleted(identifier, identifier, targetPath, finalSize);
     } catch (err) {

@@ -37,38 +37,24 @@ export async function torrentHandler(req: Request, res: Response) {
     //     throw new HttpError(400, zodErrors)
 
     const torrents: YtsTorrent[] = req.body.torrents
-    console.log(torrents)
 
     const selectedTorrent = torrents.filter(torrent => (torrent.seeds ?? 0) > 0).sort((a, b) => (b.seeds ?? 0) - (a.seeds ?? 0))[0]
-    console.log("selected torrent = ", selectedTorrent)
 
     if (!selectedTorrent)
         throw new HttpError(400, "Selected torrent has no peers")
 
     // const torrentResponse = await fetch(selectedTorrent.url)
     const torrentResponse = await fetch('https://webtorrent.io/torrents/big-buck-bunny.torrent')
-    // console.log(torrentResponse)
 
     const torrentBuffer = Buffer.from(
       await torrentResponse.arrayBuffer()
     )
 
-    console.log(`Torrent reçu : ${torrentBuffer.length} octets`)
-    
     const engine = torrentStream(torrentBuffer, {
         tmp: './'
     })
 
     engine.on('ready', () => {
-        console.log("Torrent Metadata : ")
-        
-        engine.files.forEach((file: any) => {
-            console.log({
-                filename: file.name,
-                path: file.path,
-                size: file.length
-            })
-        })
     })
     
     res.json({success: true, message: "Torrent download started !"})

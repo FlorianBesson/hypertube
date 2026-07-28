@@ -50,8 +50,9 @@ app.get('/api/ping', (req: Request, res: Response) => {
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV === 'dev')
-        console.log(err)
+    if (process.env.NODE_ENV === 'dev') {
+        console.error(err);
+    }
     
     if (err instanceof HttpError) {
         return res.status(err.status).json({ success: false, message: err.message });
@@ -61,7 +62,6 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 // Start the Express HTTP listener
 app.listen(PORT, async () => {
-    console.log(`Server running at http://localhost:${PORT}`);        
     await checkDbConnection();
     initCronJobs();
 });

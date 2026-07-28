@@ -116,7 +116,6 @@ export class MovieDbService {
           lastWatchedAt: new Date(),
         },
       });
-      console.log(`[MovieDbService] Saved completed movie in DB: ${targetPath}`);
     } catch (dbErr) {
       console.warn(`[MovieDbService] DB upsert warning for ${identifier}:`, dbErr);
     }

@@ -59,7 +59,6 @@ export class BitTorrentService {
       torrentSource = `magnet:?xt=urn:btih:${normalizedHash}&tr=udp://tracker.opentrackr.org:1337/announce&tr=udp://tracker.openbittorrent.com:80&tr=udp://tracker.coppersurfer.tk:6969&tr=udp://glotorrents.pw:6969/announce&tr=udp://tracker.leechers-paradise.org:6969`;
     } else {
       const iaTorrentUrl = `https://archive.org/download/${normalizedHash}/${normalizedHash}_archive.torrent`;
-      console.log(`[BitTorrentService] Fetching Internet Archive torrent file from ${iaTorrentUrl}`);
       const res = await fetch(iaTorrentUrl);
       if (!res.ok) {
         throw new Error(`Internet Archive torrent download failed: HTTP ${res.status}`);
@@ -102,7 +101,6 @@ export class BitTorrentService {
 
     engine.on('ready', () => {
       clearTimeout(metadataTimer);
-      console.log(`[BitTorrentService] Torrent engine metadata ready for ${normalizedHash}`);
 
       const videoExtensions = ['.mp4', '.webm', '.mkv', '.avi', '.mov', '.m4v'];
       const videoFiles = (engine.files as TorrentStreamFile[]).filter((f) => {
@@ -141,7 +139,6 @@ export class BitTorrentService {
     });
 
     engine.on('idle', async () => {
-      console.log(`[BitTorrentService] Torrent download 100% completed for ${normalizedHash}`);
       if (activeEngine.videoFile) {
         const fullFilePath = path.join(downloadFolder, activeEngine.videoFile.path);
         const identifier = imdbId || normalizedHash;
