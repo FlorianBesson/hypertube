@@ -10,6 +10,8 @@ import userRoutes from './routes/user';
 import usersRoutes from './routes/users';
 import movieRoutes from './routes/movies';
 
+import { initCronJobs } from './services/cron_cleanup';
+
 const PORT = 3000;
 export const app: Application = express();
 
@@ -59,4 +61,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 app.listen(PORT, async () => {
     console.log(`Server running at http://localhost:${PORT}`);        
     await checkDbConnection();
+    initCronJobs();
 });
