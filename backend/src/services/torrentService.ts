@@ -104,8 +104,24 @@ class TorrentService {
   }
 
   /**
+   * Helper function to perform fetch with timeout.
+   */
+  private async fetchWithTimeout(url: string, options: any = {}, timeoutMs = 6000): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
+  /**
    * Streams an Internet Archive movie using HTTP 206 Partial Content directly from Archive.org CDN,
-   * while triggering background download for local disk caching.
+   * with candidate fallback loop, timeout protection, and background disk caching.
    */
   public async streamArchiveMovie(identifier: string, rangeHeader: string | undefined, res: any, clientUserAgent?: string): Promise<void> {
     const activeUserAgent = clientUserAgent || DEFAULT_USER_AGENT;
@@ -114,105 +130,160 @@ class TorrentService {
       fs.mkdirSync(downloadFolder, { recursive: true });
     }
 
-    // 1. Fetch metadata using exact identifier case
-    const metaRes = await fetch(`https://archive.org/metadata/${encodeURIComponent(identifier)}`, {
-      headers: { 'User-Agent': activeUserAgent }
-    });
-    if (!metaRes.ok) {
-      throw new Error(`Internet Archive item metadata not found: HTTP ${metaRes.status}`);
-    }
-    const data = await metaRes.json() as any;
-    const files = data.files || [];
-    const mp4Files = files.filter((f: any) => typeof f.name === 'string' && f.name.toLowerCase().endsWith('.mp4'));
-
-    let mainFile = mp4Files.sort((a: any, b: any) => Number(b.size || 0) - Number(a.size || 0))[0];
-    if (!mainFile && files.length > 0) {
-      mainFile = files.find((f: any) => typeof f.name === 'string' && (f.name.endsWith('.ogv') || f.name.endsWith('.webm') || f.name.endsWith('.avi')));
-    }
-
-    const filename = mainFile ? mainFile.name : `${identifier}.mp4`;
-    const targetFilePath = path.join(downloadFolder, filename);
-
-    // If file is fully downloaded locally, stream from disk
-    if (fs.existsSync(targetFilePath) && mainFile && Number(mainFile.size || 0) > 0 && fs.statSync(targetFilePath).size >= Number(mainFile.size)) {
-      const stat = fs.statSync(targetFilePath);
-      const fileSize = stat.size;
-      const mimeType = this.getMimeType(filename);
-
-      if (rangeHeader) {
-        const parts = rangeHeader.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const chunksize = (end - start) + 1;
-
-        res.writeHead(206, {
-          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-          'Accept-Ranges': 'bytes',
-          'Content-Length': chunksize,
-          'Content-Type': mimeType,
-        });
-        fs.createReadStream(targetFilePath, { start, end }).pipe(res);
-      } else {
-        res.writeHead(200, {
-          'Content-Length': fileSize,
-          'Content-Type': mimeType,
-        });
-        fs.createReadStream(targetFilePath).pipe(res);
+    // 1. Fetch metadata with timeout
+    let data: any = null;
+    try {
+      const metaRes = await this.fetchWithTimeout(`https://archive.org/metadata/${encodeURIComponent(identifier)}`, {
+        headers: { 'User-Agent': activeUserAgent }
+      }, 7000);
+      if (metaRes.ok) {
+        data = await metaRes.json();
       }
-      return;
+    } catch (metaErr) {
+      console.warn(`[TorrentService] Metadata lookup warning for ${identifier}:`, metaErr);
     }
 
-    // 2. Stream directly from Archive.org direct CDN URL following redirects
-    const archiveDirectUrl = `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(filename)}`;
-    const headers: Record<string, string> = {
-      'User-Agent': activeUserAgent,
-    };
-    if (rangeHeader) {
-      headers['Range'] = rangeHeader;
-    }
-
-    const archiveRes = await fetch(archiveDirectUrl, {
-      headers,
-      redirect: 'follow',
+    const files = data?.files || [];
+    // Filter and prioritize candidate files: web-friendly formats first
+    const candidateFiles: any[] = files.filter((f: any) => typeof f.name === 'string' && (
+      f.name.toLowerCase().endsWith('.mp4') ||
+      f.name.toLowerCase().endsWith('.webm') ||
+      f.name.toLowerCase().endsWith('.ogv') ||
+      f.name.toLowerCase().endsWith('.mkv')
+    )).sort((a: any, b: any) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      // Prioritize .mp4 over .webm/.ogv, and derivative 512kb/256kb if primary HD times out
+      const isMp4A = nameA.endsWith('.mp4') ? 2 : 0;
+      const isMp4B = nameB.endsWith('.mp4') ? 2 : 0;
+      return isMp4B - isMp4A;
     });
 
-    if (!archiveRes.ok && archiveRes.status !== 206) {
-      throw new Error(`Internet Archive CDN error: HTTP ${archiveRes.status}`);
+    if (candidateFiles.length === 0) {
+      // Fallback filename guess if metadata had no listed video files
+      candidateFiles.push({ name: `${identifier}.mp4` });
+      candidateFiles.push({ name: `${identifier}_512kb.mp4` });
     }
 
-    const resHeaders: Record<string, string> = {
-      'Content-Type': archiveRes.headers.get('content-type') || this.getMimeType(filename),
-      'Accept-Ranges': 'bytes',
-    };
-    if (archiveRes.headers.get('content-range')) {
-      resHeaders['Content-Range'] = archiveRes.headers.get('content-range')!;
-    }
-    if (archiveRes.headers.get('content-length')) {
-      resHeaders['Content-Length'] = archiveRes.headers.get('content-length')!;
-    }
+    let activeRes: Response | null = null;
+    let selectedFilename: string = candidateFiles[0].name;
+    let selectedFileSize: bigint | null = candidateFiles[0].size ? BigInt(candidateFiles[0].size) : null;
+    let selectedDirectUrl: string = `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(selectedFilename)}`;
 
-    res.writeHead(archiveRes.status, resHeaders);
+    // 2. Iterate through candidates until an accessible stream is reached
+    for (const candidate of candidateFiles) {
+      const targetFilePath = path.join(downloadFolder, candidate.name);
 
-    if (archiveRes.body) {
-      const reader = archiveRes.body.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (!res.writableEnded) {
-          res.write(value);
+      // If already downloaded locally, serve from disk immediately
+      if (fs.existsSync(targetFilePath) && candidate.size && Number(candidate.size) > 0 && fs.statSync(targetFilePath).size >= Number(candidate.size)) {
+        console.log(`[TorrentService] Serving IA movie ${identifier} from local disk cache (${targetFilePath})`);
+        this.streamLocalFile(targetFilePath, rangeHeader, res, candidate.name);
+        return;
+      }
+
+      const candidateUrls = [
+        `https://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(candidate.name)}`,
+        `http://archive.org/download/${encodeURIComponent(identifier)}/${encodeURIComponent(candidate.name)}`
+      ];
+
+      for (const archiveDirectUrl of candidateUrls) {
+        const headers: Record<string, string> = { 'User-Agent': activeUserAgent };
+        if (rangeHeader) {
+          headers['Range'] = rangeHeader;
+        }
+
+        try {
+          console.log(`[TorrentService] Testing IA candidate stream URL: ${archiveDirectUrl}`);
+          const cdnRes = await this.fetchWithTimeout(archiveDirectUrl, { headers, redirect: 'follow' }, 4000);
+          if (cdnRes.ok || cdnRes.status === 206) {
+            activeRes = cdnRes;
+            selectedFilename = candidate.name;
+            selectedFileSize = candidate.size ? BigInt(candidate.size) : null;
+            selectedDirectUrl = archiveDirectUrl;
+            console.log(`[TorrentService] Successfully connected to candidate: ${candidate.name} via ${archiveDirectUrl} (Status ${cdnRes.status})`);
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`[TorrentService] Candidate ${archiveDirectUrl} connection failed (${err.message}). Trying next...`);
         }
       }
-      if (!res.writableEnded) {
-        res.end();
+
+      if (activeRes) break;
+    }
+
+    if (!activeRes) {
+      const serverInfo = data?.server ? ` (Serveur ${data.server})` : '';
+      console.warn(`[TorrentService] Storage server offline for ${identifier}${serverInfo}`);
+      throw new Error(`Le serveur de stockage Internet Archive pour ce film${serverInfo} est actuellement indisponible ou hors-ligne. Veuillez réessayer ultérieurement.`);
+    }
+
+    const targetFilePath = path.join(downloadFolder, selectedFilename);
+    const archiveDirectUrl = selectedDirectUrl;
+
+    const resHeaders: Record<string, string> = {
+      'Content-Type': activeRes.headers.get('content-type') || this.getMimeType(selectedFilename),
+      'Accept-Ranges': 'bytes',
+    };
+    if (activeRes.headers.get('content-range')) {
+      resHeaders['Content-Range'] = activeRes.headers.get('content-range')!;
+    }
+    if (activeRes.headers.get('content-length')) {
+      resHeaders['Content-Length'] = activeRes.headers.get('content-length')!;
+    }
+
+    res.writeHead(activeRes.status, resHeaders);
+
+    if (activeRes.body) {
+      const reader = activeRes.body.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (res.writableEnded || res.closed) break;
+          res.write(value);
+        }
+      } catch (pipeErr) {
+        console.warn(`[TorrentService] Stream piping interrupted for ${identifier}:`, pipeErr);
+      } finally {
+        if (!res.writableEnded) {
+          res.end();
+        }
       }
     } else {
       res.end();
     }
 
     // Trigger non-blocking background download to local disk
-    this.backgroundDownloadArchiveMovie(identifier, archiveDirectUrl, targetFilePath, mainFile?.size ? BigInt(mainFile.size) : null, activeUserAgent).catch((err) => {
+    this.backgroundDownloadArchiveMovie(identifier, archiveDirectUrl, targetFilePath, selectedFileSize, activeUserAgent).catch((err) => {
       console.error(`[TorrentService] Background download error for ${identifier}:`, err);
     });
+  }
+
+  private streamLocalFile(filePath: string, rangeHeader: string | undefined, res: any, filename: string): void {
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+    const mimeType = this.getMimeType(filename);
+
+    if (rangeHeader) {
+      const parts = rangeHeader.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': mimeType,
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': mimeType,
+      });
+      fs.createReadStream(filePath).pipe(res);
+    }
   }
 
   private async backgroundDownloadArchiveMovie(identifier: string, directUrl: string, targetPath: string, fileSize: bigint | null, userAgent?: string): Promise<void> {
@@ -240,24 +311,28 @@ class TorrentService {
       const finalSize = fs.existsSync(targetPath) ? BigInt(fs.statSync(targetPath).size) : fileSize;
       console.log(`[TorrentService] IA Movie background download finished: ${targetPath}`);
 
-      await prisma.movie.upsert({
-        where: { imdbId: identifier },
-        update: {
-          hash: identifier,
-          filePath: targetPath,
-          fileSize: finalSize,
-          isCompleted: true,
-          lastWatchedAt: new Date(),
-        },
-        create: {
-          imdbId: identifier,
-          hash: identifier,
-          filePath: targetPath,
-          fileSize: finalSize,
-          isCompleted: true,
-          lastWatchedAt: new Date(),
-        },
-      });
+      try {
+        await prisma.movie.upsert({
+          where: { imdbId: identifier },
+          update: {
+            hash: identifier,
+            filePath: targetPath,
+            fileSize: finalSize,
+            isCompleted: true,
+            lastWatchedAt: new Date(),
+          },
+          create: {
+            imdbId: identifier,
+            hash: identifier,
+            filePath: targetPath,
+            fileSize: finalSize,
+            isCompleted: true,
+            lastWatchedAt: new Date(),
+          },
+        });
+      } catch (dbErr) {
+        console.warn(`[TorrentService] DB upsert warning for ${identifier}:`, dbErr);
+      }
     } catch (err) {
       console.error(`[TorrentService] Failed background save for ${identifier}:`, err);
     }
