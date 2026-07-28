@@ -19,6 +19,7 @@ export interface Movie {
   torrentUrl?: string
   detailsUrl?: string
   tmdbId?: number
+  hash?: string
 }
 
 export interface Torrent {
