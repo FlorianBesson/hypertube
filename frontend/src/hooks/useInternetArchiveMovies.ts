@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Movie, InternetArchiveSearchResponse } from '../types/movie'
-import { enrichInternetArchiveMoviesWithTmdb } from '../components/dashboard/internetArchiveTmdb'
+import { enrichInternetArchiveMoviesWithTmdb } from '../components/dashboard/movies/internetArchiveTmdb'
 import {
   INTERNET_ARCHIVE_BASE_QUERY,
   INTERNET_ARCHIVE_PAGE_SIZE,

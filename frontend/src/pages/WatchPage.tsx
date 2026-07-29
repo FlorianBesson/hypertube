@@ -4,7 +4,7 @@ import VideoPlayer from '../components/watch/VideoPlayer'
 import CommentsSection from '../components/watch/CommentsSection'
 import { translations } from '../locales/translations'
 import type { LoggedUser } from '../App'
-import type { Movie } from '../components/dashboard/DashboardMovies'
+import type { Movie } from '../types/movie'
 
 interface WatchPageProps {
   lang: 'en' | 'fr'

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { LoggedUser } from '../App'
 import { translations } from '../locales/translations'
-import DashboardMovies from '../components/dashboard/DashboardMovies'
-import DashboardMembers from '../components/dashboard/DashboardMembers'
+import { DashboardMovies, DashboardMembers } from '../components/dashboard'
 
 import type { DashboardUserMember } from '../types/member'
 

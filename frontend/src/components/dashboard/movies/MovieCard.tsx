@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { TranslationType } from '../../locales/translations'
-import type { Movie } from '../../types/movie'
+import type { TranslationType } from '../../../locales/translations'
+import type { Movie } from '../../../types/movie'
 
 export interface MovieCardProps {
   movie: Movie

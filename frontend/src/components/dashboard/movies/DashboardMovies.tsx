@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import type { TranslationType } from '../../locales/translations'
-import type { Movie } from '../../types/movie'
+import type { TranslationType } from '../../../locales/translations'
+import type { Movie } from '../../../types/movie'
 import MovieDetailsModal from './MovieDetailsModal'
 import MovieCard from './MovieCard'
 import MovieToolbar from './MovieToolbar'
-import { useWatchedMovies } from '../../hooks/useWatchedMovies'
-import { useInternetArchiveMovies } from '../../hooks/useInternetArchiveMovies'
+import { useWatchedMovies } from '../../../hooks/useWatchedMovies'
+import { useInternetArchiveMovies } from '../../../hooks/useInternetArchiveMovies'
 
-export type { Movie, Torrent } from '../../types/movie'
+export type { Movie, Torrent } from '../../../types/movie'
 
 export interface DashboardMoviesProps {
   t: TranslationType['dashboard']

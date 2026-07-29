@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
-import type { Movie } from '../dashboard/DashboardMovies'
+import type { Movie } from '../../types/movie'
 
 interface VideoPlayerProps {
   movie: Movie | null

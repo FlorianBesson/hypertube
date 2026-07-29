@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import type { TranslationType } from '../../locales/translations'
-import type { DashboardUserMember } from '../../types/member'
+import type { TranslationType } from '../../../locales/translations'
+import type { DashboardUserMember } from '../../../types/member'
 import MemberCard from './MemberCard'
 
 export type { DashboardUserMember }

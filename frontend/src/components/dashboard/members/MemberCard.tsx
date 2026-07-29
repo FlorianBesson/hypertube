@@ -1,6 +1,6 @@
-import Avatar from '../ui/Avatar'
-import type { TranslationType } from '../../locales/translations'
-import type { DashboardUserMember } from '../../types/member'
+import Avatar from '../../ui/Avatar'
+import type { TranslationType } from '../../../locales/translations'
+import type { DashboardUserMember } from '../../../types/member'
 
 export interface MemberCardProps {
   member: DashboardUserMember

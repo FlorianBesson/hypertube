@@ -1,5 +1,5 @@
-import type { TranslationType } from '../../locales/translations'
-import type { SortByOption, SortOrder, WatchedFilterOption } from '../../hooks/useInternetArchiveMovies'
+import type { TranslationType } from '../../../locales/translations'
+import type { SortByOption, SortOrder, WatchedFilterOption } from '../../../hooks/useInternetArchiveMovies'
 
 export interface MovieToolbarProps {
   searchQuery: string
