@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { prisma } from '../prisma';
-import { authenticateToken } from '../middlewares/auth';
-import { upload, uploadDirectory } from '../config/multer';
+import { prisma } from '../../prisma';
+import { authenticateToken } from '../../middlewares/auth';
+import { upload, uploadDirectory } from '../../config/multer';
 import * as z from "zod";
-import bcrypt from "bcrypt"
+import bcrypt from "bcrypt";
 
 const router = Router();
 
@@ -189,7 +189,6 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
  * Description: Updates the password of the authenticated user after checking their current password.
  * Authenticated: Yes
  */
- 
 const PasswordSchema = z.object({
     currentPassword: z.string().min(1, "L'ancien mot de passe est requis"),
     newPassword: z
@@ -197,16 +196,15 @@ const PasswordSchema = z.object({
         .min(8, "Le nouveau mot de passe doit faire au moins 8 caractères")
         .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
         .regex(/[\p{P}\p{S}]/u, "Le mot de passe doit contenir au moins un caractère spécial")
-})
- 
+});
+
 router.put("/password", authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
         
-        const result = PasswordSchema.safeParse(req.body)
-        if (!result.success)
-        {
-            res.status(400).json({ success: false, message: result.error.issues[0].message })
+        const result = PasswordSchema.safeParse(req.body);
+        if (!result.success) {
+            res.status(400).json({ success: false, message: result.error.issues[0].message });
             return;
         }        
         const { currentPassword, newPassword } = result.data;
@@ -221,13 +219,12 @@ router.put("/password", authenticateToken, async (req: Request, res: Response) =
         }
         
         const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-        if (!isPasswordValid)
-        {
-            res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect"})
+        if (!isPasswordValid) {
+            res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
             return;
         }
         
-        const newPasswordHash = await bcrypt.hash(newPassword, 10)
+        const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
         // Update password in DB
         await prisma.user.update({

@@ -1,21 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../prisma';
-import { authenticateToken } from '../middlewares/auth';
+import { prisma } from '../../prisma';
+import { authenticateToken } from '../../middlewares/auth';
 
 const router = Router();
-
-/**
- * Helper function to obfuscate/mask user email addresses for privacy.
- * Example: 'antoine@magneto.com' becomes 'a*****e@magneto.com'
- */
-function maskEmail(email: string): string {
-    const [username, domain] = email.split('@');
-    if (!username || !domain) return email;
-    if (username.length <= 2) {
-        return `${username[0]}*@${domain}`;
-    }
-    return `${username[0]}${'*'.repeat(username.length - 2)}${username[username.length - 1]}@${domain}`;
-}
 
 /**
  * Route: GET /api/users

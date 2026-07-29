@@ -44,7 +44,7 @@ export default function CommentsSection({
       setIsLoading(true)
       try {
         const token = localStorage.getItem('token')
-        const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}/comments`, {
+        const res = await fetch(`/api/movies/comments/${encodeURIComponent(imdbId)}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
 
@@ -73,7 +73,7 @@ export default function CommentsSection({
 
     setIsSubmitting(true)
     try {
-      const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}/comments`, {
+      const res = await fetch(`/api/movies/comments/${encodeURIComponent(imdbId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

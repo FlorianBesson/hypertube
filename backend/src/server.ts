@@ -4,11 +4,10 @@ import { prisma } from './prisma';
 import { HttpError } from './errors';
 import { checkDbConnection } from './db/utils';
 
-// Import router modules for authentication, profile management, and movies
+// Import modular router packages for each domain
 import authRoutes from './routes/auth';
-import userRoutes from './routes/user';
-import usersRoutes from './routes/users';
-import torrentRoutes from './routes/torrent'
+import { meRouter, communityRouter } from './routes/users';
+import torrentRoutes from './routes/torrent';
 import movieRoutes from './routes/movies';
 
 import { initCronJobs } from './services/maintenance';
@@ -24,9 +23,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Register main API endpoints with their mount paths
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/torrent', torrentRoutes)
+app.use('/api/user', meRouter);
+app.use('/api/users', communityRouter);
+app.use('/api/torrent', torrentRoutes);
 app.use('/api/movies', movieRoutes);
 
 /**
