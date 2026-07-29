@@ -5,8 +5,7 @@ import CommentsSection from '../components/watch/CommentsSection'
 import { translations } from '../locales/translations'
 import type { LoggedUser } from '../App'
 import type { Movie } from '../types/movie'
-
-import { PUBLIC_DOMAIN_TORRENTS_DATABASE } from '../services/sources/publicDomainTorrentsSourceProvider'
+import { WikimediaCommonsSourceProvider } from '../services/sources/wikimediaCommonsSourceProvider'
 
 interface WatchPageProps {
   lang: 'en' | 'fr'
@@ -37,8 +36,10 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
     const fetchMovieFallback = async () => {
       setIsLoading(true)
       try {
-        if (id.startsWith('pdt-')) {
-          const found = PUBLIC_DOMAIN_TORRENTS_DATABASE.find(m => m.id === id)
+        if (id.startsWith('wikimedia-')) {
+          const provider = new WikimediaCommonsSourceProvider()
+          const items = await provider.searchMovies({ page: 1, limit: 50, lang })
+          const found = items.find(m => m.id === id)
           if (found) {
             setMovie(found)
             return
@@ -81,7 +82,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
     }
 
     fetchMovieFallback()
-  }, [id, movie])
+  }, [id, movie, lang])
 
   // Automatically mark movie as watched in BDD when user opens WatchPage
   useEffect(() => {

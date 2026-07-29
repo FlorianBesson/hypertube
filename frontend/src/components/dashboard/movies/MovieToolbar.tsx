@@ -94,7 +94,7 @@ export default function MovieToolbar({
               >
                 <option value="all">{t.allSources || "All Sources"}</option>
                 <option value="archive">{t.internetArchive || "Internet Archive"}</option>
-                <option value="publicdomain_torrents">{t.publicDomainTorrents || "Public Domain Torrents"}</option>
+                <option value="wikimedia_commons">{t.wikimediaCommons || "Wikimedia Commons"}</option>
               </select>
             </div>
           )}
