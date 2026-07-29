@@ -16,7 +16,7 @@ export default function DashboardPage({
   const t = translations[lang].dashboard
   
   // showCommunity: toggle for the community members sidebar
-  const [showCommunity, setShowCommunity] = useState(true)
+  const [showCommunity, setShowCommunity] = useState(false)
 
   // users: list of registered user objects retrieved from database
   const [users, setUsers] = useState<Array<{ id: number; username: string; firstName: string; lastName: string; photo: string | null }>>([])
