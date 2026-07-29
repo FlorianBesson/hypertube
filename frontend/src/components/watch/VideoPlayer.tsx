@@ -117,7 +117,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs pointer-events-none">
           <Loader2 className="w-12 h-12 text-red-600 animate-spin mb-3" />
           <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
-            Bufferisation du flux vidéo...
+            {t.buffering || 'Bufferisation du flux vidéo...'}
           </span>
         </div>
       )}
@@ -130,7 +130,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h3 className="text-white font-bold text-lg mb-2">Flux vidéo indisponible</h3>
+          <h3 className="text-white font-bold text-lg mb-2">{t.videoUnavailable || 'Flux vidéo indisponible'}</h3>
           <p className="text-neutral-400 font-medium text-xs max-w-md mb-6 leading-relaxed">{streamError}</p>
           <div className="flex items-center gap-3">
             <button
@@ -144,13 +144,13 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
               }}
               className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full text-xs font-bold transition-all shadow-lg shadow-red-600/20 cursor-pointer"
             >
-              Réessayer
+              {t.retry || 'Réessayer'}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
               className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded-full text-xs font-bold transition-all cursor-pointer"
             >
-              Retour au catalogue
+              {t.backToCatalog || 'Retour au catalogue'}
             </button>
           </div>
         </div>

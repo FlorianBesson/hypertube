@@ -84,7 +84,14 @@
     "anyRating": "Any Rating",
     "loadingMore": "Loading more movies...",
     "noMoreMovies": "No more movies to load",
-    "watchedBadge": "Watched"
+    "watchedBadge": "Watched",
+    "closeModal": "Close",
+    "downloads": "downloads",
+    "description": "Description",
+    "noDescription": "No description available.",
+    "creator": "Creator",
+    "language": "Language",
+    "playMovie": "Watch movie"
   },
   "profile": {
     "backToDashboard": "Back to dashboard",
@@ -165,6 +172,11 @@
     "noComments": "No comments yet. Be the first to share your thoughts!",
     "movieNotFound": "Movie not found",
     "quality": "1080p Web-DL",
-    "errorLoadingVideo": "Error loading video stream."
+    "errorLoadingVideo": "Error loading video stream.",
+    "buffering": "Buffering video stream...",
+    "videoUnavailable": "Video stream unavailable",
+    "retry": "Retry",
+    "messagesCount": "messages",
+    "anonymousUser": "User"
   }
 }

@@ -53,7 +53,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center border border-white/10 transition-all duration-200 cursor-pointer"
-                    title={t.moviesTitle ? "Fermer" : "Close"}
+                    title={t.closeModal || "Close"}
                 >
                     ✕
                 </button>
@@ -96,7 +96,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                                 {movie.downloads !== undefined && (
                                     <>
                                         <span>•</span>
-                                        <span>{movie.downloads.toLocaleString()} téléchargements</span>
+                                        <span>{movie.downloads.toLocaleString()} {t.downloads || 'downloads'}</span>
                                     </>
                                 )}
                                 {movie.rating > 0 && <span>•</span>}
@@ -110,21 +110,21 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
 
                         {/* Synopsis */}
                         <div>
-                            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Description</h3>
+                            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{t.description || 'Description'}</h3>
                             <p className="text-sm text-neutral-300 leading-relaxed">
-                                {movie.description || 'Aucune description disponible.'}
+                                {movie.description || t.noDescription || 'Aucune description disponible.'}
                             </p>
                         </div>
 
                         {/* Internet Archive metadata */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10 text-xs">
                             <div>
-                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">Créateur</span>
-                                <span className="text-white font-medium">{movie.creator || 'Non renseigné'}</span>
+                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.creator || 'Créateur'}</span>
+                                <span className="text-white font-medium">{movie.creator || t.notSpecified || 'Non renseigné'}</span>
                             </div>
                             <div>
-                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">Langue</span>
-                                <span className="text-white font-medium">{movie.language || 'Non renseignée'}</span>
+                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.language || 'Langue'}</span>
+                                <span className="text-white font-medium">{movie.language || t.notSpecified || 'Non renseigné'}</span>
                             </div>
                         </div>
 
@@ -140,7 +140,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                                     <path d="M8 5v14l11-7z" />
                                 </svg>
-                                Lancer la vidéo
+                                {t.playMovie || 'Lancer la vidéo'}
                             </button>
                         </div>
                     </div>

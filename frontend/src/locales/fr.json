@@ -84,7 +84,14 @@
     "anyRating": "Toutes les notes",
     "loadingMore": "Chargement de films supplémentaires...",
     "noMoreMovies": "Fin de la liste des films",
-    "watchedBadge": "Vu"
+    "watchedBadge": "Vu",
+    "closeModal": "Fermer",
+    "downloads": "téléchargements",
+    "description": "Description",
+    "noDescription": "Aucune description disponible.",
+    "creator": "Créateur",
+    "language": "Langue",
+    "playMovie": "Lancer la vidéo"
   },
   "profile": {
     "backToDashboard": "Retour au tableau de bord",
@@ -165,6 +172,11 @@
     "noComments": "Aucun commentaire pour le moment. Soyez le premier !",
     "movieNotFound": "Film non trouvé",
     "quality": "1080p Web-DL",
-    "errorLoadingVideo": "Erreur lors du chargement de la vidéo."
+    "errorLoadingVideo": "Erreur lors du chargement de la vidéo.",
+    "buffering": "Bufferisation du flux vidéo...",
+    "videoUnavailable": "Flux vidéo indisponible",
+    "retry": "Réessayer",
+    "messagesCount": "messages",
+    "anonymousUser": "Utilisateur"
   }
 }
