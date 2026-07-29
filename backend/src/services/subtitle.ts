@@ -151,48 +151,84 @@ export class SubtitleService {
     /**
      * Fetch SRT subtitle from OpenSubtitles v1 REST API
      */
-    private static async fetchFromOpenSubtitlesApi(imdbId: string, lang: string, apiKey: string): Promise<string | null> {
-        const numId = numericImdbId(imdbId);
+    private static async fetchFromOpenSubtitlesApi(identifier: string, lang: string, apiKey: string): Promise<string | null> {
         const langInfo = mapLanguageCode(lang);
+        const isNumericImdb = /^(tt)?\d+$/i.test(identifier);
 
-        const searchUrl = `https://api.opensubtitles.com/api/v1/subtitles?imdb_id=${numId}&languages=${langInfo.iso6391}`;
-        const response = await globalThis.fetch(searchUrl, {
-            headers: {
-                'User-Agent': 'Hypertube v1.0',
-                'Api-Key': apiKey,
-                'Content-Type': 'application/json',
-            },
-        });
+        let searchUrls: string[] = [];
 
-        if (!response.ok) return null;
+        if (isNumericImdb) {
+            const numId = numericImdbId(identifier);
+            searchUrls.push(`https://api.opensubtitles.com/api/v1/subtitles?imdb_id=${numId}&languages=${langInfo.iso6391}`);
+        } else {
+            // Identifier is a string title slug like "TarzansRevenge1938" or "TheFastAndTheFurious1955" or "The_Fast_and_the_Furious"
+            const yearMatch = identifier.match(/(18|19|20)\d{2}/);
+            const year = yearMatch ? yearMatch[0] : '';
+            const rawTitle = identifier.replace(/^tt/i, '');
+            const cleanTitle = rawTitle
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/(18|19|20)\d{2}/g, '')
+                .replace(/_/g, ' ')
+                .replace(/-/g, ' ')
+                .replace(/[^a-zA-Z0-9\s]/g, '')
+                .trim();
 
-        const data = (await response.json()) as any;
-        if (!data || !data.data || data.data.length === 0) return null;
+            if (cleanTitle) {
+                if (year) {
+                    searchUrls.push(`https://api.opensubtitles.com/api/v1/subtitles?query=${encodeURIComponent(cleanTitle)}&year=${year}&languages=${langInfo.iso6391}`);
+                }
+                searchUrls.push(`https://api.opensubtitles.com/api/v1/subtitles?query=${encodeURIComponent(cleanTitle)}&languages=${langInfo.iso6391}`);
+            }
+        }
 
-        // Take first matching subtitle file ID
-        const fileId = data.data[0]?.attributes?.files?.[0]?.file_id;
-        if (!fileId) return null;
+        for (const searchUrl of searchUrls) {
+            try {
+                const response = await globalThis.fetch(searchUrl, {
+                    headers: {
+                        'User-Agent': 'Hypertube v1.0',
+                        'Api-Key': apiKey,
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-        // Request download URL
-        const downloadRes = await globalThis.fetch('https://api.opensubtitles.com/api/v1/download', {
-            method: 'POST',
-            headers: {
-                'User-Agent': 'Hypertube v1.0',
-                'Api-Key': apiKey,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ file_id: fileId }),
-        });
+                if (!response.ok) continue;
 
-        if (!downloadRes.ok) return null;
-        const downloadData = (await downloadRes.json()) as any;
-        const link = downloadData?.link;
-        if (!link) return null;
+                const data = (await response.json()) as any;
+                if (!data || !data.data || data.data.length === 0) continue;
 
-        // Download actual SRT content
-        const srtRes = await globalThis.fetch(link);
-        if (!srtRes.ok) return null;
-        return await srtRes.text();
+                // Take first matching subtitle file ID
+                const fileId = data.data[0]?.attributes?.files?.[0]?.file_id;
+                if (!fileId) continue;
+
+                // Request download URL
+                const downloadRes = await globalThis.fetch('https://api.opensubtitles.com/api/v1/download', {
+                    method: 'POST',
+                    headers: {
+                        'User-Agent': 'Hypertube v1.0',
+                        'Api-Key': apiKey,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ file_id: fileId }),
+                });
+
+                if (!downloadRes.ok) continue;
+                const downloadData = (await downloadRes.json()) as any;
+                const link = downloadData?.link;
+                if (!link) continue;
+
+                // Download actual SRT content
+                const srtRes = await globalThis.fetch(link);
+                if (!srtRes.ok) continue;
+                const text = await srtRes.text();
+                if (text && text.trim().length > 0) {
+                    return text;
+                }
+            } catch (err) {
+                console.error(`[SubtitleService] OpenSubtitles fetch error for ${searchUrl}:`, err);
+            }
+        }
+
+        return null;
     }
 
     /**
