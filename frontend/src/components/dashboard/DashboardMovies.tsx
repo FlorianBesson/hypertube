@@ -129,7 +129,7 @@ function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
       onClick={() => onSelectMovie(movie)}
       className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
         isWatched 
-          ? 'border-emerald-500/20 opacity-60 hover:opacity-85' 
+          ? 'border-white/5 hover:border-red-600/30 opacity-70 hover:opacity-95' 
           : 'border-white/5 hover:border-red-600/30'
       }`}
     >
@@ -165,30 +165,41 @@ function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
         <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
       </div>
 
-      {/* Watched Status Tag or Source Tag */}
-      {isWatched ? (
-        <div className="absolute top-2 left-2 z-20">
-          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md bg-emerald-600/90 text-white border border-emerald-500/30 flex items-center gap-1 backdrop-blur-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={3}
-              stroke="currentColor"
-              className="w-3.5 h-3.5"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-            {t.watchedBadge || "Watched"}
-          </span>
-        </div>
-      ) : movie.source ? (
+      {/* Provider Badge (Top Left) */}
+      {movie.source && (
         <div className="absolute top-2 left-2 z-20">
           <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md bg-black/70 text-neutral-300 border border-white/10 backdrop-blur-md">
             {movie.source}
           </span>
         </div>
-      ) : null}
+      )}
+
+      {/* Watched Eye Icon (Top Right) */}
+      {isWatched && (
+        <div className="absolute top-2 right-2 z-20" title={t.watchedBadge || "Déjà vu"}>
+          <div className="w-7 h-7 rounded-full bg-black/60 text-white border border-white/15 flex items-center justify-center shadow-md backdrop-blur-md">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              className="w-4 h-4 text-neutral-200"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* Hover Play Button Overlay */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/35 backdrop-blur-[1px] z-10">
