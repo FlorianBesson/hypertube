@@ -42,10 +42,16 @@ export class MovieSourceAggregator {
         movies = []
       }
     } else {
-      // Query all providers in parallel
+      // Query all providers in parallel with balanced limit (e.g. 10 per provider)
       const activeProviders = Array.from(this.providers.values())
+      const perProviderLimit = Math.max(1, Math.floor((params.limit || 20) / activeProviders.length))
+      const splitParams: MovieSearchParams = {
+        ...params,
+        limit: perProviderLimit
+      }
+
       const results = await Promise.allSettled(
-        activeProviders.map(p => p.searchMovies(params))
+        activeProviders.map(p => p.searchMovies(splitParams))
       )
 
       const combined: Movie[] = []

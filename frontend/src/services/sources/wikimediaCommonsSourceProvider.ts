@@ -114,7 +114,7 @@ export class WikimediaCommonsSourceProvider implements IMovieSourceProvider {
           description: description || 'Film libre du domaine public issu de Wikimedia Commons.',
           creator: creator || undefined,
           language: 'English',
-          downloads: Math.floor(sizeBytes / 3000), // proportional popularity
+          downloads,
           torrentUrl: videoUrl,
           detailsUrl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(p.title)}`,
           torrents: [
