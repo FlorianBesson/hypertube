@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { TorrentSourceResolver } from './bittorrent/torrentSourceResolver';
+import { resolveSource } from './bittorrent/torrentSourceResolver';
 import { TorrentEngineManager, ActiveTorrentEngine } from './bittorrent/torrentEngineManager';
 
 export interface TorrentStreamFile {
@@ -14,31 +14,33 @@ export interface TorrentStreamFile {
 
 export type { ActiveTorrentEngine };
 
-export class BitTorrentService {
-  private engineManager = new TorrentEngineManager();
-  private downloadsBaseDir: string;
+const defaultEngineManager = new TorrentEngineManager();
 
-  constructor(downloadsBaseDir: string) {
-    this.downloadsBaseDir = downloadsBaseDir;
+/**
+ * Initializes or returns an active non-blocking torrent stream engine.
+ */
+export async function getOrStartTorrent(
+  torrentHash: string,
+  imdbId?: string,
+  downloadsBaseDir: string = path.join(process.cwd(), 'downloads'),
+  engineManager: TorrentEngineManager = defaultEngineManager
+): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
+  const normalizedHash = torrentHash.toLowerCase();
+
+  const active = engineManager.getActiveEngine(normalizedHash);
+  if (active) {
+    return active.readyPromise;
   }
 
-  /**
-   * Initializes or returns an active non-blocking torrent stream engine.
-   */
-  public async getOrStartTorrent(torrentHash: string, imdbId?: string): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
-    const normalizedHash = torrentHash.toLowerCase();
-
-    const active = this.engineManager.getActiveEngine(normalizedHash);
-    if (active) {
-      return active.readyPromise;
-    }
-
-    const downloadFolder = path.join(this.downloadsBaseDir, normalizedHash);
-    if (!fs.existsSync(downloadFolder)) {
-      fs.mkdirSync(downloadFolder, { recursive: true });
-    }
-
-    const torrentSource = await TorrentSourceResolver.resolveSource(normalizedHash);
-    return this.engineManager.createEngine(normalizedHash, torrentSource, downloadFolder, imdbId);
+  const downloadFolder = path.join(downloadsBaseDir, normalizedHash);
+  if (!fs.existsSync(downloadFolder)) {
+    fs.mkdirSync(downloadFolder, { recursive: true });
   }
+
+  const torrentSource = await resolveSource(normalizedHash);
+  return engineManager.createEngine(normalizedHash, torrentSource, downloadFolder, imdbId);
 }
+
+export const bitTorrentService = {
+  getOrStartTorrent,
+};

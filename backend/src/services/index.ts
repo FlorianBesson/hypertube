@@ -1,3 +1,3 @@
 export * from './stream';
-export * from './movies';
-export * from './maintenance';
+export * as movies from './movies';
+export * as maintenance from './maintenance';
