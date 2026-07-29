@@ -71,9 +71,58 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
     setProgress(posPercentage)
   }
 
+  const [selectedSubLang, setSelectedSubLang] = useState<string>('fr')
+  const [showSubMenu, setShowSubMenu] = useState(false)
+  const [activeCueText, setActiveCueText] = useState<string>('')
+  const [subOffset, setSubOffset] = useState<number>(0)
+
+  // Subtitle track URLs
+  const imdbId = movie?.imdbId || movie?.id || 'tt0133093'
+  const subTracks = [
+    { code: 'fr', label: 'Français' },
+    { code: 'en', label: 'English' },
+    { code: 'es', label: 'Español' },
+  ]
+
+  const syncActiveCue = (lang: string, offsetSec: number = subOffset) => {
+    if (!videoRef.current || lang === 'off') {
+      setActiveCueText('')
+      return
+    }
+    const textTracks = videoRef.current.textTracks
+    const currentTime = videoRef.current.currentTime + offsetSec
+
+    for (let i = 0; i < textTracks.length; i++) {
+      const track = textTracks[i]
+      if (track.language === lang) {
+        track.mode = 'hidden' // Parse cues in JS without native low overlay
+        const cues = track.cues
+        if (cues) {
+          let matchedText = ''
+          for (let j = 0; j < cues.length; j++) {
+            const cue = cues[j] as VTTCue
+            if (currentTime >= cue.startTime && currentTime <= cue.endTime) {
+              matchedText = cue.text
+              break
+            }
+          }
+          setActiveCueText(matchedText)
+        }
+      } else {
+        track.mode = 'disabled'
+      }
+    }
+  }
+
+  const handleSubChange = (code: string) => {
+    setSelectedSubLang(code)
+    setShowSubMenu(false)
+    syncActiveCue(code)
+  }
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-between group">
-      {/* HTML5 Video Element connected to torrent stream API */}
+      {/* HTML5 Video Element connected to torrent stream API and WebVTT Subtitle tracks */}
       <video
         ref={videoRef}
         src={streamUrl}
@@ -102,15 +151,34 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
             if (dur > 0) {
               setProgress((cur / dur) * 100)
             }
+            syncActiveCue(selectedSubLang)
           }
         }}
         onLoadedMetadata={() => {
           if (videoRef.current) {
             setDuration(videoRef.current.duration || 0)
             setIsBuffering(false)
+            syncActiveCue(selectedSubLang)
           }
         }}
-      />
+      >
+        {subTracks.map((tr) => (
+          <track
+            key={tr.code}
+            kind="subtitles"
+            src={`/api/movies/subtitles/${encodeURIComponent(imdbId)}/${tr.code}`}
+            srcLang={tr.code}
+            label={tr.label}
+          />
+        ))}
+      </video>
+
+      {/* Floating Subtitle Overlay - Positioned safely above bottom control bar */}
+      {selectedSubLang !== 'off' && activeCueText && (
+        <div className="absolute bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-20 max-w-2xl sm:max-w-3xl px-5 py-2.5 bg-black/85 border border-white/15 text-white text-base sm:text-lg font-semibold rounded-2xl text-center shadow-2xl backdrop-blur-md transition-all duration-150 pointer-events-none whitespace-pre-line leading-relaxed">
+          {activeCueText.replace(/<[^>]*>/g, '')}
+        </div>
+      )}
 
       {/* Buffering Spinner / Overlay */}
       {isBuffering && !streamError && (
@@ -235,6 +303,92 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
                 {movie.title}
               </span>
             )}
+            {/* Subtitles CC Menu Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSubMenu(!showSubMenu)}
+                className={`hover:text-red-500 transition-all cursor-pointer px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-md ${selectedSubLang !== 'off' ? 'bg-red-600 text-white border-red-500 hover:bg-red-700' : 'bg-white/10 hover:bg-white/20 text-neutral-300 border-white/15'}`}
+                title="Sous-titres / Subtitles"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3.75h9m-9 3.75h5.25" />
+                </svg>
+                <span>CC</span>
+                <span className="text-[10px] uppercase opacity-80">({selectedSubLang})</span>
+              </button>
+
+              {showSubMenu && (
+                <div className="absolute bottom-full right-0 mb-2 w-40 bg-neutral-900/95 border border-white/15 rounded-xl shadow-2xl p-1.5 z-30 flex flex-col gap-1 backdrop-blur-md">
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-neutral-400 border-b border-white/10 flex items-center justify-between">
+                    <span>Sous-titres</span>
+                    <span className="text-red-500 font-mono text-[9px]">vtt</span>
+                  </div>
+                  <button
+                    onClick={() => handleSubChange('off')}
+                    className={`px-3 py-2 text-left text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-between ${selectedSubLang === 'off' ? 'bg-red-600 font-bold text-white' : 'text-neutral-300 hover:bg-white/10'}`}
+                  >
+                    <span>Désactivés</span>
+                    {selectedSubLang === 'off' && <span>✓</span>}
+                  </button>
+                  {subTracks.map((tr) => (
+                    <button
+                      key={tr.code}
+                      onClick={() => handleSubChange(tr.code)}
+                      className={`px-3 py-2 text-left text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-between ${selectedSubLang === tr.code ? 'bg-red-600 font-bold text-white' : 'text-neutral-300 hover:bg-white/10'}`}
+                    >
+                      <span>{tr.label}</span>
+                      {selectedSubLang === tr.code && <span>✓</span>}
+                    </button>
+                  ))}
+
+                  {/* Subtitle Delay Offset Controls */}
+                  {selectedSubLang !== 'off' && (
+                    <div className="mt-1 pt-1.5 border-t border-white/10 flex flex-col gap-1 px-1">
+                      <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold px-1">
+                        <span>Décalage tempo</span>
+                        <span className="font-mono text-red-400 font-bold">
+                          {subOffset > 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-1">
+                        <button
+                          onClick={() => {
+                            const next = parseFloat((subOffset - 0.5).toFixed(1))
+                            setSubOffset(next)
+                            syncActiveCue(selectedSubLang, next)
+                          }}
+                          className="flex-1 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-bold transition-colors cursor-pointer text-center"
+                          title="Avancer les sous-titres (-0.5s)"
+                        >
+                          -0.5s
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSubOffset(0)
+                            syncActiveCue(selectedSubLang, 0)
+                          }}
+                          className="px-2 py-1 bg-white/5 hover:bg-white/15 text-neutral-400 hover:text-white rounded text-[10px] font-semibold transition-colors cursor-pointer"
+                          title="Réinitialiser"
+                        >
+                          Reset
+                        </button>
+                        <button
+                          onClick={() => {
+                            const next = parseFloat((subOffset + 0.5).toFixed(1))
+                            setSubOffset(next)
+                            syncActiveCue(selectedSubLang, next)
+                          }}
+                          className="flex-1 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-bold transition-colors cursor-pointer text-center"
+                          title="Retarder les sous-titres (+0.5s)"
+                        >
+                          +0.5s
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => {
