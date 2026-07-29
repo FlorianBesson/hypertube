@@ -61,7 +61,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                 {/* Contenu principal */}
                 <div className="p-6 sm:p-8 relative z-10 flex flex-col md:flex-row gap-6">
                     {/* Affiche du film */}
-                    <div className="w-36 sm:w-48 aspect-[2/3] rounded-xl border border-white/10 overflow-hidden shrink-0 shadow-xl bg-neutral-950">
+                    <div className="w-36 sm:w-48 aspect-2/3 rounded-xl border border-white/10 overflow-hidden shrink-0 shadow-xl bg-neutral-950">
                         {!imageError && posterUrl ? (
                             <img 
                                 src={posterUrl} 

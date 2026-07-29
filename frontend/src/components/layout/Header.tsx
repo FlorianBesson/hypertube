@@ -23,7 +23,7 @@ export default function Header({
 
   return (
     <header className="w-full px-4 sm:px-8 pt-4 sm:pt-6">
-      <div className="max-w-[1400px] w-full mx-auto flex items-center justify-between">
+      <div className="max-w-350 w-full mx-auto flex items-center justify-between">
         <Link
           to={showUserSection ? "/dashboard" : "/"}
           className="cursor-pointer rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 shrink-0"

@@ -157,7 +157,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       )}
 
       {/* Top Floating Overlay (Header over video) */}
-      <div className="relative z-10 p-4 sm:p-6 pr-16 sm:pr-20 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+      <div className="relative z-10 p-4 sm:p-6 pr-16 sm:pr-20 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity bg-linear-to-b from-black/80 via-black/40 to-transparent">
         <div className="flex items-center gap-3">
           {/* Back to Catalog Button (Icon only) */}
           <button
@@ -174,7 +174,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       <div className="relative z-10 flex-1" />
 
       {/* Bottom Floating Control Bar */}
-      <div className="relative z-10 p-4 sm:p-6 bg-gradient-to-t from-black/95 via-black/80 to-transparent backdrop-blur-md flex flex-col gap-3 opacity-95 group-hover:opacity-100 transition-opacity">
+      <div className="relative z-10 p-4 sm:p-6 bg-linear-to-t from-black/95 via-black/80 to-transparent backdrop-blur-md flex flex-col gap-3 opacity-95 group-hover:opacity-100 transition-opacity">
         {/* Progress / Scrub Bar */}
         <div
           className="w-full h-2 hover:h-3 bg-white/20 rounded-full cursor-pointer transition-all relative overflow-hidden group/bar"

@@ -128,7 +128,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
   return (
     <div
       onClick={() => onSelectMovie(movie)}
-      className={`group relative aspect-[2/3] rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
+      className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
         isWatched 
           ? 'border-emerald-500/20 opacity-60 hover:opacity-85' 
           : 'border-white/5 hover:border-red-600/30'
@@ -146,7 +146,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
             loading="lazy"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4 text-center`}>
+          <div className={`w-full h-full bg-linear-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4 text-center`}>
             <svg
               className="w-8 h-8 text-neutral-600 mb-2"
               xmlns="http://www.w3.org/2000/svg"
@@ -163,7 +163,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
           </div>
         )}
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
       </div>
 
       {/* Watched Status Tag or Source Tag */}
@@ -739,8 +739,8 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="aspect-[2/3] bg-neutral-800/20 rounded-xl border border-white/5 animate-pulse relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+              <div key={i} className="aspect-2/3 bg-neutral-800/20 rounded-xl border border-white/5 animate-pulse relative overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
                 <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-2">
                   <div className="h-3 bg-neutral-700/50 rounded w-1/3" />
                   <div className="h-4 bg-neutral-700/50 rounded w-3/4" />
