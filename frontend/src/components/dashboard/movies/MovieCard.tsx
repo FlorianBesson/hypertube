@@ -67,15 +67,7 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
       {/* Provider Badge (Top Left) */}
       {movie.source && (
         <div className="absolute top-2 left-2 z-20">
-          <span
-            className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md border backdrop-blur-md inline-block ${
-              movie.source.includes('Public Domain')
-                ? 'bg-amber-950/85 text-amber-300 border-amber-500/40 shadow-amber-950/50'
-                : movie.source.includes('Archive')
-                ? 'bg-blue-950/85 text-blue-300 border-blue-500/40 shadow-blue-950/50'
-                : 'bg-black/80 text-neutral-300 border-white/10'
-            }`}
-          >
+          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md bg-black/70 text-neutral-300 border border-white/10 backdrop-blur-md">
             {movie.source}
           </span>
         </div>

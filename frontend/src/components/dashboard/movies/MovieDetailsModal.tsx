@@ -83,13 +83,7 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                             <div className="flex items-center gap-2 pr-12">
                                 <span className="text-xs font-extrabold text-red-500 uppercase tracking-widest">{movie.genre}</span>
                                 {movie.source && (
-                                    <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-md tracking-wider border backdrop-blur-md inline-block ${
-                                        movie.source.includes('Public Domain')
-                                            ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-                                            : movie.source.includes('Archive')
-                                            ? 'bg-blue-950/80 text-blue-300 border-blue-500/40'
-                                            : 'bg-white/10 text-neutral-300 border-white/10'
-                                    }`}>
+                                    <span className="text-[10px] bg-white/10 text-neutral-300 px-2 py-0.5 rounded border border-white/10 font-mono">
                                         {movie.source}
                                     </span>
                                 )}
