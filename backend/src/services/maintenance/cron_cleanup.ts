@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '../prisma';
+import { prisma } from '../../prisma';
 
 /**
  * Nettoie les fichiers vidéo et sous-titres associés des films non visionnés depuis plus de 30 jours.
@@ -24,7 +24,6 @@ export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBy
         });
 
         if (expiredMovies.length === 0) {
-            console.log('[CRON] Aucun film inactif depuis 30 jours à nettoyer.');
             return { purgedCount: 0, freedBytes: 0 };
         }
 
@@ -81,9 +80,6 @@ export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBy
             freedBytes += fileFreed;
         }
 
-        const freedMB = (freedBytes / (1024 * 1024)).toFixed(2);
-        console.log(`[CRON] Nettoyage automatique terminé : ${purgedCount} film(s) purgé(s), ${freedMB} Mo d'espace libéré.`);
-
     } catch (error) {
         console.error('[CRON] Erreur globale lors du nettoyage des vidéos inactives:', error);
     }
@@ -97,9 +93,6 @@ export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBy
 export function initCronJobs(): void {
     // Exécution tous les jours à 3h00 du matin ('0 3 * * *')
     cron.schedule('0 3 * * *', async () => {
-        console.log('[CRON] Lancement de la tâche quotidienne de nettoyage des vidéos inactives...');
         await cleanupOldMovies();
     });
-
-    console.log('[CRON] Planificateur de nettoyage automatique configuré (exécuté chaque jour à 03:00).');
 }

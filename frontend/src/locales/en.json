@@ -84,7 +84,14 @@
     "anyRating": "Any Rating",
     "loadingMore": "Loading more movies...",
     "noMoreMovies": "No more movies to load",
-    "watchedBadge": "Watched"
+    "watchedBadge": "Watched",
+    "closeModal": "Close",
+    "downloads": "downloads",
+    "description": "Description",
+    "noDescription": "No description available.",
+    "creator": "Creator",
+    "language": "Language",
+    "playMovie": "Watch movie"
   },
   "profile": {
     "backToDashboard": "Back to dashboard",
@@ -153,13 +160,6 @@
     "passwordLabel": "Password Credentials",
     "changePasswordSecure": "Change password to secure account"
   },
-  "sidebar": {
-    "navigationLabel": "Main navigation",
-    "home": "Home",
-    "discover": "Discover",
-    "library": "Library",
-    "settings": "Settings"
-  },
   "watch": {
     "backToCatalog": "Back to movies",
     "fakePlayerNotice": "Development Mock Player & Streaming Environment",
@@ -171,6 +171,12 @@
     "torrentSpeed": "Streaming BitTorrent: 3.4 MB/s (28 seeds)",
     "noComments": "No comments yet. Be the first to share your thoughts!",
     "movieNotFound": "Movie not found",
-    "quality": "1080p Web-DL"
+    "quality": "1080p Web-DL",
+    "errorLoadingVideo": "Error loading video stream.",
+    "buffering": "Buffering video stream...",
+    "videoUnavailable": "Video stream unavailable",
+    "retry": "Retry",
+    "messagesCount": "messages",
+    "anonymousUser": "User"
   }
 }

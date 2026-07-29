@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import Footer from './Footer'
 
 interface PageLayoutProps {
@@ -19,10 +19,15 @@ export default function PageLayout({
     ? 'radial-gradient(ellipse 120% 60% at 50% 0%, #5c1010 0%, #2a0505 35%, #0d0000 65%, #000000 100%)'
     : 'radial-gradient(ellipse 120% 60% at 50% 0%, #1e0505 0%, #0d0202 35%, #050000 65%, #000000 100%)'
 
+  useEffect(() => {
+    document.body.style.background = bg
+    document.body.style.backgroundAttachment = 'fixed'
+    document.body.style.backgroundColor = '#000000'
+  }, [bg])
+
   return (
     <div
       className="min-h-screen flex flex-col text-white"
-      style={{ background: bg }}
     >
       {header}
 
@@ -38,3 +43,4 @@ export default function PageLayout({
     </div>
   )
 }
+

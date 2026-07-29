@@ -44,7 +44,7 @@ export default function CommentsSection({
       setIsLoading(true)
       try {
         const token = localStorage.getItem('token')
-        const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}/comments`, {
+        const res = await fetch(`/api/movies/comments/${encodeURIComponent(imdbId)}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
 
@@ -73,7 +73,7 @@ export default function CommentsSection({
 
     setIsSubmitting(true)
     try {
-      const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}/comments`, {
+      const res = await fetch(`/api/movies/comments/${encodeURIComponent(imdbId)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ export default function CommentsSection({
           </div>
           <div>
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">{t.commentsTitle}</h2>
-            <span className="text-[11px] text-neutral-400">{comments.length} messages</span>
+            <span className="text-[11px] text-neutral-400">{comments.length} {t.messagesCount || 'messages'}</span>
           </div>
         </div>
 
@@ -196,7 +196,7 @@ export default function CommentsSection({
               <div className="flex-1 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-[11px]">
-                    {comment.user?.username || 'Utilisateur'}
+                    {comment.user?.username || t.anonymousUser || 'Utilisateur'}
                   </span>
                   <span className="text-[10px] text-neutral-500">
                     {new Date(comment.createdAt).toLocaleDateString()}

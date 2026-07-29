@@ -84,7 +84,14 @@
     "anyRating": "Toutes les notes",
     "loadingMore": "Chargement de films supplémentaires...",
     "noMoreMovies": "Fin de la liste des films",
-    "watchedBadge": "Vu"
+    "watchedBadge": "Vu",
+    "closeModal": "Fermer",
+    "downloads": "téléchargements",
+    "description": "Description",
+    "noDescription": "Aucune description disponible.",
+    "creator": "Créateur",
+    "language": "Langue",
+    "playMovie": "Lancer la vidéo"
   },
   "profile": {
     "backToDashboard": "Retour au tableau de bord",
@@ -153,13 +160,6 @@
     "passwordLabel": "Mot de passe",
     "changePasswordSecure": "Dernier changement inconnu"
   },
-  "sidebar": {
-    "navigationLabel": "Navigation principale",
-    "home": "Accueil",
-    "discover": "Découvrir",
-    "library": "Bibliothèque",
-    "settings": "Paramètres"
-  },
   "watch": {
     "backToCatalog": "Retour aux films",
     "fakePlayerNotice": "Lecteur vidéo de test & environnement de dev",
@@ -171,6 +171,12 @@
     "torrentSpeed": "Streaming BitTorrent : 3.4 Mo/s (28 seeds)",
     "noComments": "Aucun commentaire pour le moment. Soyez le premier !",
     "movieNotFound": "Film non trouvé",
-    "quality": "1080p Web-DL"
+    "quality": "1080p Web-DL",
+    "errorLoadingVideo": "Erreur lors du chargement de la vidéo.",
+    "buffering": "Bufferisation du flux vidéo...",
+    "videoUnavailable": "Flux vidéo indisponible",
+    "retry": "Réessayer",
+    "messagesCount": "messages",
+    "anonymousUser": "Utilisateur"
   }
 }

@@ -2,9 +2,9 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import path from 'path';
 import fs from 'fs';
-import { prisma } from '../prisma';
-import { authenticateToken } from '../middlewares/auth';
-import { SubtitleService, normalizeImdbId } from '../services/subtitle';
+import { prisma } from '../../prisma';
+import { authenticateToken } from '../../middlewares/auth';
+import { SubtitleService, normalizeImdbId } from '../../services/subtitle';
 
 const router = Router();
 
@@ -14,11 +14,11 @@ const createCommentSchema = z.object({
 });
 
 /**
- * Route: GET /api/movies/:imdbId/comments
+ * Route: GET /api/movies/comments/:imdbId
  * Description: Retrieves list of comments for a given movie, including author details.
  * Access: Authenticated users only
  */
-router.get("/:imdbId/comments", authenticateToken, async (req: Request, res: Response) => {
+router.get("/:imdbId", authenticateToken, async (req: Request, res: Response) => {
     try {
         const imdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
 
@@ -54,11 +54,11 @@ router.get("/:imdbId/comments", authenticateToken, async (req: Request, res: Res
 });
 
 /**
- * Route: POST /api/movies/:imdbId/comments
+ * Route: POST /api/movies/comments/:imdbId
  * Description: Creates a new comment for a movie by imdbId.
  * Access: Authenticated users only
  */
-router.post("/:imdbId/comments", authenticateToken, async (req: Request, res: Response) => {
+router.post("/:imdbId", authenticateToken, async (req: Request, res: Response) => {
     try {
         const imdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
         const rawUserId = (req as any).user?.userId || (req as any).user?.id;

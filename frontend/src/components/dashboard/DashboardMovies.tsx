@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { TranslationType } from '../../locales/translations'
 import MovieDetailsModal from './MovieDetailsModal'
+import { enrichInternetArchiveMoviesWithTmdb } from './internetArchiveTmdb'
 
 export interface Movie {
   id: string
@@ -10,29 +11,90 @@ export interface Movie {
   rating: number
   image: string
   source?: string
+  torrents?: Torrent[]
+  description?: string
+  creator?: string
+  language?: string
+  downloads?: number
+  torrentUrl?: string
+  detailsUrl?: string
+  tmdbId?: number
+  hash?: string
 }
 
-interface YtsRawMovie {
-  id: number | string
-  title: string
-  genres?: string[]
-  year: number | string
-  rating?: number
-  medium_cover_image?: string
+export interface Torrent {
+  url: string
+  hash: string
+  quality: string
+  type: string
+  is_repack?: string
+  video_codec?: string
+  bit_depth?: string
+  audio_channels?: string
+  seeds?: number
+  peers?: number
+  size?: string
+  size_bytes?: number
+  date_uploaded?: string
+  date_uploaded_unix?: number
 }
 
+type ArchiveMetadataValue = string | number | Array<string | number>
 
-interface CinemetaRawMovie {
-  id?: string
-  imdb_id?: string
-  name?: string
-  title?: string
-  year?: string | number
-  imdbRating?: string | number
-  genres?: string[]
-  poster?: string
+interface InternetArchiveRawMovie {
+  identifier: string
+  title?: ArchiveMetadataValue
+  description?: ArchiveMetadataValue
+  creator?: ArchiveMetadataValue
+  date?: ArchiveMetadataValue
+  year?: ArchiveMetadataValue
+  subject?: ArchiveMetadataValue
+  language?: ArchiveMetadataValue
+  downloads?: number
+  avg_rating?: number
 }
 
+interface InternetArchiveSearchResponse {
+  response?: {
+    numFound?: number
+    start?: number
+    docs?: InternetArchiveRawMovie[]
+  }
+}
+
+const INTERNET_ARCHIVE_PAGE_SIZE = 20
+const INTERNET_ARCHIVE_BASE_QUERY = [
+  'collection:feature_films',
+  'mediatype:movies',
+  'format:"Archive BitTorrent"'
+]
+
+function metadataValues(value?: ArchiveMetadataValue): string[] {
+  if (value === undefined || value === null) return []
+  return (Array.isArray(value) ? value : [value])
+    .map(item => String(item).trim())
+    .filter(Boolean)
+}
+
+function metadataText(value?: ArchiveMetadataValue): string {
+  return metadataValues(value)
+    .join(', ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function metadataYear(movie: InternetArchiveRawMovie): string | number {
+  const explicitYear = metadataValues(movie.year)[0]
+  if (explicitYear) return explicitYear
+
+  const date = metadataValues(movie.date)[0]
+  return date?.match(/\b(?:18|19|20)\d{2}\b/)?.[0] || 'N/A'
+}
+
+function escapeInternetArchiveQuery(value: string): string {
+  return value.replace(/([+\-!(){}[\]^"~*?:\\/]|&&|\|\|)/g, '\\$1')
+}
 
 interface MovieCardProps {
   movie: Movie
@@ -44,31 +106,13 @@ t: TranslationType['dashboard']
 
 interface DashboardMoviesProps {
   t: TranslationType['dashboard']
+  lang: 'en' | 'fr'
   showCommunity: boolean
   setShowCommunity: (val: boolean) => void
 }
 
 function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
-  const [recoveredPoster, setRecoveredPoster] = useState<string | null>(null)
-
-  const posterUrl = recoveredPoster || movie.image
-
-  // Auto-recovery: If YTS image domain is DNS-blocked, fetch official poster from OMDb API
-  useEffect(() => {
-    if (imageError && movie.title) {
-      const cleanTitle = movie.title.replace(/\(\d{4}\)/, '').trim()
-      fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=trilogy`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.Poster && data.Poster !== 'N/A') {
-            setRecoveredPoster(data.Poster)
-            setImageError(false)
-          }
-        })
-        .catch(() => {})
-    }
-  }, [imageError, movie.title])
 
   // Generate fallback gradients
   const fallbackGradients = [
@@ -83,8 +127,8 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
 
   return (
     <div
-      onClick={() => onSelectMovie(recoveredPoster ? { ...movie, image: recoveredPoster } : movie)}
-      className={`group relative aspect-[2/3] rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
+      onClick={() => onSelectMovie(movie)}
+      className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
         isWatched 
           ? 'border-emerald-500/20 opacity-60 hover:opacity-85' 
           : 'border-white/5 hover:border-red-600/30'
@@ -92,9 +136,9 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
     >
       {/* Movie Poster Image */}
       <div className="absolute inset-0 bg-neutral-900">
-        {!imageError && posterUrl ? (
+        {!imageError && movie.image ? (
           <img
-            src={posterUrl}
+            src={movie.image}
             alt={movie.title}
             referrerPolicy="no-referrer"
             onError={() => setImageError(true)}
@@ -102,7 +146,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
             loading="lazy"
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4 text-center`}>
+          <div className={`w-full h-full bg-linear-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4 text-center`}>
             <svg
               className="w-8 h-8 text-neutral-600 mb-2"
               xmlns="http://www.w3.org/2000/svg"
@@ -119,7 +163,7 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
           </div>
         )}
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
       </div>
 
       {/* Watched Status Tag or Source Tag */}
@@ -195,24 +239,41 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
         </h3>
         <div className="flex items-center justify-between mt-1 text-[11px] text-neutral-400 font-medium">
           <span>{movie.year}</span>
-          <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              className="w-3.5 h-3.5 text-amber-500"
-            >
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>
-            {movie.rating.toFixed(1)}
-          </span>
+          {movie.rating > 0 ? (
+            <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                className="w-3.5 h-3.5 text-amber-500"
+              >
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
+              {movie.rating.toFixed(1)}
+            </span>
+          ) : (
+            <span>{(movie.downloads || 0).toLocaleString()} téléchargements</span>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-export default function DashboardMovies({ t, showCommunity, setShowCommunity }: DashboardMoviesProps) {
+const NON_MOVIE_TITLE_RE = /\b(trailer|teaser|commercial|promo|clip|vhs|raw footage|home video|newsreel|advertisement|test|episode|b-roll)\b/i
+
+function isLikelyMovie(movie: InternetArchiveRawMovie): boolean {
+  const title = metadataText(movie.title)
+  if (!title || title.trim().length < 2) return false
+  if (NON_MOVIE_TITLE_RE.test(title)) return false
+
+  const subject = metadataText(movie.subject)
+  if (/\b(commercials|home movies|promos|newsreels)\b/i.test(subject)) return false
+
+  return true
+}
+
+export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [movies, setMovies] = useState<Movie[]>([])
@@ -266,9 +327,10 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
     }
   }, [searchQuery])
 
-  // Fetch movies from multiple external sources (YTS + Popcorn Time / TMDB)
+  // Fetch the movie catalogue from Internet Archive's Advanced Search API.
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
 
     const fetchVideos = async () => {
       if (page === 1) {
@@ -280,159 +342,89 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
 
       try {
         const queryStr = debouncedQuery.trim()
+        const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
 
-        // 1. Fetch YTS (External Source #1)
-        const fetchYts = async (): Promise<Movie[]> => {
-          try {
-            const params = new URLSearchParams()
-            params.append('limit', '20')
-            params.append('page', page.toString())
-            params.append('sort_by', sortBy)
-            params.append('order_by', order)
-
-            if (queryStr) params.append('query_term', queryStr)
-            if (selectedGenre) params.append('genre', selectedGenre)
-            if (selectedMinRating > 0) params.append('minimum_rating', selectedMinRating.toString())
-
-            const mirrors = [
-              `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`,
-              `https://yts.mx/api/v2/list_movies.json?${params.toString()}`
-            ]
-
-            let ytsData: { data?: { movies?: YtsRawMovie[] } } | null = null
-            for (const url of mirrors) {
-              try {
-                const response = await fetch(url)
-                if (response.ok) {
-                  const data = await response.json()
-                  if (data?.data?.movies && data.data.movies.length > 0) {
-                    ytsData = data
-                    break
-                  }
-                }
-              } catch {
-                continue
-              }
-            }
-
-            if (!ytsData?.data?.movies) return []
-
-            return ytsData.data.movies.map((m: YtsRawMovie) => ({
-              id: `yts-${m.id}`,
-              title: m.title,
-              genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-              year: m.year,
-              rating: m.rating || 0,
-              image: m.medium_cover_image || '',
-              source: 'YTS'
-            }))
-          } catch {
-            return []
-          }
+        if (queryStr) {
+          queryParts.push(`(${escapeInternetArchiveQuery(queryStr)})`)
         }
 
-
-        // 2. Fetch Torrentio / Cinemeta Catalog (External Source #2)
-        const fetchTorrentio = async (): Promise<Movie[]> => {
-          try {
-            const url = queryStr
-              ? `https://v3-cinemeta.strem.io/catalog/movie/top/search=${encodeURIComponent(queryStr)}.json`
-              : `https://cinemeta-catalogs.strem.io/top/catalog/movie/top.json`
-
-            const response = await fetch(url)
-            if (!response.ok) return await fetchYtsPopular()
-
-            const data = await response.json()
-            const metas: CinemetaRawMovie[] = data?.metas || []
-            if (metas.length === 0) return await fetchYtsPopular()
-
-            const currentYear = new Date().getFullYear()
-            let filtered = metas.filter((m: CinemetaRawMovie) => {
-              const y = parseInt(String(m.year)) || 0
-              return y > 0 && y <= currentYear
-            })
-
-            if (selectedGenre) {
-              filtered = filtered.filter((m: CinemetaRawMovie) =>
-                m.genres?.some(g => g.toLowerCase().includes(selectedGenre.toLowerCase()))
-              )
-            }
-
-            return filtered.map((m: CinemetaRawMovie) => {
-              const numRating = Number(m.imdbRating) || 0
-              return {
-                id: `torrentio-${m.imdb_id || m.id || m.name}`,
-                title: m.name || m.title || '',
-                genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-                year: m.year || 'N/A',
-                rating: Math.min(10, Math.max(0, numRating)),
-                image: m.poster || '',
-                source: 'Torrentio'
-              }
-            }).filter((m: Movie) => selectedMinRating === 0 || m.rating >= selectedMinRating)
-          } catch {
-            return await fetchYtsPopular()
-          }
+        if (selectedGenre) {
+          queryParts.push(`subject:"${escapeInternetArchiveQuery(selectedGenre)}"`)
         }
 
-        // 3. Fallback Source: YTS Popular list
-        const fetchYtsPopular = async (): Promise<Movie[]> => {
-          try {
-            const params = new URLSearchParams()
-            params.append('limit', '20')
-            params.append('page', page.toString())
-            params.append('sort_by', 'download_count')
-            if (queryStr) params.append('query_term', queryStr)
-            if (selectedGenre) params.append('genre', selectedGenre)
-
-            const ytsFallbackUrl = `https://movies-api.accel.li/api/v2/list_movies.json?${params.toString()}`
-            const res = await fetch(ytsFallbackUrl)
-            if (!res.ok) return []
-
-            const ytsData = await res.json()
-            if (!ytsData?.data?.movies) return []
-
-            return ytsData.data.movies.map((m: YtsRawMovie) => ({
-              id: `yts-popular-${m.id}`,
-              title: m.title,
-              genre: m.genres && m.genres.length > 0 ? m.genres.join(', ') : 'Movie',
-              year: m.year,
-              rating: m.rating || 0,
-              image: m.medium_cover_image || '',
-              source: 'YTS Popular'
-            }))
-          } catch {
-            return []
-          }
+        if (selectedMinRating > 0) {
+          queryParts.push(`avg_rating:[${selectedMinRating / 2} TO *]`)
         }
 
-        // Execute both external video sources in parallel (YTS + Torrentio)
-        const [ytsResult, torrentioResult] = await Promise.allSettled([
-          fetchYts(),
-          fetchTorrentio()
-        ])
+        const sortField = {
+          download_count: 'downloads',
+          title: 'titleSorter',
+          year: 'date',
+          rating: 'avg_rating'
+        }[sortBy]
 
-        const ytsList = ytsResult.status === 'fulfilled' ? ytsResult.value : []
-        const torrentioList = torrentioResult.status === 'fulfilled' ? torrentioResult.value : []
+        // Fetch extra rows to account for non-movies and TMDb filter drops
+        const FETCH_ROWS = 35
 
-        // Interleave & merge both sources for balanced presentation
-        const merged: Movie[] = []
-        const maxLen = Math.max(ytsList.length, torrentioList.length)
-        for (let i = 0; i < maxLen; i++) {
-          if (i < ytsList.length) merged.push(ytsList[i])
-          if (i < torrentioList.length) merged.push(torrentioList[i])
+        const params = new URLSearchParams({
+          q: queryParts.join(' AND '),
+          rows: FETCH_ROWS.toString(),
+          page: page.toString(),
+          output: 'json'
+        })
+        params.append('sort[]', `${sortField} ${order}`)
+        const fields = [
+          'identifier',
+          'title',
+          'description',
+          'creator',
+          'date',
+          'year',
+          'subject',
+          'language',
+          'downloads',
+          'avg_rating'
+        ]
+        fields.forEach(field => params.append('fl[]', field))
+
+        const response = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`, {
+          signal: controller.signal
+        })
+        if (!response.ok) {
+          throw new Error(`Internet Archive returned ${response.status}`)
         }
 
-        // Deduplicate movies by normalized title
-        const seenTitles = new Set<string>()
-        const fetchedMovies: Movie[] = []
-        for (const movie of merged) {
-          const normTitle = movie.title.toLowerCase().trim()
-          if (!seenTitles.has(normTitle)) {
-            seenTitles.add(normTitle)
-            fetchedMovies.push(movie)
-          }
-        }
+        const data = await response.json() as InternetArchiveSearchResponse
+        const rawDocs = data.response?.docs || []
+
+        // Pre-filter out non-movies (trailers, commercials, home videos, clips)
+        const docs = rawDocs.filter(isLikelyMovie)
+
+        const archiveMovies: Movie[] = docs.map(movie => ({
+          id: movie.identifier,
+          title: metadataText(movie.title) || movie.identifier,
+          genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
+          year: metadataYear(movie),
+          rating: Math.min(10, Math.max(0, Number(movie.avg_rating || 0) * 2)),
+          image: `https://archive.org/services/img/${encodeURIComponent(movie.identifier)}`,
+          source: 'Internet Archive',
+          description: metadataText(movie.description),
+          creator: metadataText(movie.creator),
+          language: metadataText(movie.language),
+          downloads: Number(movie.downloads || 0),
+          torrentUrl: `https://archive.org/download/${encodeURIComponent(movie.identifier)}/${encodeURIComponent(movie.identifier)}_archive.torrent`,
+          detailsUrl: `https://archive.org/details/${encodeURIComponent(movie.identifier)}`
+        }))
+
+        const enrichedMovies = await enrichInternetArchiveMoviesWithTmdb(archiveMovies, {
+          apiKey: import.meta.env.VITE_TMDB_API_KEY,
+          lang,
+          concurrency: 4,
+          signal: controller.signal
+        })
+
+        // Limit to target page size (20 movies)
+        const fetchedMovies = enrichedMovies.slice(0, INTERNET_ARCHIVE_PAGE_SIZE)
 
         if (isMounted) {
           if (page === 1) {
@@ -445,14 +437,13 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
             })
           }
 
-          if (fetchedMovies.length === 0) {
-            setHasMore(false)
-          } else {
-            setHasMore(true)
-          }
+          const start = data.response?.start || 0
+          const total = data.response?.numFound || 0
+          setHasMore(start + rawDocs.length < Math.min(total, 10_000))
         }
       } catch (err) {
-        console.error("Fetch external video sources error:", err)
+        if (controller.signal.aborted) return
+        console.error('Internet Archive catalog fetch error:', err)
         if (isMounted) {
           setError(true)
         }
@@ -468,8 +459,9 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
 
     return () => {
       isMounted = false
+      controller.abort()
     }
-  }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page])
+  }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page, lang])
 
   // Set up IntersectionObserver for infinite scrolling
   useEffect(() => {
@@ -747,8 +739,8 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="aspect-[2/3] bg-neutral-800/20 rounded-xl border border-white/5 animate-pulse relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+              <div key={i} className="aspect-2/3 bg-neutral-800/20 rounded-xl border border-white/5 animate-pulse relative overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
                 <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-2">
                   <div className="h-3 bg-neutral-700/50 rounded w-1/3" />
                   <div className="h-4 bg-neutral-700/50 rounded w-3/4" />
@@ -831,7 +823,7 @@ export default function DashboardMovies({ t, showCommunity, setShowCommunity }: 
         <MovieDetailsModal 
           movie={selectedMovie} 
           onClose={() => setSelectedMovie(null)} 
-          t={t} 
+          t={t}
         />
       )}
     </div>
