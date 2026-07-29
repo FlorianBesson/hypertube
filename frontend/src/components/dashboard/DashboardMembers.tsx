@@ -1,21 +1,65 @@
 import { useNavigate } from 'react-router-dom'
-import Avatar from '../ui/Avatar'
 import type { TranslationType } from '../../locales/translations'
+import type { DashboardUserMember } from '../../types/member'
+import MemberCard from './MemberCard'
 
-interface DashboardMembersProps {
+export type { DashboardUserMember }
+
+export interface DashboardMembersProps {
   t: TranslationType['dashboard']
   loadingMembers: boolean
   errorMembers: boolean
-  otherUsers: Array<{ id: number; username: string; firstName: string; lastName: string; photo: string | null }>
+  otherUsers: DashboardUserMember[]
 }
 
 export default function DashboardMembers({ t, loadingMembers, errorMembers, otherUsers }: DashboardMembersProps) {
   const navigate = useNavigate()
 
+  const renderContent = () => {
+    if (loadingMembers) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 gap-3">
+          <span className="w-6 h-6 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+          <p className="text-xs text-neutral-500">{t.loadingMembers}</p>
+        </div>
+      )
+    }
+
+    if (errorMembers) {
+      return (
+        <div className="text-center py-6 text-red-400 text-sm">
+          {t.failedMembers}
+        </div>
+      )
+    }
+
+    if (otherUsers.length === 0) {
+      return (
+        <div className="text-center py-8 text-neutral-500 text-sm italic">
+          {t.noMembers}
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-col gap-3">
+        {otherUsers.map((u) => (
+          <MemberCard
+            key={u.id}
+            member={u}
+            onClick={(id) => navigate(`/user/${id}`)}
+            t={t}
+          />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="w-full lg:w-80 shrink-0 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md flex flex-col gap-6 relative overflow-hidden animate-in fade-in slide-in-from-right-8 duration-300 min-h-125">
       <div className="absolute top-0 right-0 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-      
+
+      {/* Header */}
       <div className="flex flex-col gap-1 border-b border-white/5 pb-3 relative z-10">
         <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-red-500">
@@ -28,51 +72,9 @@ export default function DashboardMembers({ t, loadingMembers, errorMembers, othe
         </p>
       </div>
 
+      {/* Content */}
       <div className="relative z-10 flex-1 overflow-y-auto pr-1">
-        {loadingMembers ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-3">
-            <span className="w-6 h-6 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
-            <p className="text-xs text-neutral-500">{t.loadingMembers}</p>
-          </div>
-        ) : errorMembers ? (
-          <div className="text-center py-6 text-red-400 text-sm">
-            {t.failedMembers}
-          </div>
-        ) : otherUsers.length === 0 ? (
-          <div className="text-center py-8 text-neutral-500 text-sm italic">
-            {t.noMembers}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {otherUsers.map((u) => (
-              <div
-                key={u.id}
-                onClick={() => {
-                  navigate(`/user/${u.id}`)
-                }}
-                className="bg-neutral-900/40 border border-white/5 rounded-2xl p-3 flex items-center gap-4 cursor-pointer hover:bg-neutral-900/80 hover:border-red-600/30 hover:shadow-[0_0_20px_rgba(220,38,38,0.07)] transition-all duration-300 group active:scale-[0.98]"
-              >
-                <Avatar
-                  photo={u.photo || undefined}
-                  name={u.username}
-                  size="sm"
-                  className="group-hover:scale-105 transition-transform duration-300 shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white group-hover:text-red-500 transition-colors truncate">
-                    {u.username || t.notSpecified}
-                  </p>
-                  <p className="text-[10px] text-neutral-500 uppercase mt-0.5 tracking-wider">
-                    {t.viewProfile}
-                  </p>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-neutral-600 group-hover:text-red-500 transition-colors shrink-0">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </div>
-            ))}
-          </div>
-        )}
+        {renderContent()}
       </div>
     </div>
   )

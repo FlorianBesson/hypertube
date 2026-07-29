@@ -4,6 +4,8 @@ import { translations } from '../locales/translations'
 import DashboardMovies from '../components/dashboard/DashboardMovies'
 import DashboardMembers from '../components/dashboard/DashboardMembers'
 
+import type { DashboardUserMember } from '../types/member'
+
 interface DashboardPageProps {
   user: LoggedUser
   lang: 'en' | 'fr'
@@ -19,7 +21,7 @@ export default function DashboardPage({
   const [showCommunity, setShowCommunity] = useState(false)
 
   // users: list of registered user objects retrieved from database
-  const [users, setUsers] = useState<Array<{ id: number; username: string; firstName: string; lastName: string; photo: string | null }>>([])
+  const [users, setUsers] = useState<DashboardUserMember[]>([])
   
   // loadingMembers: UI state representing if user fetching is currently in progress
   const [loadingMembers, setLoadingMembers] = useState(true)
