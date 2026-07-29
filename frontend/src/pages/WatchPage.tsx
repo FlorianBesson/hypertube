@@ -6,6 +6,8 @@ import { translations } from '../locales/translations'
 import type { LoggedUser } from '../App'
 import type { Movie } from '../types/movie'
 
+import { PUBLIC_DOMAIN_TORRENTS_DATABASE } from '../services/sources/publicDomainTorrentsSourceProvider'
+
 interface WatchPageProps {
   lang: 'en' | 'fr'
   user: LoggedUser | null
@@ -28,13 +30,21 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
   const [isCommentsCollapsed, setIsCommentsCollapsed] = useState(true)
   const [isLoading, setIsLoading] = useState(!movie)
 
-  // Recover the Internet Archive item if the page is opened directly by URL.
+  // Recover movie item if page is opened directly by URL
   useEffect(() => {
     if (movie || !id) return
 
     const fetchMovieFallback = async () => {
       setIsLoading(true)
       try {
+        if (id.startsWith('pdt-')) {
+          const found = PUBLIC_DOMAIN_TORRENTS_DATABASE.find(m => m.id === id)
+          if (found) {
+            setMovie(found)
+            return
+          }
+        }
+
         const response = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`)
         if (!response.ok) {
           throw new Error(`Internet Archive returned ${response.status}`)
@@ -64,7 +74,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
           detailsUrl: `https://archive.org/details/${encodeURIComponent(id)}`
         })
       } catch (err) {
-        console.error('Error fetching Internet Archive item:', err)
+        console.error('Error fetching movie metadata fallback:', err)
       } finally {
         setIsLoading(false)
       }

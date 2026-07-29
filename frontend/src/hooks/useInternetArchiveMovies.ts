@@ -1,19 +1,9 @@
 import { useState, useEffect } from 'react'
-import type { Movie, InternetArchiveSearchResponse } from '../types/movie'
-import { enrichInternetArchiveMoviesWithTmdb } from '../services/internetArchiveTmdb'
-import {
-  INTERNET_ARCHIVE_BASE_QUERY,
-  INTERNET_ARCHIVE_PAGE_SIZE,
-  escapeInternetArchiveQuery,
-  isLikelyMovie,
-  metadataText,
-  metadataValues,
-  metadataYear
-} from '../utils/internetArchiveUtils'
+import type { Movie } from '../types/movie'
+import type { MovieSourceId, SortByOption, SortOrder, WatchedFilterOption } from '../services/sources/types'
+import { movieSourceAggregator } from '../services/sources/movieSourceAggregator'
 
-export type SortByOption = 'title' | 'year' | 'rating' | 'download_count'
-export type SortOrder = 'asc' | 'desc'
-export type WatchedFilterOption = 'all' | 'watched' | 'unwatched'
+export type { SortByOption, SortOrder, WatchedFilterOption, MovieSourceId }
 
 export interface UseInternetArchiveMoviesProps {
   lang: 'en' | 'fr'
@@ -26,6 +16,9 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(false)
+
+  // Source selection state ('all' | 'archive' | 'publicdomain_torrents')
+  const [selectedSource, setSelectedSource] = useState<MovieSourceId>('all')
 
   // Sort and Filter States
   const [sortBy, setSortBy] = useState<SortByOption>('download_count')
@@ -59,7 +52,7 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
     }
   }, [searchQuery])
 
-  // Fetch movies from Internet Archive
+  // Fetch movies via clean MovieSourceAggregator
   useEffect(() => {
     let isMounted = true
     const controller = new AbortController()
@@ -73,87 +66,21 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
       setError(false)
 
       try {
-        const queryStr = debouncedQuery.trim()
-        const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
-
-        if (queryStr) {
-          queryParts.push(`(${escapeInternetArchiveQuery(queryStr)})`)
-        }
-
-        if (selectedGenre) {
-          queryParts.push(`subject:"${escapeInternetArchiveQuery(selectedGenre)}"`)
-        }
-
-        if (selectedMinRating > 0) {
-          queryParts.push(`avg_rating:[${selectedMinRating / 2} TO *]`)
-        }
-
-        const sortField = {
-          download_count: 'downloads',
-          title: 'titleSorter',
-          year: 'date',
-          rating: 'avg_rating'
-        }[sortBy]
-
-        const FETCH_ROWS = 35
-
-        const params = new URLSearchParams({
-          q: queryParts.join(' AND '),
-          rows: FETCH_ROWS.toString(),
-          page: page.toString(),
-          output: 'json'
-        })
-        params.append('sort[]', `${sortField} ${order}`)
-        const fields = [
-          'identifier',
-          'title',
-          'description',
-          'creator',
-          'date',
-          'year',
-          'subject',
-          'language',
-          'downloads',
-          'avg_rating'
-        ]
-        fields.forEach(field => params.append('fl[]', field))
-
-        const response = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`, {
-          signal: controller.signal
-        })
-        if (!response.ok) {
-          throw new Error(`Internet Archive returned ${response.status}`)
-        }
-
-        const data = await response.json() as InternetArchiveSearchResponse
-        const rawDocs = data.response?.docs || []
-
-        const docs = rawDocs.filter(isLikelyMovie)
-
-        const archiveMovies: Movie[] = docs.map(movie => ({
-          id: movie.identifier,
-          title: metadataText(movie.title) || movie.identifier,
-          genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
-          year: metadataYear(movie),
-          rating: Math.min(10, Math.max(0, Number(movie.avg_rating || 0) * 2)),
-          image: `https://archive.org/services/img/${encodeURIComponent(movie.identifier)}`,
-          source: 'Internet Archive',
-          description: metadataText(movie.description),
-          creator: metadataText(movie.creator),
-          language: metadataText(movie.language),
-          downloads: Number(movie.downloads || 0),
-          torrentUrl: `https://archive.org/download/${encodeURIComponent(movie.identifier)}/${encodeURIComponent(movie.identifier)}_archive.torrent`,
-          detailsUrl: `https://archive.org/details/${encodeURIComponent(movie.identifier)}`
-        }))
-
-        const enrichedMovies = await enrichInternetArchiveMoviesWithTmdb(archiveMovies, {
-          apiKey: import.meta.env.VITE_TMDB_API_KEY,
-          lang,
-          concurrency: 4,
-          signal: controller.signal
-        })
-
-        const fetchedMovies = enrichedMovies.slice(0, INTERNET_ARCHIVE_PAGE_SIZE)
+        const fetchedMovies = await movieSourceAggregator.fetchMovies(
+          selectedSource,
+          {
+            query: debouncedQuery.trim(),
+            genre: selectedGenre,
+            minRating: selectedMinRating,
+            sortBy,
+            order,
+            page,
+            limit: 20,
+            lang,
+            signal: controller.signal
+          },
+          import.meta.env.VITE_TMDB_API_KEY
+        )
 
         if (isMounted) {
           if (page === 1) {
@@ -166,13 +93,11 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
             })
           }
 
-          const start = data.response?.start || 0
-          const total = data.response?.numFound || 0
-          setHasMore(start + rawDocs.length < Math.min(total, 10_000))
+          setHasMore(fetchedMovies.length >= 10)
         }
       } catch (err) {
         if (controller.signal.aborted) return
-        console.error('Internet Archive catalog fetch error:', err)
+        console.error('[useMovies] Source aggregator fetch error:', err)
         if (isMounted) {
           setError(true)
         }
@@ -190,11 +115,13 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
       isMounted = false
       controller.abort()
     }
-  }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page, lang])
+  }, [debouncedQuery, selectedSource, sortBy, order, selectedGenre, selectedMinRating, page, lang])
 
   return {
     searchQuery,
     setSearchQuery,
+    selectedSource,
+    setSelectedSource,
     movies,
     loading,
     loadingMore,

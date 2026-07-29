@@ -173,7 +173,7 @@ function mergeTmdbMatch(movie: Movie, match: TmdbMovie | null): Movie {
       ? `https://image.tmdb.org/t/p/w500${match.poster_path}`
       : movie.image,
     description: match.overview || movie.description,
-    source: 'Internet Archive',
+    source: movie.source || 'Internet Archive',
     tmdbId: match.id
   }
 }
@@ -207,21 +207,21 @@ export async function enrichInternetArchiveMoviesWithTmdb(
   { apiKey, lang, concurrency = 4, signal }: EnrichmentOptions
 ): Promise<Movie[]> {
   if (!apiKey) {
-    throw new Error('VITE_TMDB_API_KEY is not configured')
+    return movies
   }
   if (movies.length === 0) return movies
 
   const language = lang === 'fr' ? 'fr-FR' : 'en-US'
-  const matchedMovies = await mapWithConcurrency(movies, concurrency, async movie => {
+  const enrichedMovies = await mapWithConcurrency(movies, concurrency, async movie => {
     try {
       const match = await findTmdbMatch(movie, apiKey, language, signal)
-      return match ? mergeTmdbMatch(movie, match) : null
+      return match ? mergeTmdbMatch(movie, match) : movie
     } catch (error) {
       if (signal?.aborted) throw error
       console.warn(`TMDb enrichment failed for "${movie.title}"`, error)
-      return null
+      return movie
     }
   })
 
-  return matchedMovies.filter((movie): movie is Movie => movie !== null)
+  return enrichedMovies
 }
