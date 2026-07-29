@@ -37,8 +37,9 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const [streamError, setStreamError] = useState<string | null>(null)
 
   // Construct backend video stream URL based on torrent hash or movie info
+  const token = localStorage.getItem('token')
   const torrentHash = movie?.torrents?.[0]?.hash || movie?.hash || movie?.id || 'sample'
-  const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}${movie?.id ? `?imdbId=${encodeURIComponent(movie.id)}` : ''}`
+  const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}?${movie?.id ? `imdbId=${encodeURIComponent(movie.id)}&` : ''}${token ? `token=${encodeURIComponent(token)}` : ''}`
 
   useEffect(() => {
     if (videoRef.current) {

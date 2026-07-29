@@ -99,9 +99,8 @@ function escapeInternetArchiveQuery(value: string): string {
 interface MovieCardProps {
   movie: Movie
   isWatched: boolean
-  onToggleWatch: (movieId: string, e: React.MouseEvent) => void
   onSelectMovie: (movie: Movie) => void
-t: TranslationType['dashboard']
+  t: TranslationType['dashboard']
 }
 
 interface DashboardMoviesProps {
@@ -111,7 +110,7 @@ interface DashboardMoviesProps {
   setShowCommunity: (val: boolean) => void
 }
 
-function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieCardProps) {
+function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
 
   // Generate fallback gradients
@@ -191,32 +190,6 @@ function MovieCard({ movie, isWatched, onToggleWatch, onSelectMovie, t }: MovieC
         </div>
       ) : null}
 
-      {/* Manual Watch Toggle Button on top right */}
-      <button
-        onClick={(e) => onToggleWatch(movie.id, e)}
-        className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md border cursor-pointer transition-all duration-300 active:scale-90 opacity-0 group-hover:opacity-100 ${
-          isWatched 
-            ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500/40' 
-            : 'bg-black/60 hover:bg-black/80 text-neutral-400 hover:text-white border-white/10'
-        }`}
-        title={isWatched ? "Mark as unwatched" : "Mark as watched"}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="currentColor"
-          className="w-4 h-4"
-        >
-          {isWatched ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-          )}
-        </svg>
-      </button>
-
       {/* Hover Play Button Overlay */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/35 backdrop-blur-[1px] z-10">
         <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 scale-75 group-hover:scale-100 transition-all duration-300">
@@ -293,15 +266,30 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
   const [page, setPage] = useState<number>(1)
   const [hasMore, setHasMore] = useState<boolean>(true)
 
-  // Watched movies tracker
-  const [watchedMovies, setWatchedMovies] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('watchedMovies')
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
+  // Watched movies tracker loaded from BDD
+  const [watchedMovies, setWatchedMovies] = useState<string[]>([])
+
+  useEffect(() => {
+    const fetchWatched = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) return
+        const response = await fetch('/api/movies/watched', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        if (!response.ok) return
+        const data = await response.json()
+        if (data.success && Array.isArray(data.watched)) {
+          setWatchedMovies(data.watched)
+        }
+      } catch (err) {
+        console.error('Error fetching watched movies from BDD:', err)
+      }
     }
-  })
+    fetchWatched()
+  }, [])
 
   const observerTarget = useRef<HTMLDivElement>(null)
 
@@ -486,20 +474,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     }
   }, [observerTarget, hasMore, loading, loadingMore])
 
-  // Watch toggle handler (marks as watched in localStorage)
-  const handleToggleWatch = (movieId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setWatchedMovies(prev => {
-      let updated: string[]
-      if (prev.includes(movieId)) {
-        updated = prev.filter(id => id !== movieId)
-      } else {
-        updated = [...prev, movieId]
-      }
-      localStorage.setItem('watchedMovies', JSON.stringify(updated))
-      return updated
-    })
-  }
+
 
   // Client-side filtering & sorting for genre, rating, watched status, and order
   const displayedMovies = movies
@@ -791,7 +766,6 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
                 key={movie.id} 
                 movie={movie} 
                 isWatched={watchedMovies.includes(movie.id)}
-                onToggleWatch={handleToggleWatch}
                 onSelectMovie={(m) => setSelectedMovie(m)}
                 t={t}
               />

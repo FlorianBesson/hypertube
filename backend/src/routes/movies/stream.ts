@@ -1,7 +1,10 @@
 import { Router, Request, Response } from 'express';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 import { torrentService } from '../../services/stream';
+import { prisma } from '../../prisma';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 const router = Router();
 
 /**
@@ -27,6 +30,28 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
         torrentService.updateLastWatched(torrentHash, imdbId).catch((err) => {
             console.error("Erreur lors de la mise à jour de lastWatchedAt:", err);
         });
+
+        // If authenticated user token is provided in Header or Query, mark movie as watched by user in BDD
+        const authHeader = req.headers['authorization'];
+        const token = (authHeader && authHeader.split(' ')[1]) || (req.query.token as string | undefined);
+        if (token && imdbId) {
+            try {
+                const decoded: any = jwt.verify(token, JWT_SECRET);
+                const userId = decoded?.userId || decoded?.id;
+                if (userId) {
+                    const parsedUserId = typeof userId === 'string' ? parseInt(userId, 10) : Number(userId);
+                    if (!isNaN(parsedUserId)) {
+                        prisma.watchedMovie.upsert({
+                            where: { userId_imdbId: { userId: parsedUserId, imdbId } },
+                            update: { watchedAt: new Date() },
+                            create: { userId: parsedUserId, imdbId },
+                        }).catch((err) => console.error("Erreur upsert WatchedMovie:", err));
+                    }
+                }
+            } catch {
+                // Ignore invalid token on stream route
+            }
+        }
 
         // 2. Check if movie is already fully downloaded on disk
         const completedMovie = await torrentService.getCompletedMovie(torrentHash, imdbId);
