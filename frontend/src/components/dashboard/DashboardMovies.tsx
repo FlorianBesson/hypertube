@@ -1,468 +1,49 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import type { TranslationType } from '../../locales/translations'
+import type { Movie } from '../../types/movie'
 import MovieDetailsModal from './MovieDetailsModal'
-import { enrichInternetArchiveMoviesWithTmdb } from './internetArchiveTmdb'
+import MovieCard from './MovieCard'
+import MovieToolbar from './MovieToolbar'
+import { useWatchedMovies } from '../../hooks/useWatchedMovies'
+import { useInternetArchiveMovies } from '../../hooks/useInternetArchiveMovies'
 
-export interface Movie {
-  id: string
-  title: string
-  genre: string
-  year: string | number
-  rating: number
-  image: string
-  source?: string
-  torrents?: Torrent[]
-  description?: string
-  creator?: string
-  language?: string
-  downloads?: number
-  torrentUrl?: string
-  detailsUrl?: string
-  tmdbId?: number
-  hash?: string
-}
+export type { Movie, Torrent } from '../../types/movie'
 
-export interface Torrent {
-  url: string
-  hash: string
-  quality: string
-  type: string
-  is_repack?: string
-  video_codec?: string
-  bit_depth?: string
-  audio_channels?: string
-  seeds?: number
-  peers?: number
-  size?: string
-  size_bytes?: number
-  date_uploaded?: string
-  date_uploaded_unix?: number
-}
-
-type ArchiveMetadataValue = string | number | Array<string | number>
-
-interface InternetArchiveRawMovie {
-  identifier: string
-  title?: ArchiveMetadataValue
-  description?: ArchiveMetadataValue
-  creator?: ArchiveMetadataValue
-  date?: ArchiveMetadataValue
-  year?: ArchiveMetadataValue
-  subject?: ArchiveMetadataValue
-  language?: ArchiveMetadataValue
-  downloads?: number
-  avg_rating?: number
-}
-
-interface InternetArchiveSearchResponse {
-  response?: {
-    numFound?: number
-    start?: number
-    docs?: InternetArchiveRawMovie[]
-  }
-}
-
-const INTERNET_ARCHIVE_PAGE_SIZE = 20
-const INTERNET_ARCHIVE_BASE_QUERY = [
-  'collection:feature_films',
-  'mediatype:movies',
-  'format:"Archive BitTorrent"'
-]
-
-function metadataValues(value?: ArchiveMetadataValue): string[] {
-  if (value === undefined || value === null) return []
-  return (Array.isArray(value) ? value : [value])
-    .map(item => String(item).trim())
-    .filter(Boolean)
-}
-
-function metadataText(value?: ArchiveMetadataValue): string {
-  return metadataValues(value)
-    .join(', ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function metadataYear(movie: InternetArchiveRawMovie): string | number {
-  const explicitYear = metadataValues(movie.year)[0]
-  if (explicitYear) return explicitYear
-
-  const date = metadataValues(movie.date)[0]
-  return date?.match(/\b(?:18|19|20)\d{2}\b/)?.[0] || 'N/A'
-}
-
-function escapeInternetArchiveQuery(value: string): string {
-  return value.replace(/([+\-!(){}[\]^"~*?:\\/]|&&|\|\|)/g, '\\$1')
-}
-
-interface MovieCardProps {
-  movie: Movie
-  isWatched: boolean
-  onSelectMovie: (movie: Movie) => void
-  t: TranslationType['dashboard']
-}
-
-interface DashboardMoviesProps {
+export interface DashboardMoviesProps {
   t: TranslationType['dashboard']
   lang: 'en' | 'fr'
   showCommunity: boolean
   setShowCommunity: (val: boolean) => void
 }
 
-function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
-  const [imageError, setImageError] = useState(false)
-
-  // Generate fallback gradients
-  const fallbackGradients = [
-    'from-red-950/40 to-neutral-900/60',
-    'from-blue-950/40 to-neutral-900/60',
-    'from-purple-950/40 to-neutral-900/60',
-    'from-emerald-950/40 to-neutral-900/60',
-    'from-amber-950/40 to-neutral-900/60'
-  ]
-  const gradientIndex = movie.title.length % fallbackGradients.length
-  const fallbackGradient = fallbackGradients[gradientIndex]
-
-  return (
-    <div
-      onClick={() => onSelectMovie(movie)}
-      className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
-        isWatched 
-          ? 'border-white/5 hover:border-red-600/30 opacity-30 hover:opacity-100' 
-          : 'border-white/5 hover:border-red-600/30'
-      }`}
-    >
-      {/* Movie Poster Image */}
-      <div className="absolute inset-0 bg-neutral-900">
-        {!imageError && movie.image ? (
-          <img
-            src={movie.image}
-            alt={movie.title}
-            referrerPolicy="no-referrer"
-            onError={() => setImageError(true)}
-            className="w-full h-full object-cover opacity-70 group-hover:opacity-85 transition-all duration-500"
-            loading="lazy"
-          />
-        ) : (
-          <div className={`w-full h-full bg-linear-to-br ${fallbackGradient} flex flex-col items-center justify-center p-4 text-center`}>
-            <svg
-              className="w-8 h-8 text-neutral-600 mb-2"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 20.25h12m-12-3h12m-12-3h12m-12-3h12m-12-3h12m-12-3h12m-12-3h12" />
-            </svg>
-            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block truncate w-full">
-              {movie.genre}
-            </span>
-          </div>
-        )}
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-linear-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
-      </div>
-
-      {/* Provider Badge (Top Left) */}
-      {movie.source && (
-        <div className="absolute top-2 left-2 z-20">
-          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider shadow-md bg-black/70 text-neutral-300 border border-white/10 backdrop-blur-md">
-            {movie.source}
-          </span>
-        </div>
-      )}
-
-      {/* Watched Eye Icon (Top Right) */}
-      {isWatched && (
-        <div className="absolute top-2 right-2 z-20" title={t.watchedBadge || "Déjà vu"}>
-          <div className="w-7 h-7 rounded-full bg-black/60 text-white border border-white/15 flex items-center justify-center shadow-md backdrop-blur-md">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-              className="w-4 h-4 text-neutral-200"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </div>
-        </div>
-      )}
-
-      {/* Hover Play Button Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/35 backdrop-blur-[1px] z-10">
-        <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 scale-75 group-hover:scale-100 transition-all duration-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            className="w-6 h-6 text-white ml-0.5"
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </div>
-      </div>
-
-      {/* Movie Metadata */}
-      <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-0.5 z-10">
-        <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest truncate">{movie.genre}</span>
-        <h3 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors" title={movie.title}>
-          {movie.title}
-        </h3>
-        <div className="flex items-center justify-between mt-1 text-[11px] text-neutral-400 font-medium">
-          <span>{movie.year}</span>
-          {movie.rating > 0 ? (
-            <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                className="w-3.5 h-3.5 text-amber-500"
-              >
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-              </svg>
-              {movie.rating.toFixed(1)}
-            </span>
-          ) : (
-            <span>{(movie.downloads || 0).toLocaleString()} téléchargements</span>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const NON_MOVIE_TITLE_RE = /\b(trailer|teaser|commercial|promo|clip|vhs|raw footage|home video|newsreel|advertisement|test|episode|b-roll)\b/i
-
-function isLikelyMovie(movie: InternetArchiveRawMovie): boolean {
-  const title = metadataText(movie.title)
-  if (!title || title.trim().length < 2) return false
-  if (NON_MOVIE_TITLE_RE.test(title)) return false
-
-  const subject = metadataText(movie.subject)
-  if (/\b(commercials|home movies|promos|newsreels)\b/i.test(subject)) return false
-
-  return true
-}
-
 export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [movies, setMovies] = useState<Movie[]>([])
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState(false)
-
-  // Sort and Filter States
-  const [sortBy, setSortBy] = useState<'title' | 'year' | 'rating' | 'download_count'>('download_count')
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
-  const [selectedGenre, setSelectedGenre] = useState<string>('')
-  const [selectedMinRating, setSelectedMinRating] = useState<number>(0)
-  const [watchedFilter, setWatchedFilter] = useState<'all' | 'watched' | 'unwatched'>('all')
-
-  // Pagination states
-  const [page, setPage] = useState<number>(1)
-  const [hasMore, setHasMore] = useState<boolean>(true)
-
-  // Watched movies tracker loaded from BDD
-  const [watchedMovies, setWatchedMovies] = useState<string[]>([])
-
-  useEffect(() => {
-    const fetchWatched = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) return
-        const response = await fetch('/api/movies/watched', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        if (!response.ok) return
-        const data = await response.json()
-        if (data.success && Array.isArray(data.watched)) {
-          setWatchedMovies(data.watched)
-        }
-      } catch (err) {
-        console.error('Error fetching watched movies from BDD:', err)
-      }
-    }
-    fetchWatched()
-  }, [])
-
   const observerTarget = useRef<HTMLDivElement>(null)
 
-  // Debounce search input and set search-related page/sort values inside the async callback
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      const queryStr = searchQuery.trim()
-      setDebouncedQuery(queryStr)
-      setPage(1)
+  const { watchedMovies } = useWatchedMovies()
+  const {
+    searchQuery,
+    setSearchQuery,
+    movies,
+    loading,
+    loadingMore,
+    error,
+    sortBy,
+    setSortBy,
+    order,
+    setOrder,
+    selectedGenre,
+    setSelectedGenre,
+    selectedMinRating,
+    setSelectedMinRating,
+    watchedFilter,
+    setWatchedFilter,
+    page,
+    setPage,
+    hasMore
+  } = useInternetArchiveMovies({ lang })
 
-      // Adjust default sorting based on search presence
-      if (queryStr !== '') {
-        setSortBy('title')
-        setOrder('asc')
-      } else {
-        setSortBy('download_count')
-        setOrder('desc')
-      }
-    }, 450)
-
-    return () => {
-      clearTimeout(handler)
-    }
-  }, [searchQuery])
-
-  // Fetch the movie catalogue from Internet Archive's Advanced Search API.
-  useEffect(() => {
-    let isMounted = true
-    const controller = new AbortController()
-
-    const fetchVideos = async () => {
-      if (page === 1) {
-        setLoading(true)
-      } else {
-        setLoadingMore(true)
-      }
-      setError(false)
-
-      try {
-        const queryStr = debouncedQuery.trim()
-        const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
-
-        if (queryStr) {
-          queryParts.push(`(${escapeInternetArchiveQuery(queryStr)})`)
-        }
-
-        if (selectedGenre) {
-          queryParts.push(`subject:"${escapeInternetArchiveQuery(selectedGenre)}"`)
-        }
-
-        if (selectedMinRating > 0) {
-          queryParts.push(`avg_rating:[${selectedMinRating / 2} TO *]`)
-        }
-
-        const sortField = {
-          download_count: 'downloads',
-          title: 'titleSorter',
-          year: 'date',
-          rating: 'avg_rating'
-        }[sortBy]
-
-        // Fetch extra rows to account for non-movies and TMDb filter drops
-        const FETCH_ROWS = 35
-
-        const params = new URLSearchParams({
-          q: queryParts.join(' AND '),
-          rows: FETCH_ROWS.toString(),
-          page: page.toString(),
-          output: 'json'
-        })
-        params.append('sort[]', `${sortField} ${order}`)
-        const fields = [
-          'identifier',
-          'title',
-          'description',
-          'creator',
-          'date',
-          'year',
-          'subject',
-          'language',
-          'downloads',
-          'avg_rating'
-        ]
-        fields.forEach(field => params.append('fl[]', field))
-
-        const response = await fetch(`https://archive.org/advancedsearch.php?${params.toString()}`, {
-          signal: controller.signal
-        })
-        if (!response.ok) {
-          throw new Error(`Internet Archive returned ${response.status}`)
-        }
-
-        const data = await response.json() as InternetArchiveSearchResponse
-        const rawDocs = data.response?.docs || []
-
-        // Pre-filter out non-movies (trailers, commercials, home videos, clips)
-        const docs = rawDocs.filter(isLikelyMovie)
-
-        const archiveMovies: Movie[] = docs.map(movie => ({
-          id: movie.identifier,
-          title: metadataText(movie.title) || movie.identifier,
-          genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
-          year: metadataYear(movie),
-          rating: Math.min(10, Math.max(0, Number(movie.avg_rating || 0) * 2)),
-          image: `https://archive.org/services/img/${encodeURIComponent(movie.identifier)}`,
-          source: 'Internet Archive',
-          description: metadataText(movie.description),
-          creator: metadataText(movie.creator),
-          language: metadataText(movie.language),
-          downloads: Number(movie.downloads || 0),
-          torrentUrl: `https://archive.org/download/${encodeURIComponent(movie.identifier)}/${encodeURIComponent(movie.identifier)}_archive.torrent`,
-          detailsUrl: `https://archive.org/details/${encodeURIComponent(movie.identifier)}`
-        }))
-
-        const enrichedMovies = await enrichInternetArchiveMoviesWithTmdb(archiveMovies, {
-          apiKey: import.meta.env.VITE_TMDB_API_KEY,
-          lang,
-          concurrency: 4,
-          signal: controller.signal
-        })
-
-        // Limit to target page size (20 movies)
-        const fetchedMovies = enrichedMovies.slice(0, INTERNET_ARCHIVE_PAGE_SIZE)
-
-        if (isMounted) {
-          if (page === 1) {
-            setMovies(fetchedMovies)
-          } else {
-            setMovies(prev => {
-              const existingIds = new Set(prev.map(item => item.id))
-              const uniqueNew = fetchedMovies.filter(item => !existingIds.has(item.id))
-              return [...prev, ...uniqueNew]
-            })
-          }
-
-          const start = data.response?.start || 0
-          const total = data.response?.numFound || 0
-          setHasMore(start + rawDocs.length < Math.min(total, 10_000))
-        }
-      } catch (err) {
-        if (controller.signal.aborted) return
-        console.error('Internet Archive catalog fetch error:', err)
-        if (isMounted) {
-          setError(true)
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-          setLoadingMore(false)
-        }
-      }
-    }
-
-    fetchVideos()
-
-    return () => {
-      isMounted = false
-      controller.abort()
-    }
-  }, [debouncedQuery, sortBy, order, selectedGenre, selectedMinRating, page, lang])
-
-  // Set up IntersectionObserver for infinite scrolling
+  // IntersectionObserver for infinite scroll
   useEffect(() => {
     const target = observerTarget.current
     if (!target || !hasMore || loading || loadingMore) return
@@ -483,51 +64,48 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
         observer.unobserve(target)
       }
     }
-  }, [observerTarget, hasMore, loading, loadingMore])
+  }, [observerTarget, hasMore, loading, loadingMore, setPage])
 
+  // Client-side filtering & sorting
+  const displayedMovies = useMemo(() => {
+    return movies
+      .filter(movie => {
+        const isWatched = watchedMovies.includes(movie.id)
+        if (watchedFilter === 'watched' && !isWatched) return false
+        if (watchedFilter === 'unwatched' && isWatched) return false
 
+        if (selectedGenre) {
+          const movieGenreLower = (movie.genre || '').toLowerCase()
+          if (!movieGenreLower.includes(selectedGenre.toLowerCase())) {
+            return false
+          }
+        }
 
-  // Client-side filtering & sorting for genre, rating, watched status, and order
-  const displayedMovies = movies
-    .filter(movie => {
-      // Watched status filter
-      const isWatched = watchedMovies.includes(movie.id)
-      if (watchedFilter === 'watched' && !isWatched) return false
-      if (watchedFilter === 'unwatched' && isWatched) return false
-
-      // Genre filter
-      if (selectedGenre) {
-        const movieGenreLower = (movie.genre || '').toLowerCase()
-        if (!movieGenreLower.includes(selectedGenre.toLowerCase())) {
+        if (selectedMinRating > 0 && movie.rating < selectedMinRating) {
           return false
         }
-      }
 
-      // Minimum rating filter
-      if (selectedMinRating > 0 && movie.rating < selectedMinRating) {
-        return false
-      }
-
-      return true
-    })
-    .sort((a, b) => {
-      let comparison = 0
-      if (sortBy === 'title') {
-        comparison = a.title.localeCompare(b.title)
-      } else if (sortBy === 'year') {
-        const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
-        const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
-        comparison = yearA - yearB
-      } else if (sortBy === 'rating') {
-        comparison = a.rating - b.rating
-      }
-      return order === 'asc' ? comparison : -comparison
-    })
+        return true
+      })
+      .sort((a, b) => {
+        let comparison = 0
+        if (sortBy === 'title') {
+          comparison = a.title.localeCompare(b.title)
+        } else if (sortBy === 'year') {
+          const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
+          const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
+          comparison = yearA - yearB
+        } else if (sortBy === 'rating') {
+          comparison = a.rating - b.rating
+        }
+        return order === 'asc' ? comparison : -comparison
+      })
+  }, [movies, watchedMovies, watchedFilter, selectedGenre, selectedMinRating, sortBy, order])
 
   return (
     <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-125 animate-in fade-in duration-300">
       <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-      
+
       {/* Dashboard Title Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-3 relative z-10">
         <div>
@@ -541,7 +119,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
             {t.moviesSubtitle || "Explore and discover films"}
           </p>
         </div>
-        
+
         <button 
           onClick={() => setShowCommunity(!showCommunity)}
           className="flex items-center gap-2 text-xs font-semibold text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full transition-all group border border-transparent hover:border-white/10 shrink-0 cursor-pointer"
@@ -560,161 +138,37 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
         </button>
       </div>
 
-      {/* Search Input Section */}
-      <div className="relative z-10 w-full max-w-md">
-        <div className="relative">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-            <svg
-              className="w-4 h-4 text-neutral-400"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2.5}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t.searchPlaceholder || "Search movies..."}
-            className="w-full bg-neutral-950/40 border border-white/10 focus:border-red-500/70 focus:ring-1 focus:ring-red-500/50 rounded-full pl-10 pr-9 py-2.5 text-sm text-neutral-200 placeholder-neutral-500 outline-none transition-all duration-200"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="w-4 h-4"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Filters and Sort Toolbar */}
-      <div className="relative z-10 w-full flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Genre Filter */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.genreLabel || "Genre"}</span>
-            <select
-              value={selectedGenre}
-              onChange={(e) => {
-                setSelectedGenre(e.target.value)
-                setPage(1)
-              }}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-32"
-            >
-              <option value="">{t.allGenres || "All Genres"}</option>
-              <option value="action">Action</option>
-              <option value="adventure">Adventure</option>
-              <option value="animation">Animation</option>
-              <option value="comedy">Comedy</option>
-              <option value="crime">Crime</option>
-              <option value="documentary">Documentary</option>
-              <option value="drama">Drama</option>
-              <option value="family">Family</option>
-              <option value="fantasy">Fantasy</option>
-              <option value="history">History</option>
-              <option value="horror">Horror</option>
-              <option value="mystery">Mystery</option>
-              <option value="romance">Romance</option>
-              <option value="sci-fi">Sci-Fi</option>
-              <option value="thriller">Thriller</option>
-            </select>
-          </div>
-
-          {/* Min Rating Filter */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.ratingLabel || "Min Rating"}</span>
-            <select
-              value={selectedMinRating}
-              onChange={(e) => {
-                setSelectedMinRating(Number(e.target.value))
-                setPage(1)
-              }}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-28"
-            >
-              <option value="0">{t.anyRating || "Any Rating"}</option>
-              <option value="5">5+</option>
-              <option value="6">6+</option>
-              <option value="7">7+</option>
-              <option value="8">8+</option>
-              <option value="9">9+</option>
-            </select>
-          </div>
-
-          {/* Watched Filter */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.watchedLabel || "Status"}</span>
-            <select
-              value={watchedFilter}
-              onChange={(e) => {
-                setWatchedFilter(e.target.value as 'all' | 'watched' | 'unwatched')
-                setPage(1)
-              }}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-28"
-            >
-              <option value="all">{t.statusAll || "All movies"}</option>
-              <option value="watched">{t.statusWatched || "Watched"}</option>
-              <option value="unwatched">{t.statusUnwatched || "Unwatched"}</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Sorting Dropdown */}
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto md:justify-end border-t md:border-t-0 border-white/5 pt-3 md:pt-0">
-          <div className="flex flex-col gap-1 w-full sm:w-auto">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.sortBy || "Sort by"}</span>
-            <div className="flex gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => {
-                  setSortBy(e.target.value as 'title' | 'year' | 'rating' | 'download_count')
-                  setPage(1)
-                }}
-                className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-36 flex-1 sm:flex-none"
-              >
-                <option value="download_count">{t.sortPopularity || "Popularity"}</option>
-                <option value="title">{t.sortTitle || "Title (A-Z)"}</option>
-                <option value="year">{t.sortYear || "Year"}</option>
-                <option value="rating">{t.sortRating || "Rating"}</option>
-              </select>
-              
-              <button
-                onClick={() => {
-                  setOrder(prev => prev === 'asc' ? 'desc' : 'asc')
-                  setPage(1)
-                }}
-                className="border border-white/10 hover:border-red-500/50 bg-neutral-950 hover:bg-neutral-900 rounded-lg p-2 text-neutral-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
-                title={order === 'asc' ? 'Ascending' : 'Descending'}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className={`w-4 h-4 transition-transform duration-300 ${order === 'asc' ? 'rotate-180' : ''}`}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Toolbar (Search & Filters) */}
+      <MovieToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedGenre={selectedGenre}
+        onGenreChange={(g) => {
+          setSelectedGenre(g)
+          setPage(1)
+        }}
+        selectedMinRating={selectedMinRating}
+        onMinRatingChange={(r) => {
+          setSelectedMinRating(r)
+          setPage(1)
+        }}
+        watchedFilter={watchedFilter}
+        onWatchedFilterChange={(f) => {
+          setWatchedFilter(f)
+          setPage(1)
+        }}
+        sortBy={sortBy}
+        onSortByChange={(s) => {
+          setSortBy(s)
+          setPage(1)
+        }}
+        order={order}
+        onOrderToggle={() => {
+          setOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
+          setPage(1)
+        }}
+        t={t}
+      />
 
       {/* Movies Grid / Content Section */}
       {loading && page === 1 ? (
@@ -773,9 +227,9 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 relative z-10 pt-2">
             {displayedMovies.map((movie) => (
-              <MovieCard 
-                key={movie.id} 
-                movie={movie} 
+              <MovieCard
+                key={movie.id}
+                movie={movie}
                 isWatched={watchedMovies.includes(movie.id)}
                 onSelectMovie={(m) => setSelectedMovie(m)}
                 t={t}
@@ -794,7 +248,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
               )}
             </div>
           )}
-          
+
           {!hasMore && (
             <div className="w-full text-center py-6 text-xs text-neutral-500 relative z-10 border-t border-white/5 mt-6">
               {t.noMoreMovies || "No more movies to load"}
@@ -805,9 +259,9 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
 
       {/* Render Movie Details Modal when a movie is selected */}
       {selectedMovie && (
-        <MovieDetailsModal 
-          movie={selectedMovie} 
-          onClose={() => setSelectedMovie(null)} 
+        <MovieDetailsModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
           t={t}
         />
       )}
