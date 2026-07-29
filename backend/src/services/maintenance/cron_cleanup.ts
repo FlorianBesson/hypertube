@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '../prisma';
+import { prisma } from '../../prisma';
 
 /**
  * Nettoie les fichiers vidéo et sous-titres associés des films non visionnés depuis plus de 30 jours.

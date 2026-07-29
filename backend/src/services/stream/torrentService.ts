@@ -1,6 +1,6 @@
 import path from 'path';
 import { MimeService } from './mimeService';
-import { movieDbService } from './movieDbService';
+import { movieDbService } from '../movies/movieDbService';
 import { ArchiveService } from './archiveService';
 import { BitTorrentService, TorrentStreamFile } from './bittorrentService';
 

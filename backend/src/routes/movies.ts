@@ -3,7 +3,7 @@ import { z } from 'zod';
 import fs from 'fs';
 import { prisma } from '../prisma';
 import { authenticateToken } from '../middlewares/auth';
-import { torrentService } from '../services/torrentService';
+import { torrentService } from '../services/stream';
 
 const router = Router();
 

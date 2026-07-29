@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { movieDbService } from './movieDbService';
+import { movieDbService } from '../movies/movieDbService';
 
 const torrentStream = require('torrent-stream');
 

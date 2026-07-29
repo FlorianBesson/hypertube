@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { MimeService } from './mimeService';
-import { movieDbService } from './movieDbService';
+import { movieDbService } from '../movies/movieDbService';
 
 const DEFAULT_USER_AGENT = 'Hypertube/1.0 (Node.js Video Streaming)';
 

@@ -11,7 +11,7 @@ import usersRoutes from './routes/users';
 import torrentRoutes from './routes/torrent'
 import movieRoutes from './routes/movies';
 
-import { initCronJobs } from './services/cron_cleanup';
+import { initCronJobs } from './services/maintenance';
 
 const PORT = 3000;
 export const app: Application = express();
