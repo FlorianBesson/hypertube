@@ -153,13 +153,6 @@
     "passwordLabel": "Mot de passe",
     "changePasswordSecure": "Dernier changement inconnu"
   },
-  "sidebar": {
-    "navigationLabel": "Navigation principale",
-    "home": "Accueil",
-    "discover": "Découvrir",
-    "library": "Bibliothèque",
-    "settings": "Paramètres"
-  },
   "watch": {
     "backToCatalog": "Retour aux films",
     "fakePlayerNotice": "Lecteur vidéo de test & environnement de dev",
