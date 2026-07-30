@@ -105,7 +105,6 @@ function matchScore(movie: Movie, candidate: TmdbMovie): number {
 
 export function cleanTitleForSearch(title: string): string {
   return title
-    .replace(/\(\s*(?:18|19|20)\d{2}\s*\)/gi, ' ')
     .replace(/\[[^\]]*\]/g, ' ')
     .replace(/\([^)]*\)/g, ' ')
     .replace(/\b(?:18|19|20)\d{2}\b/g, ' ')
@@ -115,17 +114,24 @@ export function cleanTitleForSearch(title: string): string {
     .trim()
 }
 
+function extractQuotedTitle(title: string): string | null {
+  const match = title.match(/"([^"]+)"/)
+  return match ? match[1].trim() : null
+}
+
 async function searchTmdb(
   movie: Movie,
   apiKey: string,
   language: string,
   signal?: AbortSignal
 ): Promise<TmdbMovie[]> {
-  const searchQuery = cleanTitleForSearch(movie.title) || movie.title
-  const search = async (includeYear: boolean): Promise<TmdbMovie[]> => {
+  const cleanedQuery = cleanTitleForSearch(movie.title) || movie.title
+  const quotedQuery = extractQuotedTitle(movie.title)
+
+  const search = async (query: string, includeYear: boolean): Promise<TmdbMovie[]> => {
     const params = new URLSearchParams({
       api_key: apiKey,
-      query: searchQuery,
+      query,
       include_adult: 'false',
       language,
       page: '1'
@@ -146,8 +152,16 @@ async function searchTmdb(
     return data.results || []
   }
 
-  const resultsWithYear = await search(true)
-  return resultsWithYear.length > 0 ? resultsWithYear : search(false)
+  // Archive.org titles often wrap the real title in quotes and append hashtag/credit noise after it
+  if (quotedQuery && quotedQuery !== cleanedQuery) {
+    const quotedResults = await search(quotedQuery, true)
+    if (quotedResults.length > 0) return quotedResults
+    const quotedResultsNoYear = await search(quotedQuery, false)
+    if (quotedResultsNoYear.length > 0) return quotedResultsNoYear
+  }
+
+  const resultsWithYear = await search(cleanedQuery, true)
+  return resultsWithYear.length > 0 ? resultsWithYear : search(cleanedQuery, false)
 }
 
 async function findTmdbMatch(
