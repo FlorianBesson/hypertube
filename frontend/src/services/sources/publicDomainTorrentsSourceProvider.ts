@@ -83,11 +83,7 @@ export class PublicDomainTorrentsSourceProvider implements IMovieSourceProvider 
     // 1. Text Search Filter
     if (query.trim()) {
       const q = query.toLowerCase().trim()
-      filtered = filtered.filter(m =>
-        m.title.toLowerCase().includes(q) ||
-        (m.description || '').toLowerCase().includes(q) ||
-        (m.genre || '').toLowerCase().includes(q)
-      )
+      filtered = filtered.filter(m => m.title.toLowerCase().includes(q))
     }
 
     // 2. Genre Filter

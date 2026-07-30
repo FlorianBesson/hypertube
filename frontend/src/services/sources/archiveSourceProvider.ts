@@ -19,7 +19,7 @@ export class ArchiveSourceProvider implements IMovieSourceProvider {
     const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
 
     if (query && query.trim()) {
-      queryParts.push(`(${escapeInternetArchiveQuery(query.trim())})`)
+      queryParts.push(`title:(${escapeInternetArchiveQuery(query.trim())})`)
     }
 
     if (genre && genre.trim()) {
