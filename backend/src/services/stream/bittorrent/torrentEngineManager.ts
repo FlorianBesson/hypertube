@@ -34,7 +34,7 @@ export class TorrentEngineManager {
     if (!active || !active.engine) {
       return { seeds: 0, peers: 0 };
     }
-    const wires = active.engine.swarm.wires || [];
+    const wires = active.engine.swarm?.wires || [];
     return {
       seeds: wires.length,
       peers: wires.length

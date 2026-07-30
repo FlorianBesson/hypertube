@@ -92,16 +92,7 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
             return;
         }
 
-        // 3. Internet Archive instant progressive stream & background disk caching
-        if (archiveId || torrentService.isArchiveIdentifier(torrentHash)) {
-            const idToStream = archiveId || torrentHash;
-            const userAgent = req.headers['user-agent'];
-            await torrentService.streamArchiveMovie(idToStream, req.headers.range, res, userAgent);
-            return;
-        }
-
-
-        // 4. Movie is not fully cached: stream live via TorrentService
+        // 3. Movie is not fully cached: stream live via TorrentService P2P engine
         const { videoFile } = await torrentService.getOrStartTorrent(torrentHash, imdbId);
         const fileSize = videoFile.length;
         const range = req.headers.range;
