@@ -37,7 +37,10 @@ export class MovieSourceAggregator {
       const provider = this.providers.get(sourceId)!
       try {
         movies = await provider.searchMovies(params)
-      } catch (err) {
+      } catch (err: any) {
+        if (params.signal?.aborted || err?.name === 'AbortError') {
+          throw err
+        }
         console.error(`[MovieSourceAggregator] Provider ${sourceId} failed:`, err)
         movies = []
       }
@@ -53,7 +56,10 @@ export class MovieSourceAggregator {
         if (res.status === 'fulfilled') {
           combined.push(...res.value)
         } else {
-          console.warn(`[MovieSourceAggregator] Provider ${activeProviders[index].id} error:`, res.reason)
+          const reason = res.reason
+          if (!params.signal?.aborted && reason?.name !== 'AbortError') {
+            console.warn(`[MovieSourceAggregator] Provider ${activeProviders[index].id} error:`, reason)
+          }
         }
       })
 
