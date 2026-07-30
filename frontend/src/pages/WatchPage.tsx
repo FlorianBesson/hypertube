@@ -30,6 +30,21 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
 
   const [isCommentsCollapsed, setIsCommentsCollapsed] = useState(true)
   const [isLoading, setIsLoading] = useState(!movie)
+  const [loadingSeconds, setLoadingSeconds] = useState(0)
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null
+    if (isLoading) {
+      interval = setInterval(() => {
+        setLoadingSeconds(prev => prev + 1)
+      }, 1000)
+    } else {
+      setLoadingSeconds(0)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isLoading])
 
   // Recover movie item if page is opened directly by URL
   useEffect(() => {
@@ -117,7 +132,10 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center h-full w-full bg-black">
           <span className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin mb-4" />
-          <p className="text-sm font-semibold text-neutral-400">Chargement du lecteur vidéo...</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-neutral-400">Chargement du lecteur vidéo...</p>
+            <span className="text-sm font-bold text-red-500 font-mono">({loadingSeconds}s)</span>
+          </div>
         </div>
       ) : (
         <>

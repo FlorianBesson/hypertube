@@ -35,10 +35,26 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isBuffering, setIsBuffering] = useState(true)
+  const [bufferingSeconds, setBufferingSeconds] = useState(0)
   const [streamError, setStreamError] = useState<string | null>(null)
   const [showControls, setShowControls] = useState(true)
   const [realtimeSeeds, setRealtimeSeeds] = useState<number | null>(null)
   const controlsTimeoutRef = useRef<number | null>(null)
+
+  // Timer counter for buffering duration in seconds
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null
+    if (isBuffering && !streamError) {
+      interval = setInterval(() => {
+        setBufferingSeconds(prev => prev + 1)
+      }, 1000)
+    } else {
+      setBufferingSeconds(0)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isBuffering, streamError])
 
   const resetControlsTimeout = () => {
     if (controlsTimeoutRef.current) {
@@ -311,9 +327,14 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
       {isBuffering && !streamError && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs pointer-events-none">
           <Loader2 className="w-12 h-12 text-red-600 animate-spin mb-3" />
-          <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
-            {t.buffering || 'Bufferisation du flux vidéo...'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
+              {t.buffering || 'Bufferisation du flux vidéo...'}
+            </span>
+            <span className="text-xs font-bold text-red-500 font-mono">
+              ({bufferingSeconds}s)
+            </span>
+          </div>
         </div>
       )}
 
