@@ -112,7 +112,8 @@ export class MovieSourceAggregator {
       }
     }
 
-    return movies
+    // Only show movies we could confidently match to TMDB
+    return movies.filter(movie => movie.tmdbId)
   }
 }
 

@@ -118,7 +118,7 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
         </h3>
         <div className="flex items-center justify-between mt-1 text-[11px] text-neutral-400 font-medium">
           <span>{movie.year}</span>
-          {movie.rating > 0 ? (
+          {movie.tmdbId && (
             <span className="flex items-center gap-0.5 font-semibold text-neutral-200">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -130,8 +130,6 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
               </svg>
               {movie.rating.toFixed(1)}
             </span>
-          ) : (
-            <span>{(movie.downloads || 0).toLocaleString()} téléchargements</span>
           )}
         </div>
       </div>
