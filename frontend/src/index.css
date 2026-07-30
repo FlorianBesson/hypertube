@@ -11,3 +11,15 @@ body {
   color: #ffffff;
   min-height: 100vh;
 }
+
+/* Custom styling & positioning for HTML5 video subtitles (WebVTT ::cue) */
+video::cue {
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+  padding: 4px 12px;
+  border-radius: 8px;
+}

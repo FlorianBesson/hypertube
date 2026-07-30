@@ -9,6 +9,7 @@ interface TmdbMovie {
   poster_path?: string | null
   vote_average?: number
   genre_ids?: number[]
+  imdb_id?: string
 }
 
 interface TmdbSearchResponse {
@@ -140,12 +141,28 @@ async function findTmdbMatch(
   if (cached) return cached
 
   const matchPromise = searchTmdb(movie, apiKey, language, signal)
-    .then(results => {
+    .then(async results => {
       const ranked = results
         .map(candidate => ({ candidate, score: matchScore(movie, candidate) }))
         .sort((left, right) => right.score - left.score)
 
-      return ranked[0] && ranked[0].score >= 0.5 ? ranked[0].candidate : null
+      const bestCandidate = ranked[0] && ranked[0].score >= 0.5 ? ranked[0].candidate : null
+      if (!bestCandidate) return null
+
+      // Fetch external IDs (IMDb ID) for TMDb movie
+      try {
+        const extRes = await fetch(`https://api.themoviedb.org/3/movie/${bestCandidate.id}/external_ids?api_key=${apiKey}`, { signal })
+        if (extRes.ok) {
+          const extData = await extRes.json() as { imdb_id?: string }
+          if (extData.imdb_id) {
+            bestCandidate.imdb_id = extData.imdb_id
+          }
+        }
+      } catch {
+        // Ignore external_ids error, fallback to candidate without imdb_id
+      }
+
+      return bestCandidate
     })
     .catch(error => {
       tmdbMatchCache.delete(cacheKey)
@@ -174,7 +191,8 @@ function mergeTmdbMatch(movie: Movie, match: TmdbMovie | null): Movie {
       : movie.image,
     description: match.overview || movie.description,
     source: 'Internet Archive',
-    tmdbId: match.id
+    tmdbId: match.id,
+    imdbId: match.imdb_id || undefined
   }
 }
 
