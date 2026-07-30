@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
@@ -49,14 +49,14 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
         setBufferingSeconds(prev => prev + 1)
       }, 1000)
     } else {
-      setBufferingSeconds(0)
+      queueMicrotask(() => setBufferingSeconds(0))
     }
     return () => {
       if (interval) clearInterval(interval)
     }
   }, [isBuffering, streamError])
 
-  const resetControlsTimeout = () => {
+  const resetControlsTimeout = useCallback(() => {
     if (controlsTimeoutRef.current) {
       window.clearTimeout(controlsTimeoutRef.current)
     }
@@ -66,7 +66,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
         setShowControls(false)
       }
     }, 3000)
-  }
+  }, [isPlaying])
 
   const handleMouseMove = () => {
     resetControlsTimeout()
@@ -117,14 +117,14 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
 
   useEffect(() => {
     if (!isPlaying) {
-      setShowControls(true)
+      queueMicrotask(() => setShowControls(true))
       if (controlsTimeoutRef.current) {
         window.clearTimeout(controlsTimeoutRef.current)
       }
     } else {
-      resetControlsTimeout()
+      queueMicrotask(() => resetControlsTimeout())
     }
-  }, [isPlaying])
+  }, [isPlaying, resetControlsTimeout])
 
   useEffect(() => {
     if (onControlsVisibilityChange) {

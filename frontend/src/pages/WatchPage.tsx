@@ -39,7 +39,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
         setLoadingSeconds(prev => prev + 1)
       }, 1000)
     } else {
-      setLoadingSeconds(0)
+      queueMicrotask(() => setLoadingSeconds(0))
     }
     return () => {
       if (interval) clearInterval(interval)
@@ -108,7 +108,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
     }
 
     fetchMovieFallback()
-  }, [id, movie])
+  }, [id, movie, lang])
 
   // Automatically mark movie as watched in BDD when user opens WatchPage
   useEffect(() => {

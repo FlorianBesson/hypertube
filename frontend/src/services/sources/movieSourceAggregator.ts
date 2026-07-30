@@ -37,8 +37,8 @@ export class MovieSourceAggregator {
       const provider = this.providers.get(sourceId)!
       try {
         movies = await provider.searchMovies(params)
-      } catch (err: any) {
-        if (params.signal?.aborted || err?.name === 'AbortError') {
+      } catch (err) {
+        if (params.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
           throw err
         }
         console.error(`[MovieSourceAggregator] Provider ${sourceId} failed:`, err)

@@ -3,12 +3,27 @@ import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './t
 
 import rawScrapedTorrents from './public_domain_torrents.json'
 
+interface RawPublicDomainMovie {
+  id: string
+  title: string
+  detail_url?: string
+  torrents?: string[]
+  status?: string
+  imdb_id?: string
+  tmdb_id?: number
+  poster_path?: string
+  overview?: string
+  vote_average?: number
+  release_date?: string
+  genres?: string
+}
+
 function parseYear(title: string): number | string {
   const match = title.match(/\b(19\d{2}|20\d{2})\b/)
   return match ? parseInt(match[0], 10) : 'N/A'
 }
 
-const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as any[]).map((m: any) => {
+const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as RawPublicDomainMovie[]).map((m: RawPublicDomainMovie) => {
   const defaultTorrentUrl = m.torrents && m.torrents.length > 0 ? m.torrents[0] : ''
   const movieYear = m.release_date ? m.release_date.slice(0, 4) : parseYear(m.title)
   
