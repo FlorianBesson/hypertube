@@ -1,6 +1,6 @@
 import type { Movie } from '../../types/movie'
 
-export type MovieSourceId = 'all' | 'archive' | 'wikimedia_commons'
+export type MovieSourceId = 'all' | 'archive' | 'publicdomain_torrents'
 
 export type SortByOption = 'title' | 'year' | 'rating' | 'download_count'
 export type SortOrder = 'asc' | 'desc'

@@ -1,7 +1,7 @@
 import type { Movie } from '../../types/movie'
 import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './types'
 import { ArchiveSourceProvider } from './archiveSourceProvider'
-import { WikimediaCommonsSourceProvider } from './wikimediaCommonsSourceProvider'
+import { PublicDomainTorrentsSourceProvider } from './publicDomainTorrentsSourceProvider'
 import { enrichInternetArchiveMoviesWithTmdb } from '../internetArchiveTmdb'
 
 export class MovieSourceAggregator {
@@ -9,7 +9,7 @@ export class MovieSourceAggregator {
 
   constructor() {
     this.registerProvider(new ArchiveSourceProvider())
-    this.registerProvider(new WikimediaCommonsSourceProvider())
+    this.registerProvider(new PublicDomainTorrentsSourceProvider())
   }
 
   public registerProvider(provider: IMovieSourceProvider): void {
@@ -42,16 +42,10 @@ export class MovieSourceAggregator {
         movies = []
       }
     } else {
-      // Query all providers in parallel with balanced limit (e.g. 10 per provider)
+      // Query all providers in parallel
       const activeProviders = Array.from(this.providers.values())
-      const perProviderLimit = Math.max(1, Math.floor((params.limit || 20) / activeProviders.length))
-      const splitParams: MovieSearchParams = {
-        ...params,
-        limit: perProviderLimit
-      }
-
       const results = await Promise.allSettled(
-        activeProviders.map(p => p.searchMovies(splitParams))
+        activeProviders.map(p => p.searchMovies(params))
       )
 
       const combined: Movie[] = []
@@ -63,7 +57,7 @@ export class MovieSourceAggregator {
         }
       })
 
-      // Deduplicate by lowercased title
+      // Interleave / deduplicate by title
       const seenTitles = new Set<string>()
       const uniqueMovies: Movie[] = []
 
@@ -78,7 +72,7 @@ export class MovieSourceAggregator {
       movies = uniqueMovies
     }
 
-    // Global sorting by requested criteria across all sources
+    // Sort unified results
     const { sortBy = 'download_count', order = 'desc' } = params
     movies.sort((a, b) => {
       let comparison = 0
@@ -96,7 +90,7 @@ export class MovieSourceAggregator {
       return order === 'asc' ? comparison : -comparison
     })
 
-    // Enrich with TMDB metadata while preserving provider source
+    // Optionally enrich with TMDB
     if (movies.length > 0) {
       try {
         movies = await enrichInternetArchiveMoviesWithTmdb(movies, {
