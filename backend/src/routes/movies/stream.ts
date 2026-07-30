@@ -24,7 +24,8 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
             return;
         }
 
-        const torrentHash = torrentService.isArchiveIdentifier(rawTorrentHash) ? rawTorrentHash : rawTorrentHash.toLowerCase();
+        const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
+        const torrentHash = archiveId || rawTorrentHash.toLowerCase();
 
         // 1. Update lastWatchedAt timestamp in DB asynchronously
         torrentService.updateLastWatched(torrentHash, imdbId).catch((err) => {
@@ -91,9 +92,9 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
         }
 
         // 3. Internet Archive instant progressive stream & background disk caching
-        if (torrentService.isArchiveIdentifier(torrentHash)) {
+        if (archiveId) {
             const userAgent = req.headers['user-agent'];
-            await torrentService.streamArchiveMovie(torrentHash, req.headers.range, res, userAgent);
+            await torrentService.streamArchiveMovie(archiveId, req.headers.range, res, userAgent);
             return;
         }
 

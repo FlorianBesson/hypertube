@@ -6,7 +6,7 @@ import { fetchArchiveMetadata, getArchiveCandidateFiles } from './archive/archiv
 import { backgroundDownloadArchiveMovie } from './archive/archiveDownloader';
 import { streamLocalFile } from './archive/archiveStreamer';
 
-export { isArchiveIdentifier } from './archive/archiveUtils';
+export { isArchiveIdentifier, getArchiveIdentifier } from './archive/archiveUtils';
 
 /**
  * Streams an Internet Archive movie using HTTP 206 Partial Content directly from Archive.org CDN,
