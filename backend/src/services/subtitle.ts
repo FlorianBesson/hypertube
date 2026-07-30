@@ -136,11 +136,10 @@ export class SubtitleService {
             }
         }
 
-        // Fallback: Generate demo/mock WebVTT subtitle if no online API provided valid SRT (for offline dev/test)
+        // If no subtitle content was found across APIs, return null (404)
         if (!srtContent) {
-            console.log(`[SubtitleService] Generating fallback WebVTT subtitle for ${cleanImdb} [${cleanLang}]`);
-            const mockVtt = `WEBVTT\n\n1\n00:00:01.000 --> 00:00:05.000\n[Hypertube Subtitles - ${cleanLang.toUpperCase()}]\nMovie IMDb ID: ${cleanImdb}\n\n2\n00:00:06.000 --> 00:00:10.000\nSubtitle stream active.\n`;
-            return this.saveVttFile(cleanImdb, cleanLang, mockVtt);
+            console.log(`[SubtitleService] No subtitle found for ${cleanImdb} [${cleanLang}]`);
+            return null;
         }
 
         // Convert downloaded SRT to WebVTT

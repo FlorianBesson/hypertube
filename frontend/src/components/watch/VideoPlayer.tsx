@@ -76,13 +76,23 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const [showSubMenu, setShowSubMenu] = useState(false)
   const [activeCueText, setActiveCueText] = useState<string>('')
   const [subOffset, setSubOffset] = useState<number>(0)
+  const [subToast, setSubToast] = useState<string | null>(null)
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showSubToast = (message: string) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+    setSubToast(message)
+    toastTimeoutRef.current = setTimeout(() => {
+      setSubToast(null)
+    }, 3500)
+  }
 
   // Subtitle track URLs
   const imdbId = movie?.imdbId || movie?.id || 'tt0133093'
   const subTracks = [
-    { code: 'fr', label: 'Français' },
-    { code: 'en', label: 'English' },
-    { code: 'es', label: 'Español' },
+    { code: 'fr', label: t.french || 'Français' },
+    { code: 'en', label: t.english || 'English' },
+    { code: 'es', label: t.spanish || 'Español' },
   ]
 
   const syncActiveCue = (lang: string, offsetSec: number = subOffset) => {
@@ -115,10 +125,34 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
     }
   }
 
-  const handleSubChange = (code: string) => {
-    setSelectedSubLang(code)
+  const handleSubChange = async (code: string) => {
     setShowSubMenu(false)
-    syncActiveCue(code)
+    if (code === 'off') {
+      setSelectedSubLang('off')
+      setActiveCueText('')
+      return
+    }
+
+    const trackObj = subTracks.find((tr) => tr.code === code)
+    const label = trackObj?.label || code
+
+    try {
+      const res = await fetch(`/api/movies/subtitles/${encodeURIComponent(imdbId)}/${code}`)
+      if (!res.ok) {
+        const msg = (t.subtitlesUnavailable || 'Sous-titres indisponibles en {lang} pour ce film').replace('{lang}', label)
+        showSubToast(`⚠️ ${msg}`)
+        setSelectedSubLang('off')
+        setActiveCueText('')
+        return
+      }
+      setSelectedSubLang(code)
+      syncActiveCue(code)
+    } catch {
+      const msg = (t.subtitlesError || 'Erreur lors de la récupération des sous-titres en {lang}').replace('{lang}', label)
+      showSubToast(`⚠️ ${msg}`)
+      setSelectedSubLang('off')
+      setActiveCueText('')
+    }
   }
 
   return (
@@ -173,6 +207,13 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
           />
         ))}
       </video>
+
+      {/* Subtitle Warning/Toast Banner */}
+      {subToast && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-5 py-2.5 bg-neutral-900/90 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold rounded-full shadow-2xl backdrop-blur-md animate-fade-in pointer-events-none flex items-center gap-2">
+          <span>{subToast}</span>
+        </div>
+      )}
 
       {/* Floating Subtitle Overlay - Positioned safely above bottom control bar */}
       {selectedSubLang !== 'off' && activeCueText && (
@@ -309,7 +350,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
               <button
                 onClick={() => setShowSubMenu(!showSubMenu)}
                 className={`hover:text-red-500 transition-all cursor-pointer px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-md ${selectedSubLang !== 'off' ? 'bg-red-600 text-white border-red-500 hover:bg-red-700' : 'bg-white/10 hover:bg-white/20 text-neutral-300 border-white/15'}`}
-                title="Sous-titres / Subtitles"
+                title={t.subtitles || 'Sous-titres'}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3.75h9m-9 3.75h5.25" />
@@ -321,14 +362,14 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
               {showSubMenu && (
                 <div className="absolute bottom-full right-0 mb-2 w-40 bg-neutral-900/95 border border-white/15 rounded-xl shadow-2xl p-1.5 z-30 flex flex-col gap-1 backdrop-blur-md">
                   <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-neutral-400 border-b border-white/10 flex items-center justify-between">
-                    <span>Sous-titres</span>
+                    <span>{t.subtitles || 'Sous-titres'}</span>
                     <span className="text-red-500 font-mono text-[9px]">vtt</span>
                   </div>
                   <button
                     onClick={() => handleSubChange('off')}
                     className={`px-3 py-2 text-left text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-between ${selectedSubLang === 'off' ? 'bg-red-600 font-bold text-white' : 'text-neutral-300 hover:bg-white/10'}`}
                   >
-                    <span>Désactivés</span>
+                    <span>{t.subtitlesOff || 'Désactivés'}</span>
                     {selectedSubLang === 'off' && <span>✓</span>}
                   </button>
                   {subTracks.map((tr) => (
@@ -346,7 +387,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
                   {selectedSubLang !== 'off' && (
                     <div className="mt-1 pt-1.5 border-t border-white/10 flex flex-col gap-1 px-1">
                       <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold px-1">
-                        <span>Décalage tempo</span>
+                        <span>{t.syncOffset || 'Décalage tempo'}</span>
                         <span className="font-mono text-red-400 font-bold">
                           {subOffset > 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}
                         </span>
@@ -359,7 +400,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
                             syncActiveCue(selectedSubLang, next)
                           }}
                           className="flex-1 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-bold transition-colors cursor-pointer text-center"
-                          title="Avancer les sous-titres (-0.5s)"
+                          title={t.advanceSubtitles || 'Avancer les sous-titres (-0.5s)'}
                         >
                           -0.5s
                         </button>
@@ -369,9 +410,9 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
                             syncActiveCue(selectedSubLang, 0)
                           }}
                           className="px-2 py-1 bg-white/5 hover:bg-white/15 text-neutral-400 hover:text-white rounded text-[10px] font-semibold transition-colors cursor-pointer"
-                          title="Réinitialiser"
+                          title={t.reset || 'Réinitialiser'}
                         >
-                          Reset
+                          {t.reset || 'Reset'}
                         </button>
                         <button
                           onClick={() => {
@@ -380,7 +421,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
                             syncActiveCue(selectedSubLang, next)
                           }}
                           className="flex-1 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-bold transition-colors cursor-pointer text-center"
-                          title="Retarder les sous-titres (+0.5s)"
+                          title={t.delaySubtitles || 'Retarder les sous-titres (+0.5s)'}
                         >
                           +0.5s
                         </button>
