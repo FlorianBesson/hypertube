@@ -87,13 +87,36 @@ function matchScore(movie: Movie, candidate: TmdbMovie): number {
   const archiveYear = parseYear(movie.year)
   const tmdbYear = parseYear(candidate.release_date || '')
 
-  if (!archiveYear || !tmdbYear) return titleScore
+  if (archiveYear && tmdbYear) {
+    const difference = Math.abs(archiveYear - tmdbYear)
+    if (difference === 0) return titleScore + 0.25
+    if (difference === 1) return titleScore + 0.1
+    if (difference > 2) return titleScore - 0.5
+    return titleScore
+  }
 
-  const difference = Math.abs(archiveYear - tmdbYear)
-  if (difference === 0) return titleScore + 0.25
-  if (difference === 1) return titleScore + 0.1
-  if (difference > 2) return titleScore - 0.5
+  // If no year in source metadata, penalize modern releases (> 1980) to avoid false positive remakes
+  if (tmdbYear && tmdbYear > 1980) {
+    return titleScore - 0.6
+  }
+
   return titleScore
+}
+
+export function cleanTitleForSearch(title: string): string {
+  return title
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\b(?:18|19|20)\d{2}\b/g, ' ')
+    .replace(/\b(?:full movie|feature film|movie|film|hd|4k|1080p|720p|restored|public domain|mp4|avi)\b/gi, ' ')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function extractQuotedTitle(title: string): string | null {
+  const match = title.match(/"([^"]+)"/)
+  return match ? match[1].trim() : null
 }
 
 async function searchTmdb(
@@ -102,10 +125,13 @@ async function searchTmdb(
   language: string,
   signal?: AbortSignal
 ): Promise<TmdbMovie[]> {
-  const search = async (includeYear: boolean): Promise<TmdbMovie[]> => {
+  const cleanedQuery = cleanTitleForSearch(movie.title) || movie.title
+  const quotedQuery = extractQuotedTitle(movie.title)
+
+  const search = async (query: string, includeYear: boolean): Promise<TmdbMovie[]> => {
     const params = new URLSearchParams({
       api_key: apiKey,
-      query: movie.title,
+      query,
       include_adult: 'false',
       language,
       page: '1'
@@ -126,8 +152,16 @@ async function searchTmdb(
     return data.results || []
   }
 
-  const resultsWithYear = await search(true)
-  return resultsWithYear.length > 0 ? resultsWithYear : search(false)
+  // Archive.org titles often wrap the real title in quotes and append hashtag/credit noise after it
+  if (quotedQuery && quotedQuery !== cleanedQuery) {
+    const quotedResults = await search(quotedQuery, true)
+    if (quotedResults.length > 0) return quotedResults
+    const quotedResultsNoYear = await search(quotedQuery, false)
+    if (quotedResultsNoYear.length > 0) return quotedResultsNoYear
+  }
+
+  const resultsWithYear = await search(cleanedQuery, true)
+  return resultsWithYear.length > 0 ? resultsWithYear : search(cleanedQuery, false)
 }
 
 async function findTmdbMatch(
@@ -142,11 +176,23 @@ async function findTmdbMatch(
 
   const matchPromise = searchTmdb(movie, apiKey, language, signal)
     .then(async results => {
+      const mYear = parseYear(movie.year)
       const ranked = results
         .map(candidate => ({ candidate, score: matchScore(movie, candidate) }))
-        .sort((left, right) => right.score - left.score)
+        .filter(item => item.score >= 0.3)
+        .sort((left, right) => {
+          if (Math.abs(right.score - left.score) > 0.25) {
+            return right.score - left.score
+          }
+          if (!mYear) {
+            const yearLeft = parseYear(left.candidate.release_date || '') || 9999
+            const yearRight = parseYear(right.candidate.release_date || '') || 9999
+            return yearLeft - yearRight
+          }
+          return right.score - left.score
+        })
 
-      const bestCandidate = ranked[0] && ranked[0].score >= 0.5 ? ranked[0].candidate : null
+      const bestCandidate = ranked[0] ? ranked[0].candidate : null
       if (!bestCandidate) return null
 
       // Fetch external IDs (IMDb ID) for TMDb movie
@@ -190,7 +236,7 @@ function mergeTmdbMatch(movie: Movie, match: TmdbMovie | null): Movie {
       ? `https://image.tmdb.org/t/p/w500${match.poster_path}`
       : movie.image,
     description: match.overview || movie.description,
-    source: 'Internet Archive',
+    source: movie.source,
     tmdbId: match.id,
     imdbId: match.imdb_id || undefined
   }
@@ -225,21 +271,21 @@ export async function enrichInternetArchiveMoviesWithTmdb(
   { apiKey, lang, concurrency = 4, signal }: EnrichmentOptions
 ): Promise<Movie[]> {
   if (!apiKey) {
-    throw new Error('VITE_TMDB_API_KEY is not configured')
+    return movies
   }
   if (movies.length === 0) return movies
 
   const language = lang === 'fr' ? 'fr-FR' : 'en-US'
-  const matchedMovies = await mapWithConcurrency(movies, concurrency, async movie => {
+  const enrichedMovies = await mapWithConcurrency(movies, concurrency, async movie => {
     try {
       const match = await findTmdbMatch(movie, apiKey, language, signal)
-      return match ? mergeTmdbMatch(movie, match) : null
+      return match ? mergeTmdbMatch(movie, match) : movie
     } catch (error) {
       if (signal?.aborted) throw error
       console.warn(`TMDb enrichment failed for "${movie.title}"`, error)
-      return null
+      return movie
     }
   })
 
-  return matchedMovies.filter((movie): movie is Movie => movie !== null)
+  return enrichedMovies
 }

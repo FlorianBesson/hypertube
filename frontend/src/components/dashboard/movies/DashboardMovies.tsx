@@ -24,6 +24,8 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
   const {
     searchQuery,
     setSearchQuery,
+    selectedSource,
+    setSelectedSource,
     movies,
     loading,
     loadingMore,
@@ -142,6 +144,11 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
       <MovieToolbar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        selectedSource={selectedSource}
+        onSourceChange={(s) => {
+          setSelectedSource(s)
+          setPage(1)
+        }}
         selectedGenre={selectedGenre}
         onGenreChange={(g) => {
           setSelectedGenre(g)

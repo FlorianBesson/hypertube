@@ -22,6 +22,7 @@ interface CommentsSectionProps {
   t: TranslationType['watch']
   user: LoggedUser | null
   imdbId?: string
+  showControls?: boolean
 }
 
 export default function CommentsSection({
@@ -29,7 +30,8 @@ export default function CommentsSection({
   onToggleCollapse,
   t,
   user,
-  imdbId = 'default'
+  imdbId = 'default',
+  showControls = true
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<ApiComment[]>([])
   const [newCommentText, setNewCommentText] = useState('')
@@ -104,7 +106,7 @@ export default function CommentsSection({
     return (
       <button
         onClick={onToggleCollapse}
-        className="absolute top-4 right-4 z-40 p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-200 cursor-pointer hover:scale-110 flex items-center justify-center group"
+        className={`absolute top-4 right-4 z-40 p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         title={t.expandComments}
       >
         <MessageSquare className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />

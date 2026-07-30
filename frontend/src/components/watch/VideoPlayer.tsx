@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
@@ -7,6 +7,7 @@ import type { Movie } from '../../types/movie'
 interface VideoPlayerProps {
   movie: Movie | null
   t: TranslationType['watch']
+  onControlsVisibilityChange?: (visible: boolean) => void
 }
 
 function formatTime(seconds: number): string {
@@ -23,7 +24,7 @@ function formatTime(seconds: number): string {
   return `${pad(m)}:${pad(s)}`
 }
 
-export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
+export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: VideoPlayerProps) {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -34,11 +35,46 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isBuffering, setIsBuffering] = useState(true)
+  const [bufferingSeconds, setBufferingSeconds] = useState(0)
   const [streamError, setStreamError] = useState<string | null>(null)
+  const [showControls, setShowControls] = useState(true)
+  const [realtimeSeeds, setRealtimeSeeds] = useState<number | null>(null)
+  const controlsTimeoutRef = useRef<number | null>(null)
+
+  // Timer counter for buffering duration in seconds
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null
+    if (isBuffering && !streamError) {
+      interval = setInterval(() => {
+        setBufferingSeconds(prev => prev + 1)
+      }, 1000)
+    } else {
+      queueMicrotask(() => setBufferingSeconds(0))
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isBuffering, streamError])
+
+  const resetControlsTimeout = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      window.clearTimeout(controlsTimeoutRef.current)
+    }
+    setShowControls(true)
+    controlsTimeoutRef.current = window.setTimeout(() => {
+      if (isPlaying) {
+        setShowControls(false)
+      }
+    }, 3000)
+  }, [isPlaying])
+
+  const handleMouseMove = () => {
+    resetControlsTimeout()
+  }
 
   // Construct backend video stream URL based on torrent hash or movie info
   const token = localStorage.getItem('token')
-  const torrentHash = movie?.torrents?.[0]?.hash || movie?.hash || movie?.id || 'sample'
+  const torrentHash = movie?.torrents?.[0]?.hash || movie?.hash || movie?.torrentUrl || movie?.id || 'sample'
   const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}?${movie?.id ? `imdbId=${encodeURIComponent(movie.id)}&` : ''}${token ? `token=${encodeURIComponent(token)}` : ''}`
 
   useEffect(() => {
@@ -46,6 +82,55 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       videoRef.current.volume = volume / 100
     }
   }, [volume])
+
+  useEffect(() => {
+    if (streamError) return
+
+    const fetchStats = async () => {
+      try {
+        const statsUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}/stats`
+        const res = await fetch(statsUrl)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.success && typeof data.seeds === 'number') {
+            setRealtimeSeeds(data.seeds)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching real-time P2P stats:', err)
+      }
+    }
+
+    fetchStats()
+    const interval = setInterval(fetchStats, 2000)
+
+    return () => clearInterval(interval)
+  }, [torrentHash, streamError])
+
+  useEffect(() => {
+    return () => {
+      if (controlsTimeoutRef.current) {
+        window.clearTimeout(controlsTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isPlaying) {
+      queueMicrotask(() => setShowControls(true))
+      if (controlsTimeoutRef.current) {
+        window.clearTimeout(controlsTimeoutRef.current)
+      }
+    } else {
+      queueMicrotask(() => resetControlsTimeout())
+    }
+  }, [isPlaying, resetControlsTimeout])
+
+  useEffect(() => {
+    if (onControlsVisibilityChange) {
+      onControlsVisibilityChange(showControls)
+    }
+  }, [showControls, onControlsVisibilityChange])
 
   const togglePlay = () => {
     if (!videoRef.current) return
@@ -156,8 +241,12 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   }
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden flex flex-col justify-between group">
-      {/* HTML5 Video Element connected to torrent stream API and WebVTT Subtitle tracks */}
+    <div
+      className={`relative w-full h-full bg-black overflow-hidden flex flex-col justify-between group ${!showControls ? 'cursor-none' : ''}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
+    >
+      {/* HTML5 Video Element connected to torrent stream API */}
       <video
         ref={videoRef}
         src={streamUrl}
@@ -172,9 +261,21 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
           setStreamError(null)
         }}
         onCanPlay={() => setIsBuffering(false)}
-        onError={(e) => {
+        onError={async (e) => {
           console.error('Video stream error:', e)
           setIsBuffering(false)
+          try {
+            const errRes = await fetch(streamUrl)
+            if (!errRes.ok) {
+              const errData = await errRes.json()
+              if (errData && errData.message) {
+                setStreamError(errData.message)
+                return
+              }
+            }
+          } catch (fetchErr) {
+            console.error('Error fetching stream details:', fetchErr)
+          }
           setStreamError(t.errorLoadingVideo)
         }}
         onTimeUpdate={() => {
@@ -226,9 +327,14 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       {isBuffering && !streamError && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs pointer-events-none">
           <Loader2 className="w-12 h-12 text-red-600 animate-spin mb-3" />
-          <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
-            {t.buffering || 'Bufferisation du flux vidéo...'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
+              {t.buffering || 'Bufferisation du flux vidéo...'}
+            </span>
+            <span className="text-xs font-bold text-red-500 font-mono">
+              ({bufferingSeconds}s)
+            </span>
+          </div>
         </div>
       )}
 
@@ -267,7 +373,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       )}
 
       {/* Top Floating Overlay (Header over video) */}
-      <div className="relative z-10 p-4 sm:p-6 pr-16 sm:pr-20 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity bg-linear-to-b from-black/80 via-black/40 to-transparent">
+      <div className={`relative z-10 p-4 sm:p-6 pr-16 sm:pr-20 flex items-center justify-between transition-opacity duration-300 bg-linear-to-b from-black/80 via-black/40 to-transparent ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="flex items-center gap-3">
           {/* Back to Catalog Button (Icon only) */}
           <button
@@ -284,7 +390,7 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
       <div className="relative z-10 flex-1" />
 
       {/* Bottom Floating Control Bar */}
-      <div className="relative z-10 p-4 sm:p-6 bg-linear-to-t from-black/95 via-black/80 to-transparent backdrop-blur-md flex flex-col gap-3 opacity-95 group-hover:opacity-100 transition-opacity">
+      <div className={`relative z-10 p-4 sm:p-6 bg-linear-to-t from-black/95 via-black/80 to-transparent backdrop-blur-md flex flex-col gap-3 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {/* Progress / Scrub Bar */}
         <div
           className="w-full h-2 hover:h-3 bg-white/20 rounded-full cursor-pointer transition-all relative overflow-hidden group/bar"
@@ -341,9 +447,15 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
 
           <div className="flex items-center gap-4">
             {movie && (
-              <span className="hidden sm:inline text-xs font-semibold text-neutral-300">
-                {movie.title}
-              </span>
+              <div className="hidden sm:flex flex-col items-end gap-0.5">
+                <span className="text-xs font-semibold text-neutral-300">
+                  {movie.title}
+                </span>
+                <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {realtimeSeeds !== null ? realtimeSeeds : 0} seeds
+                </span>
+              </div>
             )}
             {/* Subtitles CC Menu Selector */}
             <div className="relative">

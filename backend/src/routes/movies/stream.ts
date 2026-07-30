@@ -24,7 +24,9 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
             return;
         }
 
-        const torrentHash = torrentService.isArchiveIdentifier(rawTorrentHash) ? rawTorrentHash : rawTorrentHash.toLowerCase();
+        const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
+        const isHexHash = /^[a-fA-F0-9]{40}$/.test(rawTorrentHash);
+        const torrentHash = archiveId || (isHexHash ? rawTorrentHash.toLowerCase() : rawTorrentHash);
 
         // 1. Update lastWatchedAt timestamp in DB asynchronously
         torrentService.updateLastWatched(torrentHash, imdbId).catch((err) => {
@@ -90,14 +92,7 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
             return;
         }
 
-        // 3. Internet Archive instant progressive stream & background disk caching
-        if (torrentService.isArchiveIdentifier(torrentHash)) {
-            const userAgent = req.headers['user-agent'];
-            await torrentService.streamArchiveMovie(torrentHash, req.headers.range, res, userAgent);
-            return;
-        }
-
-        // 4. Movie is not fully cached: stream live via TorrentService
+        // 3. Movie is not fully cached: stream live via TorrentService P2P engine
         const { videoFile } = await torrentService.getOrStartTorrent(torrentHash, imdbId);
         const fileSize = videoFile.length;
         const range = req.headers.range;
@@ -146,6 +141,25 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
         if (!res.headersSent) {
             res.status(500).json({ success: false, message: error.message || "Erreur lors du streaming de la vidéo" });
         }
+    }
+});
+
+router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
+    try {
+        const rawTorrentHash = Array.isArray(req.params.torrentHash) ? req.params.torrentHash[0] : req.params.torrentHash;
+        if (!rawTorrentHash) {
+            res.status(400).json({ success: false, message: "Hash de torrent manquant" });
+            return;
+        }
+
+        const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
+        const isHexHash = /^[a-fA-F0-9]{40}$/.test(rawTorrentHash);
+        const torrentHash = archiveId || (isHexHash ? rawTorrentHash.toLowerCase() : rawTorrentHash);
+
+        const stats = torrentService.getTorrentStats(torrentHash);
+        res.json({ success: true, ...stats });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 

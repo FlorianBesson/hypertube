@@ -1,9 +1,11 @@
 import type { TranslationType } from '../../../locales/translations'
-import type { SortByOption, SortOrder, WatchedFilterOption } from '../../../hooks/useInternetArchiveMovies'
+import type { MovieSourceId, SortByOption, SortOrder, WatchedFilterOption } from '../../../hooks/useInternetArchiveMovies'
 
 export interface MovieToolbarProps {
   searchQuery: string
   onSearchChange: (value: string) => void
+  selectedSource?: MovieSourceId
+  onSourceChange?: (source: MovieSourceId) => void
   selectedGenre: string
   onGenreChange: (genre: string) => void
   selectedMinRating: number
@@ -20,6 +22,8 @@ export interface MovieToolbarProps {
 export default function MovieToolbar({
   searchQuery,
   onSearchChange,
+  selectedSource = 'all',
+  onSourceChange,
   selectedGenre,
   onGenreChange,
   selectedMinRating,
@@ -79,6 +83,22 @@ export default function MovieToolbar({
       {/* Filters and Sort Toolbar */}
       <div className="w-full flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* Source Provider Filter */}
+          {onSourceChange && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.sourceLabel || "Source"}</span>
+              <select
+                value={selectedSource}
+                onChange={(e) => onSourceChange(e.target.value as MovieSourceId)}
+                className="bg-neutral-950 border border-red-500/40 rounded-lg px-3 py-1.5 text-xs text-red-400 font-semibold outline-none focus:border-red-500 cursor-pointer min-w-36 shadow-sm"
+              >
+                <option value="all">{t.allSources || "All Sources"}</option>
+                <option value="archive">{t.internetArchive || "Internet Archive"}</option>
+                <option value="publicdomain_torrents">{t.publicDomainTorrents || "Public Domain Torrents"}</option>
+              </select>
+            </div>
+          )}
+
           {/* Genre Filter */}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.genreLabel || "Genre"}</span>

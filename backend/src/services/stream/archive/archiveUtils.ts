@@ -18,6 +18,24 @@ export function isArchiveIdentifier(torrentHash: string): boolean {
 }
 
 /**
+ * Helper to extract Internet Archive identifier from a torrent URL or check if it's already an identifier.
+ */
+export function getArchiveIdentifier(torrentHash: string): string | null {
+  const norm = torrentHash.toLowerCase();
+  if (norm.startsWith('magnet:')) {
+    return null;
+  }
+  if (norm.startsWith('http://') || norm.startsWith('https://')) {
+    const match = torrentHash.match(/https?:\/\/(?:www\.)?archive\.org\/(?:download|details)\/([^\/]+)/i);
+    return match ? match[1] : null;
+  }
+  if (/^[a-fA-F0-9]{40}$/.test(norm)) {
+    return null;
+  }
+  return torrentHash;
+}
+
+/**
  * Helper function to perform fetch with timeout protection.
  */
 export async function fetchWithTimeout(url: string, options: any = {}, timeoutMs = 6000): Promise<Response> {

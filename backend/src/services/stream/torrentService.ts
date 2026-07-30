@@ -59,6 +59,8 @@ export const torrentService = {
   updateLastWatched,
   getCompletedMovie,
   isArchiveIdentifier,
+  getArchiveIdentifier: archiveService.getArchiveIdentifier,
   streamArchiveMovie,
   getOrStartTorrent,
+  getTorrentStats: bittorrentService.getTorrentStats,
 };
