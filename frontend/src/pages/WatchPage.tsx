@@ -41,7 +41,11 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
         if (id.startsWith('pdt-')) {
           const found = PUBLIC_DOMAIN_TORRENTS_DATABASE.find(m => m.id === id)
           if (found) {
-            setMovie(found)
+            const [enriched] = await enrichInternetArchiveMoviesWithTmdb([found], {
+              apiKey: import.meta.env.VITE_TMDB_API_KEY,
+              lang,
+            })
+            setMovie(enriched || found)
             return
           }
         }
@@ -128,7 +132,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
             onToggleCollapse={() => setIsCommentsCollapsed(!isCommentsCollapsed)}
             t={t}
             user={user}
-            imdbId={id || movie?.id}
+            imdbId={movie?.imdbId || id || movie?.id}
             showControls={showControls}
           />
         </>

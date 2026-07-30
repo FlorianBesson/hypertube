@@ -96,16 +96,29 @@ function matchScore(movie: Movie, candidate: TmdbMovie): number {
   return titleScore
 }
 
+export function cleanTitleForSearch(title: string): string {
+  return title
+    .replace(/\(\s*(?:18|19|20)\d{2}\s*\)/gi, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\b(?:18|19|20)\d{2}\b/g, ' ')
+    .replace(/\b(?:full movie|feature film|movie|film|hd|4k|1080p|720p|restored|public domain|mp4|avi)\b/gi, ' ')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 async function searchTmdb(
   movie: Movie,
   apiKey: string,
   language: string,
   signal?: AbortSignal
 ): Promise<TmdbMovie[]> {
+  const searchQuery = cleanTitleForSearch(movie.title) || movie.title
   const search = async (includeYear: boolean): Promise<TmdbMovie[]> => {
     const params = new URLSearchParams({
       api_key: apiKey,
-      query: movie.title,
+      query: searchQuery,
       include_adult: 'false',
       language,
       page: '1'
