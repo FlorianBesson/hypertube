@@ -3,6 +3,33 @@ import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './t
 
 export const PUBLIC_DOMAIN_TORRENTS_DATABASE: Movie[] = [
   {
+    id: 'pdt-sintel',
+    title: 'Sintel (Test P2P)',
+    genre: 'Animation, Short',
+    year: 2010,
+    rating: 7.6,
+    image: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Sintel_poster.jpg',
+    source: 'Public Domain Torrents',
+    description: 'A young woman named Sintel searches for her baby dragon, Scales, in a beautiful fantasy world.',
+    creator: 'Colin Levy',
+    language: 'English',
+    downloads: 50000,
+    hash: 'magnet:?xt=urn:btih:08ada5a7a618a59854e12273b10ec43b1b527146&dn=Sintel&tr=udp://tracker.coppersurfer.tk:6969/announce&tr=udp://tracker.openbittorrent.com:80/announce',
+    torrentUrl: 'https://webtorrent.io/torrents/sintel.torrent',
+    detailsUrl: 'https://durian.blender.org/',
+    torrents: [
+      {
+        url: 'https://webtorrent.io/torrents/sintel.torrent',
+        hash: '08ada5a7a618a59854e12273b10ec43b1b527146',
+        quality: '720p',
+        type: 'web',
+        seeds: 154,
+        peers: 42,
+        size: '650 MB'
+      }
+    ]
+  },
+  {
     id: 'pdt-charade-1963',
     title: 'Charade',
     genre: 'Mystery, Romance, Thriller',

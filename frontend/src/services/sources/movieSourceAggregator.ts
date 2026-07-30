@@ -9,7 +9,7 @@ export class MovieSourceAggregator {
 
   constructor() {
     this.registerProvider(new ArchiveSourceProvider())
-    this.registerProvider(new PublicDomainTorrentsSourceProvider())
+    // this.registerProvider(new PublicDomainTorrentsSourceProvider())
   }
 
   public registerProvider(provider: IMovieSourceProvider): void {

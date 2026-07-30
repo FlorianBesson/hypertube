@@ -41,6 +41,14 @@ export async function getOrStartTorrent(
   return engineManager.createEngine(normalizedHash, torrentSource, downloadFolder, imdbId);
 }
 
+export function getTorrentStats(
+  torrentHash: string,
+  engineManager: TorrentEngineManager = defaultEngineManager
+): { seeds: number; peers: number } {
+  return engineManager.getEngineStats(torrentHash.toLowerCase());
+}
+
 export const bitTorrentService = {
   getOrStartTorrent,
+  getTorrentStats,
 };

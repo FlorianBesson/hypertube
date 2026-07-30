@@ -27,6 +27,21 @@ export class TorrentEngineManager {
   }
 
   /**
+   * Returns active engine stats (seeds/peers wires length).
+   */
+  public getEngineStats(hash: string): { seeds: number; peers: number } {
+    const active = this.activeEngines.get(hash);
+    if (!active || !active.engine) {
+      return { seeds: 0, peers: 0 };
+    }
+    const wires = active.engine.swarm.wires || [];
+    return {
+      seeds: wires.length,
+      peers: wires.length
+    };
+  }
+
+  /**
    * Spawns and manages a torrent-stream engine instance with timeout protection,
    * video file selection on ready, and completion tracking on idle.
    */

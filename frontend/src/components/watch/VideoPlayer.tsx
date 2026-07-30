@@ -37,6 +37,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
   const [isBuffering, setIsBuffering] = useState(true)
   const [streamError, setStreamError] = useState<string | null>(null)
   const [showControls, setShowControls] = useState(true)
+  const [realtimeSeeds, setRealtimeSeeds] = useState<number | null>(null)
   const controlsTimeoutRef = useRef<number | null>(null)
 
   const resetControlsTimeout = () => {
@@ -65,6 +66,30 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
       videoRef.current.volume = volume / 100
     }
   }, [volume])
+
+  useEffect(() => {
+    if (streamError) return
+
+    const fetchStats = async () => {
+      try {
+        const statsUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}/stats`
+        const res = await fetch(statsUrl)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.success && typeof data.seeds === 'number') {
+            setRealtimeSeeds(data.seeds)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching real-time P2P stats:', err)
+      }
+    }
+
+    fetchStats()
+    const interval = setInterval(fetchStats, 2000)
+
+    return () => clearInterval(interval)
+  }, [torrentHash, streamError])
 
   useEffect(() => {
     return () => {
@@ -298,7 +323,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
                 </span>
                 <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  {movie.torrents?.[0]?.seeds ?? (movie as any).seeds ?? 0} seeds
+                  {realtimeSeeds !== null ? realtimeSeeds : (movie.torrents?.[0]?.seeds ?? (movie as any).seeds ?? 0)} seeds
                 </span>
               </div>
             )}

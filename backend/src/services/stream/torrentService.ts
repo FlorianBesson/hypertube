@@ -62,4 +62,5 @@ export const torrentService = {
   getArchiveIdentifier: archiveService.getArchiveIdentifier,
   streamArchiveMovie,
   getOrStartTorrent,
+  getTorrentStats: bittorrentService.getTorrentStats,
 };

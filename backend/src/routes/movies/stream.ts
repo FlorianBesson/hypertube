@@ -144,4 +144,22 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
     }
 });
 
+router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
+    try {
+        const rawTorrentHash = Array.isArray(req.params.torrentHash) ? req.params.torrentHash[0] : req.params.torrentHash;
+        if (!rawTorrentHash) {
+            res.status(400).json({ success: false, message: "Hash de torrent manquant" });
+            return;
+        }
+
+        const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
+        const torrentHash = archiveId || rawTorrentHash.toLowerCase();
+
+        const stats = torrentService.getTorrentStats(torrentHash);
+        res.json({ success: true, ...stats });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 export default router;
