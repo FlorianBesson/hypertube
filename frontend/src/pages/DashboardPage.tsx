@@ -55,7 +55,7 @@ export default function DashboardPage({
   const otherUsers = users.filter(u => u.id !== user.id)
 
   return (
-    <div className="max-w-[1400px] w-full mx-auto flex flex-col lg:flex-row gap-6 items-start justify-center">
+    <div className="max-w-350 w-full mx-auto flex flex-col lg:flex-row gap-6 items-start justify-center">
       <DashboardMovies 
         t={t}
         lang={lang}
