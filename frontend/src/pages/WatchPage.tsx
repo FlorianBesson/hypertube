@@ -98,6 +98,8 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
     }).catch(err => console.error('Error marking movie as watched in BDD:', err))
   }, [id, movie?.id])
 
+  const [showControls, setShowControls] = useState(true)
+
   return (
     <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden relative">
       {isLoading ? (
@@ -109,7 +111,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
         <>
           {/* Main Full-Screen Video Player Area */}
           <div className="w-full h-full">
-            <VideoPlayer movie={movie} t={t} />
+            <VideoPlayer movie={movie} t={t} onControlsVisibilityChange={setShowControls} />
           </div>
 
           {/* Right Side Overlay Comments Section */}
@@ -119,6 +121,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
             t={t}
             user={user}
             imdbId={id || movie?.id}
+            showControls={showControls}
           />
         </>
       )}
