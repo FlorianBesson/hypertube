@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
-import type { Movie } from '../dashboard/DashboardMovies'
+import type { Movie } from '../../types/movie'
 
 interface VideoPlayerProps {
   movie: Movie | null
@@ -37,8 +37,9 @@ export default function VideoPlayer({ movie, t }: VideoPlayerProps) {
   const [streamError, setStreamError] = useState<string | null>(null)
 
   // Construct backend video stream URL based on torrent hash or movie info
+  const token = localStorage.getItem('token')
   const torrentHash = movie?.torrents?.[0]?.hash || movie?.hash || movie?.id || 'sample'
-  const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}${movie?.id ? `?imdbId=${encodeURIComponent(movie.id)}` : ''}`
+  const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}?${movie?.id ? `imdbId=${encodeURIComponent(movie.id)}&` : ''}${token ? `token=${encodeURIComponent(token)}` : ''}`
 
   useEffect(() => {
     if (videoRef.current) {

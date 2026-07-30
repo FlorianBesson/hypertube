@@ -1,4 +1,4 @@
-import type { Movie } from './DashboardMovies'
+import type { Movie } from '../types/movie'
 
 interface TmdbMovie {
   id: number

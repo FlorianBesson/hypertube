@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import type { TranslationType } from '../../locales/translations'
-import type { Movie } from './DashboardMovies'
+import type { TranslationType } from '../../../locales/translations'
+import type { Movie } from '../../../types/movie'
 
 interface MovieDetailsProps {
     movie: Movie

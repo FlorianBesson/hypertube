@@ -4,8 +4,8 @@ import VideoPlayer from '../components/watch/VideoPlayer'
 import CommentsSection from '../components/watch/CommentsSection'
 import { translations } from '../locales/translations'
 import type { LoggedUser } from '../App'
-import type { Movie } from '../components/dashboard/DashboardMovies'
-import { enrichInternetArchiveMoviesWithTmdb } from '../components/dashboard/internetArchiveTmdb'
+import { enrichInternetArchiveMoviesWithTmdb } from '../services/internetArchiveTmdb'
+import type { Movie } from '../types/movie'
 
 interface WatchPageProps {
   lang: 'en' | 'fr'
@@ -80,6 +80,21 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
 
     fetchMovieFallback()
   }, [id, movie])
+
+  // Automatically mark movie as watched in BDD when user opens WatchPage
+  useEffect(() => {
+    const targetId = id || movie?.id
+    if (!targetId) return
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    fetch(`/api/movies/watched/${encodeURIComponent(targetId)}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }).catch(err => console.error('Error marking movie as watched in BDD:', err))
+  }, [id, movie?.id])
 
   return (
     <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden relative">

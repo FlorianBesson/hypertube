@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import type { LoggedUser } from '../App'
 import { translations } from '../locales/translations'
-import DashboardMovies from '../components/dashboard/DashboardMovies'
-import DashboardMembers from '../components/dashboard/DashboardMembers'
+import { DashboardMovies, DashboardMembers } from '../components/dashboard'
+
+import type { DashboardUserMember } from '../types/member'
 
 interface DashboardPageProps {
   user: LoggedUser
@@ -16,10 +17,10 @@ export default function DashboardPage({
   const t = translations[lang].dashboard
   
   // showCommunity: toggle for the community members sidebar
-  const [showCommunity, setShowCommunity] = useState(true)
+  const [showCommunity, setShowCommunity] = useState(false)
 
   // users: list of registered user objects retrieved from database
-  const [users, setUsers] = useState<Array<{ id: number; username: string; firstName: string; lastName: string; photo: string | null }>>([])
+  const [users, setUsers] = useState<DashboardUserMember[]>([])
   
   // loadingMembers: UI state representing if user fetching is currently in progress
   const [loadingMembers, setLoadingMembers] = useState(true)
