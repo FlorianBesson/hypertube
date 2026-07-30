@@ -25,14 +25,17 @@ export async function getOrStartTorrent(
   downloadsBaseDir: string = path.join(process.cwd(), 'downloads'),
   engineManager: TorrentEngineManager = defaultEngineManager
 ): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
-  const normalizedHash = torrentHash.toLowerCase();
+  const isHexHash = /^[a-fA-F0-9]{40}$/.test(torrentHash);
+  const normalizedHash = isHexHash ? torrentHash.toLowerCase() : torrentHash;
 
   const active = engineManager.getActiveEngine(normalizedHash);
   if (active) {
     return active.readyPromise;
   }
 
-  const downloadFolder = path.join(downloadsBaseDir, normalizedHash);
+  // Sanitize folder name for safe filesystem storage
+  const folderName = isHexHash ? normalizedHash : encodeURIComponent(normalizedHash).replace(/%/g, '_').substring(0, 100);
+  const downloadFolder = path.join(downloadsBaseDir, folderName);
   if (!fs.existsSync(downloadFolder)) {
     fs.mkdirSync(downloadFolder, { recursive: true });
   }

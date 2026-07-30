@@ -18,18 +18,86 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
   const [error, setError] = useState(false)
 
   // Source selection state ('all' | 'archive' | 'publicdomain_torrents')
-  const [selectedSource, setSelectedSource] = useState<MovieSourceId>('all')
+  const [selectedSource, setSelectedSource] = useState<MovieSourceId>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('hypertube_source') as MovieSourceId) || 'all'
+    }
+    return 'all'
+  })
 
   // Sort and Filter States
-  const [sortBy, setSortBy] = useState<SortByOption>('download_count')
-  const [order, setOrder] = useState<SortOrder>('desc')
-  const [selectedGenre, setSelectedGenre] = useState<string>('')
-  const [selectedMinRating, setSelectedMinRating] = useState<number>(0)
-  const [watchedFilter, setWatchedFilter] = useState<WatchedFilterOption>('all')
+  const [sortBy, setSortBy] = useState<SortByOption>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('hypertube_sort_by') as SortByOption) || 'download_count'
+    }
+    return 'download_count'
+  })
+  const [order, setOrder] = useState<SortOrder>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('hypertube_order') as SortOrder) || 'desc'
+    }
+    return 'desc'
+  })
+  const [selectedGenre, setSelectedGenre] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hypertube_genre') || ''
+    }
+    return ''
+  })
+  const [selectedMinRating, setSelectedMinRating] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const val = localStorage.getItem('hypertube_min_rating')
+      return val ? parseFloat(val) : 0
+    }
+    return 0
+  })
+  const [watchedFilter, setWatchedFilter] = useState<WatchedFilterOption>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('hypertube_watched_filter') as WatchedFilterOption) || 'all'
+    }
+    return 'all'
+  })
 
   // Pagination states
   const [page, setPage] = useState<number>(1)
   const [hasMore, setHasMore] = useState<boolean>(true)
+
+  // Persist states in localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_source', selectedSource)
+    }
+  }, [selectedSource])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_sort_by', sortBy)
+    }
+  }, [sortBy])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_order', order)
+    }
+  }, [order])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_genre', selectedGenre)
+    }
+  }, [selectedGenre])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_min_rating', String(selectedMinRating))
+    }
+  }, [selectedMinRating])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_watched_filter', watchedFilter)
+    }
+  }, [watchedFilter])
 
   // Debounce search input
   useEffect(() => {
@@ -42,8 +110,10 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
         setSortBy('title')
         setOrder('asc')
       } else {
-        setSortBy('download_count')
-        setOrder('desc')
+        const savedSortBy = (localStorage.getItem('hypertube_sort_by') as SortByOption) || 'download_count'
+        const savedOrder = (localStorage.getItem('hypertube_order') as SortOrder) || 'desc'
+        setSortBy(savedSortBy)
+        setOrder(savedOrder)
       }
     }, 450)
 

@@ -25,7 +25,8 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
         }
 
         const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
-        const torrentHash = archiveId || rawTorrentHash.toLowerCase();
+        const isHexHash = /^[a-fA-F0-9]{40}$/.test(rawTorrentHash);
+        const torrentHash = archiveId || (isHexHash ? rawTorrentHash.toLowerCase() : rawTorrentHash);
 
         // 1. Update lastWatchedAt timestamp in DB asynchronously
         torrentService.updateLastWatched(torrentHash, imdbId).catch((err) => {
@@ -153,7 +154,8 @@ router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
         }
 
         const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
-        const torrentHash = archiveId || rawTorrentHash.toLowerCase();
+        const isHexHash = /^[a-fA-F0-9]{40}$/.test(rawTorrentHash);
+        const torrentHash = archiveId || (isHexHash ? rawTorrentHash.toLowerCase() : rawTorrentHash);
 
         const stats = torrentService.getTorrentStats(torrentHash);
         res.json({ success: true, ...stats });
