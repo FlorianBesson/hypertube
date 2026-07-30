@@ -181,6 +181,17 @@
     "videoUnavailable": "Flux vidéo indisponible",
     "retry": "Réessayer",
     "messagesCount": "messages",
-    "anonymousUser": "Utilisateur"
+    "anonymousUser": "Utilisateur",
+    "subtitles": "Sous-titres",
+    "subtitlesOff": "Désactivés",
+    "syncOffset": "Décalage tempo",
+    "reset": "Réinitialiser",
+    "advanceSubtitles": "Avancer les sous-titres (-0.5s)",
+    "delaySubtitles": "Retarder les sous-titres (+0.5s)",
+    "french": "Français",
+    "english": "Anglais",
+    "spanish": "Espagnol",
+    "subtitlesUnavailable": "Sous-titres indisponibles en {lang} pour ce film",
+    "subtitlesError": "Erreur lors de la récupération des sous-titres en {lang}"
   }
 }

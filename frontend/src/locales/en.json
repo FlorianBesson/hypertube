@@ -181,6 +181,17 @@
     "videoUnavailable": "Video stream unavailable",
     "retry": "Retry",
     "messagesCount": "messages",
-    "anonymousUser": "User"
+    "anonymousUser": "User",
+    "subtitles": "Subtitles",
+    "subtitlesOff": "Off",
+    "syncOffset": "Subtitle delay",
+    "reset": "Reset",
+    "advanceSubtitles": "Advance subtitles (-0.5s)",
+    "delaySubtitles": "Delay subtitles (+0.5s)",
+    "french": "French",
+    "english": "English",
+    "spanish": "Spanish",
+    "subtitlesUnavailable": "Subtitles unavailable in {lang} for this movie",
+    "subtitlesError": "Error fetching subtitles in {lang}"
   }
 }

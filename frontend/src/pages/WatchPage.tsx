@@ -4,6 +4,7 @@ import VideoPlayer from '../components/watch/VideoPlayer'
 import CommentsSection from '../components/watch/CommentsSection'
 import { translations } from '../locales/translations'
 import type { LoggedUser } from '../App'
+import { enrichInternetArchiveMoviesWithTmdb } from '../services/internetArchiveTmdb'
 import type { Movie } from '../types/movie'
 
 import { PUBLIC_DOMAIN_TORRENTS_DATABASE } from '../services/sources/publicDomainTorrentsSourceProvider'
@@ -59,7 +60,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
         const date = text(metadata.year) || text(metadata.date)
         const year = date.match(/\b(?:18|19|20)\d{2}\b/)?.[0] || 'N/A'
 
-        setMovie({
+        const baseMovie: Movie = {
           id,
           title: text(metadata.title) || id,
           genre: text(metadata.subject) || 'Movie',
@@ -72,7 +73,14 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
           language: text(metadata.language),
           torrentUrl: `https://archive.org/download/${encodeURIComponent(id)}/${encodeURIComponent(id)}_archive.torrent`,
           detailsUrl: `https://archive.org/details/${encodeURIComponent(id)}`
+        }
+
+        const [enriched] = await enrichInternetArchiveMoviesWithTmdb([baseMovie], {
+          apiKey: import.meta.env.VITE_TMDB_API_KEY,
+          lang,
         })
+
+        setMovie(enriched || baseMovie)
       } catch (err) {
         console.error('Error fetching movie metadata fallback:', err)
       } finally {

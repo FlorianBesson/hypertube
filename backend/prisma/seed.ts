@@ -14,10 +14,10 @@ const prisma = new PrismaClient({
 })
 
 const users = [
-  { email: "antoine@magneto.com", firstName: "Antoine", lastName: "Griezmine", username: "antoine", password: "password" },
-  { email: "florian@magneto.com", firstName: "Florian", lastName: "Thauvin", username: "florian", password: "password" },
-  { email: "françois@magneto.com", firstName: "François", lastName: "Fillon", username: "francois", password: "password" },
-  { email: "jutha@magneto.com", firstName: "Jutha", lastName: "Kleinschmidt", username: "jutha", password: "password" },
+  { email: "antoine@magneto.com", firstName: "Antoine", lastName: "Griezmine", username: "antoine", password: "password", preferredLanguage: "fr" },
+  { email: "florian@magneto.com", firstName: "Florian", lastName: "Thauvin", username: "florian", password: "password", preferredLanguage: "en" },
+  { email: "françois@magneto.com", firstName: "François", lastName: "Fillon", username: "francois", password: "password", preferredLanguage: "es" },
+  { email: "jutha@magneto.com", firstName: "Jutha", lastName: "Kleinschmidt", username: "jutha", password: "password", preferredLanguage: "fr" },
 ];
 
 async function main() {
@@ -28,6 +28,7 @@ async function main() {
       where: { email: user.email },
       update: {
         password: hashedPassword,
+        preferredLanguage: user.preferredLanguage,
       },
       create: {
         email: user.email,
@@ -35,6 +36,7 @@ async function main() {
         firstName: user.firstName,
         lastName: user.lastName,
         password: hashedPassword,
+        preferredLanguage: user.preferredLanguage,
       },
     });
     console.log(`Upserted user: ${upsertedUser.email}`);
