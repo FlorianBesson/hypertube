@@ -87,12 +87,19 @@ function matchScore(movie: Movie, candidate: TmdbMovie): number {
   const archiveYear = parseYear(movie.year)
   const tmdbYear = parseYear(candidate.release_date || '')
 
-  if (!archiveYear || !tmdbYear) return titleScore
+  if (archiveYear && tmdbYear) {
+    const difference = Math.abs(archiveYear - tmdbYear)
+    if (difference === 0) return titleScore + 0.25
+    if (difference === 1) return titleScore + 0.1
+    if (difference > 2) return titleScore - 0.5
+    return titleScore
+  }
 
-  const difference = Math.abs(archiveYear - tmdbYear)
-  if (difference === 0) return titleScore + 0.25
-  if (difference === 1) return titleScore + 0.1
-  if (difference > 2) return titleScore - 0.5
+  // If no year in source metadata, penalize modern releases (> 1980) to avoid false positive remakes
+  if (tmdbYear && tmdbYear > 1980) {
+    return titleScore - 0.6
+  }
+
   return titleScore
 }
 
@@ -155,11 +162,23 @@ async function findTmdbMatch(
 
   const matchPromise = searchTmdb(movie, apiKey, language, signal)
     .then(async results => {
+      const mYear = parseYear(movie.year)
       const ranked = results
         .map(candidate => ({ candidate, score: matchScore(movie, candidate) }))
-        .sort((left, right) => right.score - left.score)
+        .filter(item => item.score >= 0.3)
+        .sort((left, right) => {
+          if (Math.abs(right.score - left.score) > 0.25) {
+            return right.score - left.score
+          }
+          if (!mYear) {
+            const yearLeft = parseYear(left.candidate.release_date || '') || 9999
+            const yearRight = parseYear(right.candidate.release_date || '') || 9999
+            return yearLeft - yearRight
+          }
+          return right.score - left.score
+        })
 
-      const bestCandidate = ranked[0] && ranked[0].score >= 0.5 ? ranked[0].candidate : null
+      const bestCandidate = ranked[0] ? ranked[0].candidate : null
       if (!bestCandidate) return null
 
       // Fetch external IDs (IMDb ID) for TMDb movie

@@ -10,7 +10,7 @@ function parseYear(title: string): number | string {
 
 const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as any[]).map((m: any) => {
   const defaultTorrentUrl = m.torrents && m.torrents.length > 0 ? m.torrents[0] : ''
-  const movieYear = parseYear(m.title)
+  const movieYear = m.release_date ? m.release_date.slice(0, 4) : parseYear(m.title)
   
   const formattedTorrents = (m.torrents || []).map((tUrl: string) => {
     let quality = '720p'
@@ -33,20 +33,22 @@ const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as any[]).map((m: any) => {
     }
   })
 
-  let genre = 'Classics, Public Domain'
-  const titleLower = m.title.toLowerCase()
-  if (titleLower.includes('chaplin') || titleLower.includes('comedy') || titleLower.includes('jerry')) {
-    genre = 'Comedy, Classics'
-  } else if (titleLower.includes('horror') || titleLower.includes('creature') || titleLower.includes('monster') || titleLower.includes('dead')) {
-    genre = 'Horror, Classics'
-  } else if (titleLower.includes('ninja') || titleLower.includes('karate') || titleLower.includes('action')) {
-    genre = 'Action, Martial Arts'
-  } else if (titleLower.includes('scifi') || titleLower.includes('space') || titleLower.includes('alien') || titleLower.includes('planet')) {
-    genre = 'Sci-Fi, Classics'
-  } else if (titleLower.includes('sherlock') || titleLower.includes('mystery')) {
-    genre = 'Mystery, Detective'
-  } else if (titleLower.includes('western') || titleLower.includes('cowboy')) {
-    genre = 'Western, Classics'
+  let genre = m.genres || 'Classics, Public Domain'
+  if (!m.genres) {
+    const titleLower = m.title.toLowerCase()
+    if (titleLower.includes('chaplin') || titleLower.includes('comedy') || titleLower.includes('jerry')) {
+      genre = 'Comedy, Classics'
+    } else if (titleLower.includes('horror') || titleLower.includes('creature') || titleLower.includes('monster') || titleLower.includes('dead')) {
+      genre = 'Horror, Classics'
+    } else if (titleLower.includes('ninja') || titleLower.includes('karate') || titleLower.includes('action')) {
+      genre = 'Action, Martial Arts'
+    } else if (titleLower.includes('scifi') || titleLower.includes('space') || titleLower.includes('alien') || titleLower.includes('planet')) {
+      genre = 'Sci-Fi, Classics'
+    } else if (titleLower.includes('sherlock') || titleLower.includes('mystery')) {
+      genre = 'Mystery, Detective'
+    } else if (titleLower.includes('western') || titleLower.includes('cowboy')) {
+      genre = 'Western, Classics'
+    }
   }
 
   return {
@@ -54,14 +56,16 @@ const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as any[]).map((m: any) => {
     title: m.title,
     genre,
     year: movieYear,
-    rating: 5.0,
-    image: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    rating: m.vote_average ? Number(m.vote_average) : 5.0,
+    image: m.poster_path || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
     source: 'Public Domain Torrents',
-    description: `A classic movie: ${m.title}. Available for free and legal streaming via public domain torrent distribution.`,
+    description: m.overview || `A classic movie: ${m.title}. Available for free and legal streaming via public domain torrent distribution.`,
     downloads: 1000,
     torrentUrl: defaultTorrentUrl,
     detailsUrl: m.detail_url,
-    torrents: formattedTorrents
+    torrents: formattedTorrents,
+    tmdbId: m.tmdb_id ? Number(m.tmdb_id) : undefined,
+    imdbId: m.imdb_id || undefined
   }
 })
 
