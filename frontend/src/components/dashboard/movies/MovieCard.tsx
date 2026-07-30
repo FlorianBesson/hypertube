@@ -26,11 +26,7 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
   return (
     <div
       onClick={() => onSelectMovie(movie)}
-      className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer ${
-        isWatched 
-          ? 'border-white/5 hover:border-red-600/30 opacity-30 hover:opacity-100' 
-          : 'border-white/5 hover:border-red-600/30'
-      }`}
+      className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer border-white/5 hover:border-red-600/30}`}
     >
       {/* Movie Poster Image */}
       <div className="absolute inset-0 bg-neutral-900">

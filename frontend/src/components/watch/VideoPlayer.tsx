@@ -323,7 +323,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
                 </span>
                 <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  {realtimeSeeds !== null ? realtimeSeeds : (movie.torrents?.[0]?.seeds ?? (movie as any).seeds ?? 0)} seeds
+                  {realtimeSeeds !== null ? realtimeSeeds : 0} seeds
                 </span>
               </div>
             )}

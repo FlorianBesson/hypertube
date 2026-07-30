@@ -29,8 +29,6 @@ const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as any[]).map((m: any) => {
       hash: tUrl, // resolver streams direct url if starts with http
       quality,
       type: 'web',
-      seeds: 10,
-      peers: 3,
       size: 'N/A'
     }
   })
