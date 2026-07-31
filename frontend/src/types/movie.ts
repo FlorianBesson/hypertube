@@ -16,6 +16,14 @@ export interface Movie {
   tmdbId?: number
   imdbId?: string
   hash?: string
+  runtime?: number
+  backdropPath?: string
+  budget?: number
+  revenue?: number
+  genres?: string[]
+  cast?: { name: string; character?: string; profilePath?: string }[]
+  director?: string
+  trailerUrl?: string
 }
 
 export interface Torrent {

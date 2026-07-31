@@ -95,7 +95,12 @@
     "noDescription": "No description available.",
     "creator": "Creator",
     "language": "Language",
-    "playMovie": "Watch movie"
+    "playMovie": "Watch movie",
+    "director": "Director",
+    "budget": "Budget",
+    "revenue": "Revenue",
+    "cast": "Main cast",
+    "watchTrailer": "Watch trailer"
   },
   "profile": {
     "backToDashboard": "Back to dashboard",

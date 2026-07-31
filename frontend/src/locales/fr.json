@@ -95,7 +95,12 @@
     "noDescription": "Aucune description disponible.",
     "creator": "Créateur",
     "language": "Langue",
-    "playMovie": "Lancer la vidéo"
+    "playMovie": "Lancer la vidéo",
+    "director": "Réalisateur",
+    "budget": "Budget",
+    "revenue": "Recettes",
+    "cast": "Casting principal",
+    "watchTrailer": "Bande-annonce"
   },
   "profile": {
     "backToDashboard": "Retour au tableau de bord",

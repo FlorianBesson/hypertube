@@ -243,6 +243,84 @@ function mergeTmdbMatch(movie: Movie, match: TmdbMovie | null): Movie {
   }
 }
 
+export interface TmdbCastMember {
+  name: string
+  character?: string
+  profilePath?: string
+}
+
+export interface TmdbMovieDetails {
+  runtime?: number
+  backdropPath?: string
+  budget?: number
+  revenue?: number
+  genres?: string[]
+  cast?: TmdbCastMember[]
+  director?: string
+  trailerUrl?: string
+}
+
+interface TmdbMovieDetailsResponse {
+  runtime?: number | null
+  backdrop_path?: string | null
+  budget?: number
+  revenue?: number
+  genres?: { id: number; name: string }[]
+  credits?: {
+    cast?: { name: string; character?: string; profile_path?: string | null; order?: number }[]
+    crew?: { name: string; job?: string }[]
+  }
+  videos?: {
+    results?: { key: string; site: string; type: string; official?: boolean }[]
+  }
+}
+
+export async function fetchTmdbMovieDetails(
+  tmdbId: number,
+  apiKey: string,
+  lang: 'en' | 'fr',
+  signal?: AbortSignal
+): Promise<TmdbMovieDetails | null> {
+  const language = lang === 'fr' ? 'fr-FR' : 'en-US'
+  const params = new URLSearchParams({
+    api_key: apiKey,
+    language,
+    append_to_response: 'credits,videos'
+  })
+
+  const response = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?${params.toString()}`, { signal })
+  if (!response.ok) return null
+
+  const data = await response.json() as TmdbMovieDetailsResponse
+
+  const cast = (data.credits?.cast || [])
+    .slice()
+    .sort((left, right) => (left.order ?? 999) - (right.order ?? 999))
+    .slice(0, 6)
+    .map(member => ({
+      name: member.name,
+      character: member.character,
+      profilePath: member.profile_path ? `https://image.tmdb.org/t/p/w185${member.profile_path}` : undefined
+    }))
+
+  const director = data.credits?.crew?.find(member => member.job === 'Director')?.name
+
+  const trailer = (data.videos?.results || [])
+    .filter(video => video.site === 'YouTube' && video.type === 'Trailer')
+    .sort((left, right) => Number(right.official) - Number(left.official))[0]
+
+  return {
+    runtime: data.runtime ?? undefined,
+    backdropPath: data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : undefined,
+    budget: data.budget || undefined,
+    revenue: data.revenue || undefined,
+    genres: (data.genres || []).map(genre => genre.name),
+    cast: cast.length > 0 ? cast : undefined,
+    director,
+    trailerUrl: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined
+  }
+}
+
 async function mapWithConcurrency<T, R>(
   values: T[],
   concurrency: number,

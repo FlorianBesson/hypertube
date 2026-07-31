@@ -270,6 +270,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
           t={t}
+          lang={lang}
         />
       )}
     </div>
