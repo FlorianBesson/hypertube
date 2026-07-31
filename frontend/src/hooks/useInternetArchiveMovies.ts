@@ -51,6 +51,12 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
     }
     return 0
   })
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('hypertube_language') || ''
+    }
+    return ''
+  })
   const [watchedFilter, setWatchedFilter] = useState<WatchedFilterOption>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem('hypertube_watched_filter') as WatchedFilterOption) || 'all'
@@ -92,6 +98,12 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
       localStorage.setItem('hypertube_min_rating', String(selectedMinRating))
     }
   }, [selectedMinRating])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hypertube_language', selectedLanguage)
+    }
+  }, [selectedLanguage])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -204,6 +216,8 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
     setSelectedGenre,
     selectedMinRating,
     setSelectedMinRating,
+    selectedLanguage,
+    setSelectedLanguage,
     watchedFilter,
     setWatchedFilter,
     page,

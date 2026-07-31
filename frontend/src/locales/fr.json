@@ -80,6 +80,8 @@
     "internetArchive": "Internet Archive",
     "publicDomainTorrents": "Public Domain Torrents",
     "ratingLabel": "Note min.",
+    "languageLabel": "Langue",
+    "allLanguages": "Toutes les langues",
     "watchedLabel": "Statut",
     "statusAll": "Tous les films",
     "statusWatched": "Déjà vu",

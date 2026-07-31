@@ -6,6 +6,7 @@ import MovieCard from './MovieCard'
 import MovieToolbar from './MovieToolbar'
 import { useWatchedMovies } from '../../../hooks/useWatchedMovies'
 import { useInternetArchiveMovies } from '../../../hooks/useInternetArchiveMovies'
+import { movieMatchesLanguage } from '../../../utils/language'
 
 export type { Movie, Torrent } from '../../../types/movie'
 
@@ -38,6 +39,8 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     setSelectedGenre,
     selectedMinRating,
     setSelectedMinRating,
+    selectedLanguage,
+    setSelectedLanguage,
     watchedFilter,
     setWatchedFilter,
     page,
@@ -87,6 +90,10 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           return false
         }
 
+        if (selectedLanguage && !movieMatchesLanguage(movie.language, selectedLanguage)) {
+          return false
+        }
+
         return true
       })
       .sort((a, b) => {
@@ -102,7 +109,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
         }
         return order === 'asc' ? comparison : -comparison
       })
-  }, [movies, watchedMovies, watchedFilter, selectedGenre, selectedMinRating, sortBy, order])
+  }, [movies, watchedMovies, watchedFilter, selectedGenre, selectedMinRating, selectedLanguage, sortBy, order])
 
   return (
     <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-125 animate-in fade-in duration-300">
@@ -157,6 +164,11 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
         selectedMinRating={selectedMinRating}
         onMinRatingChange={(r) => {
           setSelectedMinRating(r)
+          setPage(1)
+        }}
+        selectedLanguage={selectedLanguage}
+        onLanguageChange={(l) => {
+          setSelectedLanguage(l)
           setPage(1)
         }}
         watchedFilter={watchedFilter}

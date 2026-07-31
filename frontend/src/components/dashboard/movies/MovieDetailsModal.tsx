@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../../locales/translations'
 import type { Movie } from '../../../types/movie'
 import { fetchTmdbMovieDetails, type TmdbMovieDetails } from '../../../services/internetArchiveTmdb'
+import { getLanguageDisplayName } from '../../../utils/language'
 
 interface MovieDetailsProps {
     movie: Movie
@@ -165,7 +166,7 @@ export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDeta
                                 )}
                                 <div>
                                     <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.language || 'Langue'}</span>
-                                    <span className="text-white font-medium">{movie.language || t.notSpecified || 'Non renseigné'}</span>
+                                    <span className="text-white font-medium">{getLanguageDisplayName(movie.language, lang) || t.notSpecified || 'Non renseigné'}</span>
                                 </div>
                                 {details?.budget !== undefined && details.budget > 0 && (
                                     <div>

@@ -10,6 +10,8 @@ export interface MovieToolbarProps {
   onGenreChange: (genre: string) => void
   selectedMinRating: number
   onMinRatingChange: (rating: number) => void
+  selectedLanguage: string
+  onLanguageChange: (language: string) => void
   watchedFilter: WatchedFilterOption
   onWatchedFilterChange: (status: WatchedFilterOption) => void
   sortBy: SortByOption
@@ -28,6 +30,8 @@ export default function MovieToolbar({
   onGenreChange,
   selectedMinRating,
   onMinRatingChange,
+  selectedLanguage,
+  onLanguageChange,
   watchedFilter,
   onWatchedFilterChange,
   sortBy,
@@ -140,6 +144,30 @@ export default function MovieToolbar({
               <option value="7">7+</option>
               <option value="8">8+</option>
               <option value="9">9+</option>
+            </select>
+          </div>
+
+          {/* Language Filter */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.languageLabel || "Language"}</span>
+            <select
+              value={selectedLanguage}
+              onChange={(e) => onLanguageChange(e.target.value)}
+              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-32"
+            >
+              <option value="">{t.allLanguages || "All Languages"}</option>
+              <option value="english">English</option>
+              <option value="french">French</option>
+              <option value="spanish">Spanish</option>
+              <option value="german">German</option>
+              <option value="italian">Italian</option>
+              <option value="portuguese">Portuguese</option>
+              <option value="russian">Russian</option>
+              <option value="japanese">Japanese</option>
+              <option value="chinese">Chinese</option>
+              <option value="korean">Korean</option>
+              <option value="hindi">Hindi</option>
+              <option value="arabic">Arabic</option>
             </select>
           </div>
 

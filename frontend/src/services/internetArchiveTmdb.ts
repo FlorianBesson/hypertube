@@ -4,6 +4,7 @@ interface TmdbMovie {
   id: number
   title?: string
   original_title?: string
+  original_language?: string
   overview?: string
   release_date?: string
   poster_path?: string | null
@@ -237,6 +238,7 @@ function mergeTmdbMatch(movie: Movie, match: TmdbMovie | null): Movie {
       ? `https://image.tmdb.org/t/p/w500${match.poster_path}`
       : movie.image,
     description: match.overview || movie.description,
+    language: match.original_language || movie.language,
     source: movie.source,
     tmdbId: match.id,
     imdbId: match.imdb_id || undefined
