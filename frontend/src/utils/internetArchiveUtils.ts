@@ -1,10 +1,16 @@
 import type { ArchiveMetadataValue, InternetArchiveRawMovie } from '../types/movie'
 
 export const INTERNET_ARCHIVE_PAGE_SIZE = 20
+
+// Sanity cutoff to weed out movies too recent to plausibly be public domain
+// (looser than the strict 95-year US rule, to avoid over-filtering).
+export const PUBLIC_DOMAIN_YEAR_CUTOFF = 1990
+
 export const INTERNET_ARCHIVE_BASE_QUERY = [
   'collection:feature_films',
   'mediatype:movies',
-  'format:"Archive BitTorrent"'
+  'format:"Archive BitTorrent"',
+  `date:[1870-01-01 TO ${PUBLIC_DOMAIN_YEAR_CUTOFF}-12-31]`
 ]
 
 export const NON_MOVIE_TITLE_RE = /\b(trailer|teaser|commercial|promo|clip|vhs|raw footage|home video|newsreel|advertisement|test|episode|b-roll)\b/i

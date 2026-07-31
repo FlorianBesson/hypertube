@@ -3,6 +3,7 @@ import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './t
 import { ArchiveSourceProvider } from './archiveSourceProvider'
 import { PublicDomainTorrentsSourceProvider } from './publicDomainTorrentsSourceProvider'
 import { enrichInternetArchiveMoviesWithTmdb } from '../internetArchiveTmdb'
+import { PUBLIC_DOMAIN_YEAR_CUTOFF } from '../../utils/internetArchiveUtils'
 
 export class MovieSourceAggregator {
   private providers: Map<MovieSourceId, IMovieSourceProvider> = new Map()
@@ -112,8 +113,14 @@ export class MovieSourceAggregator {
       }
     }
 
-    // Only show movies we could confidently match to TMDB
-    return movies.filter(movie => movie.tmdbId)
+    // Only show movies we could confidently match to TMDB, and only movies
+    // old enough to actually be in the public domain (TMDB enrichment can
+    // otherwise overwrite the year with a mismatched, more recent release)
+    return movies.filter(movie => {
+      if (!movie.tmdbId) return false
+      const year = typeof movie.year === 'number' ? movie.year : parseInt(String(movie.year), 10)
+      return !Number.isNaN(year) && year <= PUBLIC_DOMAIN_YEAR_CUTOFF
+    })
   }
 }
 
