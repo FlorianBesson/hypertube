@@ -156,6 +156,7 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
             query: debouncedQuery.trim(),
             genre: selectedGenre,
             minRating: selectedMinRating,
+            movieLanguage: selectedLanguage,
             sortBy,
             order,
             page,
@@ -199,7 +200,7 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
       isMounted = false
       controller.abort()
     }
-  }, [debouncedQuery, selectedSource, sortBy, order, selectedGenre, selectedMinRating, page, lang])
+  }, [debouncedQuery, selectedSource, sortBy, order, selectedGenre, selectedMinRating, selectedLanguage, page, lang])
 
   return {
     searchQuery,

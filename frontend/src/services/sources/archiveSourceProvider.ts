@@ -8,13 +8,14 @@ import {
   metadataValues,
   metadataYear
 } from '../../utils/internetArchiveUtils'
+import { LANGUAGE_TOKENS } from '../../utils/language'
 
 export class ArchiveSourceProvider implements IMovieSourceProvider {
   readonly id: MovieSourceId = 'archive'
   readonly name = 'Internet Archive'
 
   async searchMovies(params: MovieSearchParams): Promise<Movie[]> {
-    const { query, genre, minRating, sortBy = 'download_count', order = 'desc', page, limit, signal } = params
+    const { query, genre, minRating, movieLanguage, sortBy = 'download_count', order = 'desc', page, limit, signal } = params
 
     const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
 
@@ -28,6 +29,11 @@ export class ArchiveSourceProvider implements IMovieSourceProvider {
 
     if (minRating && minRating > 0) {
       queryParts.push(`avg_rating:[${minRating / 2} TO *]`)
+    }
+
+    if (movieLanguage && movieLanguage.trim()) {
+      const tokens = LANGUAGE_TOKENS[movieLanguage] || [movieLanguage]
+      queryParts.push(`language:(${tokens.map(t => `"${t}"`).join(' OR ')})`)
     }
 
     const sortField = {

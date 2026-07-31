@@ -4,6 +4,7 @@ import { ArchiveSourceProvider } from './archiveSourceProvider'
 import { PublicDomainTorrentsSourceProvider } from './publicDomainTorrentsSourceProvider'
 import { enrichInternetArchiveMoviesWithTmdb } from '../internetArchiveTmdb'
 import { PUBLIC_DOMAIN_YEAR_CUTOFF } from '../../utils/internetArchiveUtils'
+import { movieMatchesLanguage } from '../../utils/language'
 
 export class MovieSourceAggregator {
   private providers: Map<MovieSourceId, IMovieSourceProvider> = new Map()
@@ -113,13 +114,17 @@ export class MovieSourceAggregator {
       }
     }
 
-    // Only show movies we could confidently match to TMDB, and only movies
-    // old enough to actually be in the public domain (TMDB enrichment can
-    // otherwise overwrite the year with a mismatched, more recent release)
+    // Only show movies we could confidently match to TMDB, old enough to
+    // actually be in the public domain (TMDB enrichment can otherwise
+    // overwrite the year with a mismatched, more recent release), and
+    // matching the selected spoken-language filter (checked here, after TMDB
+    // enrichment, since movie.language is only reliably known at this point)
     return movies.filter(movie => {
       if (!movie.tmdbId) return false
       const year = typeof movie.year === 'number' ? movie.year : parseInt(String(movie.year), 10)
-      return !Number.isNaN(year) && year <= PUBLIC_DOMAIN_YEAR_CUTOFF
+      if (Number.isNaN(year) || year > PUBLIC_DOMAIN_YEAR_CUTOFF) return false
+      if (params.movieLanguage && !movieMatchesLanguage(movie.language, params.movieLanguage)) return false
+      return true
     })
   }
 }

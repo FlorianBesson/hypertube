@@ -157,17 +157,11 @@ export default function MovieToolbar({
             >
               <option value="">{t.allLanguages || "All Languages"}</option>
               <option value="english">English</option>
-              <option value="french">French</option>
               <option value="spanish">Spanish</option>
               <option value="german">German</option>
-              <option value="italian">Italian</option>
-              <option value="portuguese">Portuguese</option>
-              <option value="russian">Russian</option>
+              <option value="french">French</option>
               <option value="japanese">Japanese</option>
-              <option value="chinese">Chinese</option>
-              <option value="korean">Korean</option>
-              <option value="hindi">Hindi</option>
-              <option value="arabic">Arabic</option>
+              <option value="italian">Italian</option>
             </select>
           </div>
 

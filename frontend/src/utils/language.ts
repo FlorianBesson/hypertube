@@ -4,7 +4,7 @@
 // metadata otherwise, which is inconsistent: ISO 639-2 codes ("eng", "spa"),
 // full English words ("English"), sometimes with extra notes. Match on
 // tokens against all known forms rather than a plain substring check.
-const LANGUAGE_TOKENS: Record<string, string[]> = {
+export const LANGUAGE_TOKENS: Record<string, string[]> = {
   english: ['en', 'eng', 'english'],
   french: ['fr', 'fre', 'fra', 'french'],
   spanish: ['es', 'spa', 'spanish'],

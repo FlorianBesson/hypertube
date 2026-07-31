@@ -10,6 +10,8 @@ export interface MovieSearchParams {
   query?: string
   genre?: string
   minRating?: number
+  /** Spoken-language filter key (e.g. "english", "french"), see utils/language.ts */
+  movieLanguage?: string
   sortBy?: SortByOption
   order?: SortOrder
   page: number
