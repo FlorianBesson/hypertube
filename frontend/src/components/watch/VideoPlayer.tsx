@@ -267,7 +267,6 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     <div
       className={`relative w-full h-full bg-black overflow-hidden flex flex-col justify-between group ${!showControls ? 'cursor-none' : ''}`}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
     >
       {/* HTML5 Video Element connected to torrent stream API */}
       <video
