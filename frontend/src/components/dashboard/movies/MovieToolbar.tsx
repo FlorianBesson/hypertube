@@ -1,11 +1,14 @@
 import type { TranslationType } from '../../../locales/translations'
-import type { MovieSourceId, SortByOption, SortOrder, WatchedFilterOption } from '../../../hooks/useInternetArchiveMovies'
+import type { MovieSourceId, SortByOption, SortOrder, WatchedFilterOption } from '../../../services/sources/types'
+import FilterSelect from './FilterSelect'
+import { MOVIE_GENRES } from '../../../utils/movieGenres'
+import { MOVIE_LANGUAGE_OPTIONS } from '../../../utils/language'
 
 export interface MovieToolbarProps {
   searchQuery: string
   onSearchChange: (value: string) => void
-  selectedSource?: MovieSourceId
-  onSourceChange?: (source: MovieSourceId) => void
+  selectedSource: MovieSourceId
+  onSourceChange: (source: MovieSourceId) => void
   selectedGenre: string
   onGenreChange: (genre: string) => void
   selectedMinRating: number
@@ -24,7 +27,7 @@ export interface MovieToolbarProps {
 export default function MovieToolbar({
   searchQuery,
   onSearchChange,
-  selectedSource = 'all',
+  selectedSource,
   onSourceChange,
   selectedGenre,
   onGenreChange,
@@ -87,97 +90,62 @@ export default function MovieToolbar({
       {/* Filters and Sort Toolbar */}
       <div className="w-full flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Source Provider Filter */}
-          {onSourceChange && (
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.sourceLabel || "Source"}</span>
-              <select
-                value={selectedSource}
-                onChange={(e) => onSourceChange(e.target.value as MovieSourceId)}
-                className="bg-neutral-950 border border-red-500/40 rounded-lg px-3 py-1.5 text-xs text-red-400 font-semibold outline-none focus:border-red-500 cursor-pointer min-w-36 shadow-sm"
-              >
-                <option value="all">{t.allSources || "All Sources"}</option>
-                <option value="archive">{t.internetArchive || "Internet Archive"}</option>
-                <option value="publicdomain_torrents">{t.publicDomainTorrents || "Public Domain Torrents"}</option>
-              </select>
-            </div>
-          )}
-
-          {/* Genre Filter */}
+          {/* Source Provider Filter (accent styling to signal it's the primary filter) */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.genreLabel || "Genre"}</span>
+            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.sourceLabel || "Source"}</span>
             <select
-              value={selectedGenre}
-              onChange={(e) => onGenreChange(e.target.value)}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-32"
+              value={selectedSource}
+              onChange={(e) => onSourceChange(e.target.value as MovieSourceId)}
+              className="bg-neutral-950 border border-red-500/40 rounded-lg px-3 py-1.5 text-xs text-red-400 font-semibold outline-none focus:border-red-500 cursor-pointer min-w-36 shadow-sm"
             >
-              <option value="">{t.allGenres || "All Genres"}</option>
-              <option value="action">Action</option>
-              <option value="adventure">Adventure</option>
-              <option value="animation">Animation</option>
-              <option value="comedy">Comedy</option>
-              <option value="crime">Crime</option>
-              <option value="documentary">Documentary</option>
-              <option value="drama">Drama</option>
-              <option value="family">Family</option>
-              <option value="fantasy">Fantasy</option>
-              <option value="history">History</option>
-              <option value="horror">Horror</option>
-              <option value="mystery">Mystery</option>
-              <option value="romance">Romance</option>
-              <option value="sci-fi">Sci-Fi</option>
-              <option value="thriller">Thriller</option>
+              <option value="all">{t.allSources || "All Sources"}</option>
+              <option value="archive">{t.internetArchive || "Internet Archive"}</option>
+              <option value="publicdomain_torrents">{t.publicDomainTorrents || "Public Domain Torrents"}</option>
             </select>
           </div>
 
-          {/* Min Rating Filter */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.ratingLabel || "Min Rating"}</span>
-            <select
-              value={selectedMinRating}
-              onChange={(e) => onMinRatingChange(Number(e.target.value))}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-28"
-            >
-              <option value="0">{t.anyRating || "Any Rating"}</option>
-              <option value="5">5+</option>
-              <option value="6">6+</option>
-              <option value="7">7+</option>
-              <option value="8">8+</option>
-              <option value="9">9+</option>
-            </select>
-          </div>
+          <FilterSelect
+            label={t.genreLabel || "Genre"}
+            value={selectedGenre}
+            onChange={onGenreChange}
+            minWidthClassName="min-w-32"
+            options={[{ value: '', label: t.allGenres || "All Genres" }, ...MOVIE_GENRES]}
+          />
 
-          {/* Language Filter */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.languageLabel || "Language"}</span>
-            <select
-              value={selectedLanguage}
-              onChange={(e) => onLanguageChange(e.target.value)}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-32"
-            >
-              <option value="">{t.allLanguages || "All Languages"}</option>
-              <option value="english">English</option>
-              <option value="spanish">Spanish</option>
-              <option value="german">German</option>
-              <option value="french">French</option>
-              <option value="japanese">Japanese</option>
-              <option value="italian">Italian</option>
-            </select>
-          </div>
+          <FilterSelect
+            label={t.ratingLabel || "Min Rating"}
+            value={selectedMinRating}
+            onChange={(value) => onMinRatingChange(Number(value))}
+            minWidthClassName="min-w-28"
+            options={[
+              { value: '0', label: t.anyRating || "Any Rating" },
+              { value: '5', label: '5+' },
+              { value: '6', label: '6+' },
+              { value: '7', label: '7+' },
+              { value: '8', label: '8+' },
+              { value: '9', label: '9+' }
+            ]}
+          />
 
-          {/* Watched Filter */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">{t.watchedLabel || "Status"}</span>
-            <select
-              value={watchedFilter}
-              onChange={(e) => onWatchedFilterChange(e.target.value as WatchedFilterOption)}
-              className="bg-neutral-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-neutral-300 outline-none focus:border-red-500/70 cursor-pointer min-w-28"
-            >
-              <option value="all">{t.statusAll || "All movies"}</option>
-              <option value="watched">{t.statusWatched || "Watched"}</option>
-              <option value="unwatched">{t.statusUnwatched || "Unwatched"}</option>
-            </select>
-          </div>
+          <FilterSelect
+            label={t.languageLabel || "Language"}
+            value={selectedLanguage}
+            onChange={onLanguageChange}
+            minWidthClassName="min-w-32"
+            options={[{ value: '', label: t.allLanguages || "All Languages" }, ...MOVIE_LANGUAGE_OPTIONS]}
+          />
+
+          <FilterSelect
+            label={t.watchedLabel || "Status"}
+            value={watchedFilter}
+            onChange={(value) => onWatchedFilterChange(value as WatchedFilterOption)}
+            minWidthClassName="min-w-28"
+            options={[
+              { value: 'all', label: t.statusAll || "All movies" },
+              { value: 'watched', label: t.statusWatched || "Watched" },
+              { value: 'unwatched', label: t.statusUnwatched || "Unwatched" }
+            ]}
+          />
         </div>
 
         {/* Sorting Dropdown */}
