@@ -128,7 +128,7 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
   const [showControls, setShowControls] = useState(true)
 
   return (
-    <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden relative">
+    <div className="fixed inset-0 z-50 w-screen h-screen bg-black overflow-hidden">
       {isLoading ? (
         <div className="flex flex-col items-center justify-center h-full w-full bg-black">
           <span className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full animate-spin mb-4" />

@@ -40,6 +40,13 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
   const [showControls, setShowControls] = useState(true)
   const [realtimeSeeds, setRealtimeSeeds] = useState<number | null>(null)
   const controlsTimeoutRef = useRef<number | null>(null)
+  const userPausedRef = useRef(false)
+
+  const resumeIfNotUserPaused = useCallback(() => {
+    if (videoRef.current && videoRef.current.paused && !userPausedRef.current) {
+      videoRef.current.play().catch(() => {})
+    }
+  }, [])
 
   // Timer counter for buffering duration in seconds
   useEffect(() => {
@@ -82,6 +89,20 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
       videoRef.current.volume = volume / 100
     }
   }, [volume])
+
+  // Browsers block unmuted autoplay without a recent user gesture (e.g. after a page reload).
+  // Retry muted in that case so playback still starts automatically.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.play().catch(() => {
+      if (!userPausedRef.current) {
+        video.muted = true
+        setIsMuted(true)
+        video.play().catch(() => {})
+      }
+    })
+  }, [streamUrl])
 
   useEffect(() => {
     if (streamError) return
@@ -135,8 +156,10 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
   const togglePlay = () => {
     if (!videoRef.current) return
     if (isPlaying) {
+      userPausedRef.current = true
       videoRef.current.pause()
     } else {
+      userPausedRef.current = false
       videoRef.current.play().catch((err) => {
         console.error('Play error:', err)
       })
@@ -260,7 +283,10 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
           setIsBuffering(false)
           setStreamError(null)
         }}
-        onCanPlay={() => setIsBuffering(false)}
+        onCanPlay={() => {
+          setIsBuffering(false)
+          resumeIfNotUserPaused()
+        }}
         onError={async (e) => {
           console.error('Video stream error:', e)
           setIsBuffering(false)
@@ -294,6 +320,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
           if (videoRef.current) {
             setDuration(videoRef.current.duration || 0)
             setIsBuffering(false)
+            resumeIfNotUserPaused()
             syncActiveCue(selectedSubLang)
           }
         }}
