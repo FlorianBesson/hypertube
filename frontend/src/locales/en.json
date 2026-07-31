@@ -53,8 +53,6 @@
     "emailInvalid": "Invalid email address"
   },
   "dashboard": {
-    "moviesTitle": "Movies",
-    "moviesSubtitle": "Explore and discover films",
     "showCommunity": "Show members",
     "hideCommunity": "Hide members",
     "communityTitle": "Members",
