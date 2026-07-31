@@ -17,7 +17,7 @@ export default function MemberCard({ member, onClick, t }: MemberCardProps) {
       <Avatar
         photo={member.photo || undefined}
         name={member.username}
-        size="sm"
+        size="base"
         className="group-hover:scale-105 transition-transform duration-300 shrink-0"
       />
       <div className="flex-1 min-w-0">

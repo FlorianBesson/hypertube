@@ -45,7 +45,7 @@ export default function Header({
                     photo={user.photo}
                     name={user.username}
                     email={user.email}
-                    size="sm"
+                    size="base"
                     active={location.pathname === "/profile"}
                   />
                 </Link>

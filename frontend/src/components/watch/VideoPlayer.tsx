@@ -75,7 +75,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
 
   const realtimeSeeds = useRealtimeSeeds(streamIdentifier, Boolean(streamError))
 
-  const imdbId = movie?.imdbId || movie?.id || 'tt0133093'
+  const imdbId = movie?.imdbId || movie?.id
   const {
     subTracks,
     selectedSubLang,
@@ -186,7 +186,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
           }
         }}
       >
-        {subTracks.map((tr) => (
+        {imdbId && subTracks.map((tr) => (
           <track
             key={tr.code}
             kind="subtitles"

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { MessageSquare, Send, PanelRightClose, User } from 'lucide-react'
+import { MessageSquare, Send, PanelRightClose } from 'lucide-react'
 import type { TranslationType } from '../../locales/translations'
 import type { LoggedUser } from '../../App'
+import Avatar from '../ui/Avatar'
 
 export interface ApiComment {
   id: number
@@ -30,7 +31,7 @@ export default function CommentsSection({
   onToggleCollapse,
   t,
   user,
-  imdbId = 'default',
+  imdbId,
   showControls = true
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<ApiComment[]>([])
@@ -68,7 +69,7 @@ export default function CommentsSection({
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCommentText.trim() || isSubmitting) return
+    if (!newCommentText.trim() || isSubmitting || !imdbId) return
 
     const token = localStorage.getItem('token')
     if (!token) return
@@ -142,13 +143,12 @@ export default function CommentsSection({
       <form onSubmit={handleAddComment} className="py-4 border-b border-white/10 flex flex-col gap-2 shrink-0">
         <div className="flex gap-2">
           {/* User Avatar */}
-          <div className="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-            {user?.photo ? (
-              <img src={user.photo} alt={user.username} className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-4 h-4 text-neutral-400" />
-            )}
-          </div>
+          <Avatar
+            photo={user?.photo}
+            name={user?.username}
+            size="sm"
+            className="shrink-0"
+          />
           <input
             type="text"
             value={newCommentText}
@@ -184,15 +184,12 @@ export default function CommentsSection({
               className="p-3 rounded-xl bg-neutral-900/80 border border-white/5 hover:border-white/10 transition-colors flex gap-3 text-xs"
             >
               {/* Commenter Avatar */}
-              <div className="w-7 h-7 rounded-full bg-neutral-800 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center mt-0.5">
-                {comment.user?.photo ? (
-                  <img src={comment.user.photo} alt={comment.user.username} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="font-bold text-neutral-400 uppercase text-[10px]">
-                    {(comment.user?.username || 'AN').slice(0, 2)}
-                  </span>
-                )}
-              </div>
+              <Avatar
+                photo={comment.user?.photo || undefined}
+                name={comment.user?.username}
+                size="xs"
+                className="shrink-0 mt-0.5"
+              />
 
               {/* Comment Content */}
               <div className="flex-1 flex flex-col gap-1">
