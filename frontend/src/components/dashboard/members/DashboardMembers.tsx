@@ -3,8 +3,6 @@ import type { TranslationType } from '../../../locales/translations'
 import type { DashboardUserMember } from '../../../types/member'
 import MemberCard from './MemberCard'
 
-export type { DashboardUserMember }
-
 export interface DashboardMembersProps {
   t: TranslationType['dashboard']
   loadingMembers: boolean
