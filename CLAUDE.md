@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Hypertube — web app to search + stream torrent video, royalty-free/legal sources only (publicdomaintorrents.info, archive.org). Built at 42 (school project, `subject.md` = original spec).
 
-Stack: React 19 + Vite + TypeScript + Tailwind 4 + React Router (frontend) — Express 5 + TypeScript + Prisma 7 + PostgreSQL (backend) — BitTorrent (torrent-stream) + Archive.org downloader for streaming — JWT/bcrypt/OAuth (42, Google) for auth — Nodemailer (Brevo SMTP) — Docker Compose + Caddy for infra.
+Stack: React 19 + Vite + TypeScript + Tailwind 4 + React Router (frontend) — Express 5 + TypeScript + Prisma 7 + PostgreSQL (backend) — BitTorrent (torrent-stream) for streaming — JWT/bcrypt/OAuth (42, Google) for auth — Nodemailer (Brevo SMTP) — Docker Compose + Caddy for infra.
 
 ## Commands
 
@@ -45,7 +45,7 @@ Run `npm run lint` / `npx tsc --noEmit` locally the same way before considering 
 These are two separate pipelines that only meet at the torrent hash / imdbId:
 
 - **Search & catalog** (`frontend/src/services/sources/`): `movieSourceAggregator.ts` queries `ArchiveSourceProvider` and `PublicDomainTorrentsSourceProvider` in parallel directly from the browser, deduplicates by title, enriches results with TMDB metadata (`internetArchiveTmdb.ts`, bilingual en/fr query resolution), then filters to items with a confirmed TMDB match, a public-domain-era release year, and matching spoken-language. The backend is not involved in search — no server-side movie search endpoint exists.
-- **Streaming** (`backend/src/services/stream/`): `torrentService.ts` is a facade over `bittorrentService.ts` (P2P via torrent-stream) and `archiveService.ts` (direct CDN download from archive.org), dispatched by whether the id passed in is a torrent hash or an Archive.org identifier (`getArchiveIdentifier`/`isArchiveIdentifier`). `routes/movies/stream.ts` serves via HTTP 206 range requests, preferring an already-completed file on disk (`downloads/`) over live P2P/CDN streaming. `movieDbService.ts`/`movieRepository.ts` persist minimal `Movie` rows (imdbId, hash, filePath, completion) to track what's cached.
+- **Streaming** (`backend/src/services/stream/`): `torrentService.ts` is a facade over `bittorrentService.ts` (P2P via torrent-stream). Archive.org-sourced ids are normalized via `getArchiveIdentifier` and streamed through the same P2P engine — `torrentSourceResolver.ts` fetches the item's `.torrent` file from archive.org and hands it to torrent-stream like any other torrent; there is no CDN/direct-download path. `routes/movies/stream.ts` serves via HTTP 206 range requests, preferring an already-completed file on disk (`downloads/`) over live P2P streaming. `movieDbService.ts`/`movieRepository.ts` persist minimal `Movie` rows (imdbId, hash, filePath, completion) to track what's cached.
 
 ### Backend route/service layering
 
