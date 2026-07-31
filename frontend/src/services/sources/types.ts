@@ -8,6 +8,8 @@ export type WatchedFilterOption = 'all' | 'watched' | 'unwatched'
 
 export interface MovieSearchParams {
   query?: string
+  /** Alternate title phrases (e.g. the same title resolved in English + French via TMDB) to OR into the title search */
+  queryTerms?: string[]
   genre?: string
   minRating?: number
   /** Spoken-language filter key (e.g. "english", "french"), see utils/language.ts */

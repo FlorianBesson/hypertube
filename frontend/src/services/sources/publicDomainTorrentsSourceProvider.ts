@@ -91,14 +91,18 @@ export class PublicDomainTorrentsSourceProvider implements IMovieSourceProvider 
   readonly name = 'Public Domain Torrents'
 
   async searchMovies(params: MovieSearchParams): Promise<Movie[]> {
-    const { query = '', genre = '', minRating = 0, sortBy = 'download_count', order = 'desc', page = 1, limit = 20 } = params
+    const { query = '', queryTerms, genre = '', minRating = 0, sortBy = 'download_count', order = 'desc', page = 1, limit = 20 } = params
 
     let filtered = [...PUBLIC_DOMAIN_TORRENTS_DATABASE]
 
-    // 1. Text Search Filter
-    if (query.trim()) {
-      const q = query.toLowerCase().trim()
-      filtered = filtered.filter(m => m.title.toLowerCase().includes(q))
+    // 1. Text Search Filter (matches any resolved title term, e.g. English + French)
+    const searchTerms = (queryTerms && queryTerms.length > 0 ? queryTerms : (query.trim() ? [query.trim()] : []))
+      .map(t => t.toLowerCase())
+    if (searchTerms.length > 0) {
+      filtered = filtered.filter(m => {
+        const titleLower = m.title.toLowerCase()
+        return searchTerms.some(term => titleLower.includes(term))
+      })
     }
 
     // 2. Genre Filter

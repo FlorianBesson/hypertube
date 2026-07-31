@@ -2,7 +2,7 @@ import type { Movie } from '../../types/movie'
 import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './types'
 import { ArchiveSourceProvider } from './archiveSourceProvider'
 import { PublicDomainTorrentsSourceProvider } from './publicDomainTorrentsSourceProvider'
-import { enrichInternetArchiveMoviesWithTmdb } from '../internetArchiveTmdb'
+import { enrichInternetArchiveMoviesWithTmdb, resolveSearchTitles } from '../internetArchiveTmdb'
 import { PUBLIC_DOMAIN_YEAR_CUTOFF } from '../../utils/internetArchiveUtils'
 import { movieMatchesLanguage } from '../../utils/language'
 
@@ -34,11 +34,26 @@ export class MovieSourceAggregator {
     tmdbApiKey?: string
   ): Promise<Movie[]> {
     let movies: Movie[] = []
+    let searchParams = params
+
+    // Resolve the query in both English and French via TMDB, so the source
+    // queries below can match a title typed in either language.
+    if (params.query && params.query.trim() && tmdbApiKey) {
+      try {
+        const queryTerms = await resolveSearchTitles(params.query.trim(), tmdbApiKey, params.signal)
+        searchParams = { ...params, queryTerms }
+      } catch (err) {
+        if (params.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+          throw err
+        }
+        console.warn('[MovieSourceAggregator] Bilingual query resolution failed:', err)
+      }
+    }
 
     if (sourceId !== 'all' && this.providers.has(sourceId)) {
       const provider = this.providers.get(sourceId)!
       try {
-        movies = await provider.searchMovies(params)
+        movies = await provider.searchMovies(searchParams)
       } catch (err) {
         if (params.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
           throw err
@@ -50,7 +65,7 @@ export class MovieSourceAggregator {
       // Query all providers in parallel
       const activeProviders = Array.from(this.providers.values())
       const results = await Promise.allSettled(
-        activeProviders.map(p => p.searchMovies(params))
+        activeProviders.map(p => p.searchMovies(searchParams))
       )
 
       const combined: Movie[] = []

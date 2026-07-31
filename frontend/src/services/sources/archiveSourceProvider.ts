@@ -15,12 +15,16 @@ export class ArchiveSourceProvider implements IMovieSourceProvider {
   readonly name = 'Internet Archive'
 
   async searchMovies(params: MovieSearchParams): Promise<Movie[]> {
-    const { query, genre, minRating, movieLanguage, sortBy = 'download_count', order = 'desc', page, limit, signal } = params
+    const { query, queryTerms, genre, minRating, movieLanguage, sortBy = 'download_count', order = 'desc', page, limit, signal } = params
 
     const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
 
-    if (query && query.trim()) {
-      queryParts.push(`title:(${escapeInternetArchiveQuery(query.trim())})`)
+    const titleTerms = queryTerms && queryTerms.length > 0
+      ? queryTerms
+      : (query && query.trim() ? [query.trim()] : [])
+
+    if (titleTerms.length > 0) {
+      queryParts.push(`(${titleTerms.map(term => `title:(${escapeInternetArchiveQuery(term)})`).join(' OR ')})`)
     }
 
     if (genre && genre.trim()) {

@@ -40,7 +40,7 @@ export function metadataYear(movie: InternetArchiveRawMovie): string | number {
 }
 
 export function escapeInternetArchiveQuery(value: string): string {
-  return value.replace(/([+\-!(){}[\]^"~*?:\\/]|&&|\|\|)/g, '\\$1')
+  return value.replace(/([+\-!(){}[\]^"'~*?:\\/]|&&|\|\|)/g, '\\$1')
 }
 
 export function isLikelyMovie(movie: InternetArchiveRawMovie): boolean {

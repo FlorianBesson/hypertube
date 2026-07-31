@@ -277,6 +277,40 @@ interface TmdbMovieDetailsResponse {
   }
 }
 
+// Archive.org / public-domain-torrents titles are almost always in English,
+// but users may search in French. Resolve the typed query against TMDB in
+// both languages and return the distinct English/French titles it maps to,
+// so provider queries can match on whichever title the source actually uses.
+export async function resolveSearchTitles(
+  query: string,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<string[]> {
+  const terms = new Set<string>([query])
+
+  const search = async (language: string): Promise<TmdbMovie[]> => {
+    const params = new URLSearchParams({
+      api_key: apiKey,
+      query,
+      include_adult: 'false',
+      language,
+      page: '1'
+    })
+    const response = await fetch(`https://api.themoviedb.org/3/search/movie?${params.toString()}`, { signal })
+    if (!response.ok) return []
+    const data = await response.json() as TmdbSearchResponse
+    return data.results || []
+  }
+
+  const [enResults, frResults] = await Promise.all([search('en-US'), search('fr-FR')])
+  ;[...enResults.slice(0, 5), ...frResults.slice(0, 5)].forEach(candidate => {
+    if (candidate.title) terms.add(candidate.title)
+    if (candidate.original_title) terms.add(candidate.original_title)
+  })
+
+  return Array.from(terms).filter(Boolean)
+}
+
 export async function fetchTmdbMovieDetails(
   tmdbId: number,
   apiKey: string,
