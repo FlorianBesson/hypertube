@@ -68,7 +68,7 @@
     "errorLoadingMovies": "Failed to fetch video content from external sources. Please try again.",
     "sortBy": "Sort by",
     "filterBy": "Filter by",
-    "sortTitle": "Title (A-Z)",
+    "sortTitle": "Title",
     "sortYear": "Year",
     "sortRating": "Rating",
     "sortPopularity": "Popularity",

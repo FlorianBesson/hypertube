@@ -68,7 +68,7 @@
     "errorLoadingMovies": "Échec de la récupération du contenu vidéo. Veuillez réessayer.",
     "sortBy": "Trier par",
     "filterBy": "Filtrer par",
-    "sortTitle": "Titre (A-Z)",
+    "sortTitle": "Titre",
     "sortYear": "Année",
     "sortRating": "Note",
     "sortPopularity": "Popularité",

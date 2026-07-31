@@ -13,6 +13,7 @@ import SubtitleOverlay from './SubtitleOverlay'
 interface VideoPlayerProps {
   movie: Movie | null
   t: TranslationType['watch']
+  lang: 'en' | 'fr'
   onControlsVisibilityChange?: (visible: boolean) => void
 }
 
@@ -30,7 +31,7 @@ function formatTime(seconds: number): string {
   return `${pad(m)}:${pad(s)}`
 }
 
-export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: VideoPlayerProps) {
+export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange }: VideoPlayerProps) {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -88,7 +89,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     selectSubtitle,
     adjustOffset,
     resetOffset
-  } = useSubtitles(videoRef, imdbId, t)
+  } = useSubtitles(videoRef, imdbId, t, lang)
 
   useEffect(() => {
     if (videoRef.current) {

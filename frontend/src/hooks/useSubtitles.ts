@@ -13,9 +13,10 @@ export interface SubtitleTrack {
 export function useSubtitles(
   videoRef: RefObject<HTMLVideoElement | null>,
   imdbId: string | undefined,
-  t: TranslationType['watch']
+  t: TranslationType['watch'],
+  lang: 'en' | 'fr'
 ) {
-  const [selectedSubLang, setSelectedSubLang] = useState('fr')
+  const [selectedSubLang, setSelectedSubLang] = useState<string>(lang)
   const [showSubMenu, setShowSubMenu] = useState(false)
   const [activeCueText, setActiveCueText] = useState('')
   const [subOffset, setSubOffset] = useState(0)

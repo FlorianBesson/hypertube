@@ -44,7 +44,7 @@ export default function WatchPage({ lang, user, onLogout }: WatchPageProps) {
         <>
           {/* Main Full-Screen Video Player Area */}
           <div className="w-full h-full">
-            <VideoPlayer movie={movie} t={t} onControlsVisibilityChange={setShowControls} />
+            <VideoPlayer movie={movie} t={t} lang={lang} onControlsVisibilityChange={setShowControls} />
           </div>
 
           {/* Right Side Overlay Comments Section */}
