@@ -5,8 +5,6 @@ import bcrypt from 'bcrypt'
 import { HttpError } from '../../errors';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
-
 const RegisterSchema = z.object({
     email: z.
         email("Field is required"),
@@ -30,6 +28,11 @@ const RegisterSchema = z.object({
 })
 
 export async function registerHandler(req: Request, res: Response) {
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET is missing from environment variables");
+    }
+    
     const result = RegisterSchema.safeParse({
         email: req.body.email,
         username: req.body.username,

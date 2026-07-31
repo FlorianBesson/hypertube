@@ -4,7 +4,10 @@ import bcrypt from 'bcrypt';
 import { prisma } from '../../prisma';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is missing from environment variables");
+}
 
 interface OauthProfile {
     email: string;
