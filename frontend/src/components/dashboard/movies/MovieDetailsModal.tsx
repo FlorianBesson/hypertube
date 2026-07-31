@@ -93,12 +93,6 @@ export default function MovieDetailsModal({ movie, onClose, t }: MovieDetailsPro
                             {/* Badges Année, Durée, Note */}
                             <div className="flex flex-wrap items-center gap-4 mt-2 text-xs font-semibold text-neutral-400">
                                 <span>{movie.year}</span>
-                                {movie.downloads !== undefined && (
-                                    <>
-                                        <span>•</span>
-                                        <span>{movie.downloads.toLocaleString()} {t.downloads || 'downloads'}</span>
-                                    </>
-                                )}
                                 {movie.rating > 0 && <span>•</span>}
                                 {movie.rating > 0 && (
                                 <span className="flex items-center gap-1 text-amber-400 font-bold">
