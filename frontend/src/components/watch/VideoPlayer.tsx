@@ -3,6 +3,12 @@ import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'luc
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
 import type { Movie } from '../../types/movie'
+import { useControlsVisibility } from '../../hooks/useControlsVisibility'
+import { useRealtimeSeeds } from '../../hooks/useRealtimeSeeds'
+import { useSubtitles } from '../../hooks/useSubtitles'
+import { resolveStreamIdentifier, buildStreamUrl, fetchStreamErrorMessage } from '../../services/videoStream'
+import SubtitlesMenu from './SubtitlesMenu'
+import SubtitleOverlay from './SubtitleOverlay'
 
 interface VideoPlayerProps {
   movie: Movie | null
@@ -37,10 +43,9 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
   const [isBuffering, setIsBuffering] = useState(true)
   const [bufferingSeconds, setBufferingSeconds] = useState(0)
   const [streamError, setStreamError] = useState<string | null>(null)
-  const [showControls, setShowControls] = useState(true)
-  const [realtimeSeeds, setRealtimeSeeds] = useState<number | null>(null)
-  const controlsTimeoutRef = useRef<number | null>(null)
   const userPausedRef = useRef(false)
+
+  const { showControls, handleMouseMove } = useControlsVisibility(isPlaying, onControlsVisibilityChange)
 
   const resumeIfNotUserPaused = useCallback(() => {
     if (videoRef.current && videoRef.current.paused && !userPausedRef.current) {
@@ -63,26 +68,27 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     }
   }, [isBuffering, streamError])
 
-  const resetControlsTimeout = useCallback(() => {
-    if (controlsTimeoutRef.current) {
-      window.clearTimeout(controlsTimeoutRef.current)
-    }
-    setShowControls(true)
-    controlsTimeoutRef.current = window.setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false)
-      }
-    }, 3000)
-  }, [isPlaying])
-
-  const handleMouseMove = () => {
-    resetControlsTimeout()
-  }
-
   // Construct backend video stream URL based on torrent hash or movie info
   const token = localStorage.getItem('token')
-  const torrentHash = movie?.torrents?.[0]?.hash || movie?.hash || movie?.torrentUrl || movie?.id || 'sample'
-  const streamUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}?${movie?.id ? `imdbId=${encodeURIComponent(movie.id)}&` : ''}${token ? `token=${encodeURIComponent(token)}` : ''}`
+  const streamIdentifier = resolveStreamIdentifier(movie)
+  const streamUrl = buildStreamUrl(streamIdentifier, movie?.id, token)
+
+  const realtimeSeeds = useRealtimeSeeds(streamIdentifier, Boolean(streamError))
+
+  const imdbId = movie?.imdbId || movie?.id || 'tt0133093'
+  const {
+    subTracks,
+    selectedSubLang,
+    showSubMenu,
+    setShowSubMenu,
+    activeCueText,
+    subOffset,
+    subToast,
+    syncActiveCue,
+    selectSubtitle,
+    adjustOffset,
+    resetOffset
+  } = useSubtitles(videoRef, imdbId, t)
 
   useEffect(() => {
     if (videoRef.current) {
@@ -103,55 +109,6 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
       }
     })
   }, [streamUrl])
-
-  useEffect(() => {
-    if (streamError) return
-
-    const fetchStats = async () => {
-      try {
-        const statsUrl = `/api/movies/stream/${encodeURIComponent(torrentHash)}/stats`
-        const res = await fetch(statsUrl)
-        if (res.ok) {
-          const data = await res.json()
-          if (data && data.success && typeof data.seeds === 'number') {
-            setRealtimeSeeds(data.seeds)
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching real-time P2P stats:', err)
-      }
-    }
-
-    fetchStats()
-    const interval = setInterval(fetchStats, 2000)
-
-    return () => clearInterval(interval)
-  }, [torrentHash, streamError])
-
-  useEffect(() => {
-    return () => {
-      if (controlsTimeoutRef.current) {
-        window.clearTimeout(controlsTimeoutRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isPlaying) {
-      queueMicrotask(() => setShowControls(true))
-      if (controlsTimeoutRef.current) {
-        window.clearTimeout(controlsTimeoutRef.current)
-      }
-    } else {
-      queueMicrotask(() => resetControlsTimeout())
-    }
-  }, [isPlaying, resetControlsTimeout])
-
-  useEffect(() => {
-    if (onControlsVisibilityChange) {
-      onControlsVisibilityChange(showControls)
-    }
-  }, [showControls, onControlsVisibilityChange])
 
   const togglePlay = () => {
     if (!videoRef.current) return
@@ -180,89 +137,6 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     setProgress(posPercentage)
   }
 
-  const [selectedSubLang, setSelectedSubLang] = useState<string>('fr')
-  const [showSubMenu, setShowSubMenu] = useState(false)
-  const [activeCueText, setActiveCueText] = useState<string>('')
-  const [subOffset, setSubOffset] = useState<number>(0)
-  const [subToast, setSubToast] = useState<string | null>(null)
-  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const showSubToast = (message: string) => {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-    setSubToast(message)
-    toastTimeoutRef.current = setTimeout(() => {
-      setSubToast(null)
-    }, 3500)
-  }
-
-  // Subtitle track URLs
-  const imdbId = movie?.imdbId || movie?.id || 'tt0133093'
-  const subTracks = [
-    { code: 'fr', label: t.french || 'Français' },
-    { code: 'en', label: t.english || 'English' },
-    { code: 'es', label: t.spanish || 'Español' },
-  ]
-
-  const syncActiveCue = (lang: string, offsetSec: number = subOffset) => {
-    if (!videoRef.current || lang === 'off') {
-      setActiveCueText('')
-      return
-    }
-    const textTracks = videoRef.current.textTracks
-    const currentTime = videoRef.current.currentTime + offsetSec
-
-    for (let i = 0; i < textTracks.length; i++) {
-      const track = textTracks[i]
-      if (track.language === lang) {
-        track.mode = 'hidden' // Parse cues in JS without native low overlay
-        const cues = track.cues
-        if (cues) {
-          let matchedText = ''
-          for (let j = 0; j < cues.length; j++) {
-            const cue = cues[j] as VTTCue
-            if (currentTime >= cue.startTime && currentTime <= cue.endTime) {
-              matchedText = cue.text
-              break
-            }
-          }
-          setActiveCueText(matchedText)
-        }
-      } else {
-        track.mode = 'disabled'
-      }
-    }
-  }
-
-  const handleSubChange = async (code: string) => {
-    setShowSubMenu(false)
-    if (code === 'off') {
-      setSelectedSubLang('off')
-      setActiveCueText('')
-      return
-    }
-
-    const trackObj = subTracks.find((tr) => tr.code === code)
-    const label = trackObj?.label || code
-
-    try {
-      const res = await fetch(`/api/movies/subtitles/${encodeURIComponent(imdbId)}/${code}`)
-      if (!res.ok) {
-        const msg = (t.subtitlesUnavailable || 'Sous-titres indisponibles en {lang} pour ce film').replace('{lang}', label)
-        showSubToast(`⚠️ ${msg}`)
-        setSelectedSubLang('off')
-        setActiveCueText('')
-        return
-      }
-      setSelectedSubLang(code)
-      syncActiveCue(code)
-    } catch {
-      const msg = (t.subtitlesError || 'Erreur lors de la récupération des sous-titres en {lang}').replace('{lang}', label)
-      showSubToast(`⚠️ ${msg}`)
-      setSelectedSubLang('off')
-      setActiveCueText('')
-    }
-  }
-
   return (
     <div
       className={`relative w-full h-full bg-black overflow-hidden flex flex-col justify-between group ${!showControls ? 'cursor-none' : ''}`}
@@ -286,22 +160,10 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
           setIsBuffering(false)
           resumeIfNotUserPaused()
         }}
-        onError={async (e) => {
-          console.error('Video stream error:', e)
+        onError={async () => {
           setIsBuffering(false)
-          try {
-            const errRes = await fetch(streamUrl)
-            if (!errRes.ok) {
-              const errData = await errRes.json()
-              if (errData && errData.message) {
-                setStreamError(errData.message)
-                return
-              }
-            }
-          } catch (fetchErr) {
-            console.error('Error fetching stream details:', fetchErr)
-          }
-          setStreamError(t.errorLoadingVideo)
+          const message = await fetchStreamErrorMessage(streamUrl, t.errorLoadingVideo)
+          setStreamError(message)
         }}
         onTimeUpdate={() => {
           if (videoRef.current) {
@@ -312,7 +174,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
             if (dur > 0) {
               setProgress((cur / dur) * 100)
             }
-            syncActiveCue(selectedSubLang)
+            syncActiveCue()
           }
         }}
         onLoadedMetadata={() => {
@@ -320,7 +182,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
             setDuration(videoRef.current.duration || 0)
             setIsBuffering(false)
             resumeIfNotUserPaused()
-            syncActiveCue(selectedSubLang)
+            syncActiveCue()
           }
         }}
       >
@@ -335,19 +197,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
         ))}
       </video>
 
-      {/* Subtitle Warning/Toast Banner */}
-      {subToast && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-5 py-2.5 bg-neutral-900/90 border border-amber-500/40 text-amber-300 text-xs sm:text-sm font-semibold rounded-full shadow-2xl backdrop-blur-md animate-fade-in pointer-events-none flex items-center gap-2">
-          <span>{subToast}</span>
-        </div>
-      )}
-
-      {/* Floating Subtitle Overlay - Positioned safely above bottom control bar */}
-      {selectedSubLang !== 'off' && activeCueText && (
-        <div className="absolute bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 z-20 max-w-2xl sm:max-w-3xl px-5 py-2.5 bg-black/85 border border-white/15 text-white text-base sm:text-lg font-semibold rounded-2xl text-center shadow-2xl backdrop-blur-md transition-all duration-150 pointer-events-none whitespace-pre-line leading-relaxed">
-          {activeCueText.replace(/<[^>]*>/g, '')}
-        </div>
-      )}
+      <SubtitleOverlay toast={subToast} activeCueText={activeCueText} isSubtitlesEnabled={selectedSubLang !== 'off'} />
 
       {/* Buffering Spinner / Overlay */}
       {isBuffering && !streamError && (
@@ -483,92 +333,18 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
                 </span>
               </div>
             )}
-            {/* Subtitles CC Menu Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSubMenu(!showSubMenu)}
-                className={`hover:text-red-500 transition-all cursor-pointer px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-md ${selectedSubLang !== 'off' ? 'bg-red-600 text-white border-red-500 hover:bg-red-700' : 'bg-white/10 hover:bg-white/20 text-neutral-300 border-white/15'}`}
-                title={t.subtitles || 'Sous-titres'}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3.75h9m-9 3.75h5.25" />
-                </svg>
-                <span>CC</span>
-                <span className="text-[10px] uppercase opacity-80">({selectedSubLang})</span>
-              </button>
 
-              {showSubMenu && (
-                <div className="absolute bottom-full right-0 mb-2 w-40 bg-neutral-900/95 border border-white/15 rounded-xl shadow-2xl p-1.5 z-30 flex flex-col gap-1 backdrop-blur-md">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-neutral-400 border-b border-white/10 flex items-center justify-between">
-                    <span>{t.subtitles || 'Sous-titres'}</span>
-                    <span className="text-red-500 font-mono text-[9px]">vtt</span>
-                  </div>
-                  <button
-                    onClick={() => handleSubChange('off')}
-                    className={`px-3 py-2 text-left text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-between ${selectedSubLang === 'off' ? 'bg-red-600 font-bold text-white' : 'text-neutral-300 hover:bg-white/10'}`}
-                  >
-                    <span>{t.subtitlesOff || 'Désactivés'}</span>
-                    {selectedSubLang === 'off' && <span>✓</span>}
-                  </button>
-                  {subTracks.map((tr) => (
-                    <button
-                      key={tr.code}
-                      onClick={() => handleSubChange(tr.code)}
-                      className={`px-3 py-2 text-left text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-between ${selectedSubLang === tr.code ? 'bg-red-600 font-bold text-white' : 'text-neutral-300 hover:bg-white/10'}`}
-                    >
-                      <span>{tr.label}</span>
-                      {selectedSubLang === tr.code && <span>✓</span>}
-                    </button>
-                  ))}
-
-                  {/* Subtitle Delay Offset Controls */}
-                  {selectedSubLang !== 'off' && (
-                    <div className="mt-1 pt-1.5 border-t border-white/10 flex flex-col gap-1 px-1">
-                      <div className="flex items-center justify-between text-[10px] text-neutral-400 font-semibold px-1">
-                        <span>{t.syncOffset || 'Décalage tempo'}</span>
-                        <span className="font-mono text-red-400 font-bold">
-                          {subOffset > 0 ? `+${subOffset.toFixed(1)}s` : `${subOffset.toFixed(1)}s`}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-1">
-                        <button
-                          onClick={() => {
-                            const next = parseFloat((subOffset - 0.5).toFixed(1))
-                            setSubOffset(next)
-                            syncActiveCue(selectedSubLang, next)
-                          }}
-                          className="flex-1 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-bold transition-colors cursor-pointer text-center"
-                          title={t.advanceSubtitles || 'Avancer les sous-titres (-0.5s)'}
-                        >
-                          -0.5s
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSubOffset(0)
-                            syncActiveCue(selectedSubLang, 0)
-                          }}
-                          className="px-2 py-1 bg-white/5 hover:bg-white/15 text-neutral-400 hover:text-white rounded text-[10px] font-semibold transition-colors cursor-pointer"
-                          title={t.reset || 'Réinitialiser'}
-                        >
-                          {t.reset || 'Reset'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            const next = parseFloat((subOffset + 0.5).toFixed(1))
-                            setSubOffset(next)
-                            syncActiveCue(selectedSubLang, next)
-                          }}
-                          className="flex-1 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-bold transition-colors cursor-pointer text-center"
-                          title={t.delaySubtitles || 'Retarder les sous-titres (+0.5s)'}
-                        >
-                          +0.5s
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <SubtitlesMenu
+              t={t}
+              subTracks={subTracks}
+              selectedSubLang={selectedSubLang}
+              showSubMenu={showSubMenu}
+              onToggleMenu={() => setShowSubMenu(!showSubMenu)}
+              onSelect={selectSubtitle}
+              subOffset={subOffset}
+              onAdjustOffset={adjustOffset}
+              onResetOffset={resetOffset}
+            />
 
             <button
               onClick={() => {
@@ -590,4 +366,3 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     </div>
   )
 }
-

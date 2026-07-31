@@ -21,16 +21,20 @@ export function useMovieFallback(id: string | undefined, initialMovie: Movie | n
     if (movie || !id) return
 
     let isMounted = true
-    setIsLoading(true)
 
-    resolveMovieById(id, lang)
-      .then(resolved => {
+    const fetchMovieFallback = async () => {
+      setIsLoading(true)
+      try {
+        const resolved = await resolveMovieById(id, lang)
         if (isMounted && resolved) setMovie(resolved)
-      })
-      .catch(err => console.error('Error fetching movie metadata fallback:', err))
-      .finally(() => {
+      } catch (err) {
+        console.error('Error fetching movie metadata fallback:', err)
+      } finally {
         if (isMounted) setIsLoading(false)
-      })
+      }
+    }
+
+    fetchMovieFallback()
 
     return () => {
       isMounted = false
