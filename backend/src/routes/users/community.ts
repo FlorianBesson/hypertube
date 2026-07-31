@@ -32,13 +32,13 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
 router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
     const idParam = req.params.id;
     if (!idParam) {
-        throw new HttpError(400, "Identifiant manquant");
+        throw new HttpError(400, "Missing identifier");
     }
     // Normalize parameter if array, parse to integer ID
     const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
     const targetId = parseInt(idStr, 10);
     if (isNaN(targetId)) {
-        throw new HttpError(400, "Identifiant invalide");
+        throw new HttpError(400, "Invalid identifier");
     }
 
     // Fetch limited set of fields for public safety (no password, no raw email)
@@ -57,7 +57,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
     });
 
     if (!user) {
-        throw new HttpError(404, "Utilisateur non trouvé");
+        throw new HttpError(404, "User not found");
     }
 
     res.json({

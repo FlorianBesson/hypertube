@@ -21,7 +21,7 @@ function getUserId(req: Request): number | null {
 router.get('/', authenticateToken, async (req: Request, res: Response) => {
   const userId = getUserId(req);
   if (!userId) {
-    throw new HttpError(401, 'Utilisateur non identifié');
+    throw new HttpError(401, 'Unauthenticated user');
   }
 
   const records = await prisma.watchedMovie.findMany({
@@ -40,14 +40,14 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
 router.post('/:imdbId', authenticateToken, async (req: Request, res: Response) => {
   const userId = getUserId(req);
   if (!userId) {
-    throw new HttpError(401, 'Utilisateur non identifié');
+    throw new HttpError(401, 'Unauthenticated user');
   }
 
   const rawImdbId = req.params.imdbId;
   const imdbId = Array.isArray(rawImdbId) ? rawImdbId[0] : rawImdbId;
 
   if (!imdbId) {
-    throw new HttpError(400, 'ID de film manquant');
+    throw new HttpError(400, 'Missing movie ID');
   }
 
   await prisma.watchedMovie.upsert({
@@ -66,7 +66,7 @@ router.post('/:imdbId', authenticateToken, async (req: Request, res: Response) =
     },
   });
 
-  res.json({ success: true, message: 'Film marqué comme vu' });
+  res.json({ success: true, message: 'Movie marked as watched' });
 });
 
 export default router;

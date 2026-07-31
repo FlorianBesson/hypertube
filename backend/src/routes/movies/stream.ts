@@ -17,7 +17,7 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
     const imdbId = Array.isArray(rawImdbId) ? (rawImdbId[0] as string) : (rawImdbId as string | undefined);
 
     if (!rawTorrentHash) {
-        throw new HttpError(400, "Hash de torrent manquant");
+        throw new HttpError(400, "Missing torrent hash");
     }
 
     const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);
@@ -26,7 +26,7 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
 
     // 1. Update lastWatchedAt timestamp in DB asynchronously
     torrentService.updateLastWatched(torrentHash, imdbId).catch((err) => {
-        console.error("Erreur lors de la mise à jour de lastWatchedAt:", err);
+        console.error("Error updating lastWatchedAt:", err);
     });
 
     // 2. Check if movie is already fully downloaded on disk
@@ -114,7 +114,7 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
 router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
     const rawTorrentHash = Array.isArray(req.params.torrentHash) ? req.params.torrentHash[0] : req.params.torrentHash;
     if (!rawTorrentHash) {
-        throw new HttpError(400, "Hash de torrent manquant");
+        throw new HttpError(400, "Missing torrent hash");
     }
 
     const archiveId = torrentService.getArchiveIdentifier(rawTorrentHash);

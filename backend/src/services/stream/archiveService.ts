@@ -73,9 +73,9 @@ export async function streamArchiveMovie(
   }
 
   if (!activeRes) {
-    const serverInfo = data?.server ? ` (Serveur ${data.server})` : '';
+    const serverInfo = data?.server ? ` (Server ${data.server})` : '';
     console.warn(`[archiveService] Storage server offline for ${identifier}${serverInfo}`);
-    throw new Error(`Le serveur de stockage Internet Archive pour ce film${serverInfo} est actuellement indisponible ou hors-ligne. Veuillez réessayer ultérieurement.`);
+    throw new Error(`The Internet Archive storage server for this movie${serverInfo} is currently unavailable or offline. Please try again later.`);
   }
 
   const targetFilePath = path.join(downloadFolder, selectedFilename);

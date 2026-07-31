@@ -17,17 +17,17 @@ interface OauthProfile {
 }
 
 async function findOrCreateOauthUser({ email, firstName, lastName, photoUrl, bio, fallbackLogin }: OauthProfile) {
-    // 1. Recherche de l'utilisateur existant
+    // 1. Look up the existing user
     let user = await prisma.user.findUnique({
         where: { email }
     });
 
-    // 2. Si l'utilisateur n'existe pas, on le crée avec un pseudo unique
+    // 2. If the user doesn't exist yet, create them with a unique username
     if (!user) {
         let baseUsername = (fallbackLogin || firstName || "user")
             .toLowerCase()
-            .replace(/[^a-z0-9]/g, ""); // Retire espaces et caractères spéciaux
-        
+            .replace(/[^a-z0-9]/g, ""); // Strip spaces and special characters
+
         if (!baseUsername) baseUsername = "user";
 
         let uniqueUsername = baseUsername;
@@ -58,13 +58,13 @@ async function findOrCreateOauthUser({ email, firstName, lastName, photoUrl, bio
         });
     }
 
-    // 3. Mise à jour de la dernière connexion
+    // 3. Update last login timestamp
     const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: { lastLogin: new Date() }
     });
 
-    // 4. Génération du token JWT
+    // 4. Generate JWT token
     const token = jwt.sign(
         { userId: updatedUser.id, email: updatedUser.email, username: updatedUser.username },
         JWT_SECRET,
@@ -80,7 +80,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     // Basic payload validation
     if (!username || !password) {
-        throw new HttpError(400, "Nom d'utilisateur et mot de passe requis");
+        throw new HttpError(400, "Username and password are required");
     }
 
     // Search for user in database by normalized username
@@ -90,13 +90,13 @@ router.post("/login", async (req: Request, res: Response) => {
 
     // Fail if user is not found
     if (!user) {
-        throw new HttpError(401, "Identifiants incorrects");
+        throw new HttpError(401, "Invalid credentials");
     }
 
     // Verify password match using bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-        throw new HttpError(401, "Identifiants incorrects");
+        throw new HttpError(401, "Invalid credentials");
     }
 
     // Update last login timestamp in the database
@@ -115,7 +115,7 @@ router.post("/login", async (req: Request, res: Response) => {
     // Send successful response with signed token and user profile details
     res.json({
         success: true,
-        message: "Connexion réussie",
+        message: "Login successful",
         token,
         user: {
             id: updatedUser.id,
@@ -147,7 +147,7 @@ router.post("/42", async (req: Request, res: Response) => {
     const { code } = req.body;
 
     if (!code) {
-        throw new HttpError(400, "Code d'autorisation manquant");
+        throw new HttpError(400, "Missing authorization code");
     }
 
     // 1. Exchange authorization code for access token
@@ -168,7 +168,7 @@ router.post("/42", async (req: Request, res: Response) => {
     const tokenData = await tokenResponse.json() as any;
 
     if (!tokenResponse.ok) {
-        throw new HttpError(400, "Échec de la récupération du token 42");
+        throw new HttpError(400, "Failed to retrieve 42 token");
     }
 
     const accessToken = tokenData.access_token;
@@ -183,7 +183,7 @@ router.post("/42", async (req: Request, res: Response) => {
     const userData = await userResponse.json() as any;
 
     if (!userResponse.ok) {
-        throw new HttpError(400, "Échec de la récupération des infos utilisateur 42");
+        throw new HttpError(400, "Failed to retrieve 42 user info");
     }
 
     const email = userData.email?.toLowerCase().trim();
@@ -192,7 +192,7 @@ router.post("/42", async (req: Request, res: Response) => {
     const photoUrl = userData.image?.link || userData.image?.versions?.medium || null;
 
     if (!email) {
-        throw new HttpError(400, "Adresse email manquante sur le compte 42");
+        throw new HttpError(400, "Missing email address on 42 account");
     }
 
     // 3. Find or create the user in the database
@@ -201,13 +201,13 @@ router.post("/42", async (req: Request, res: Response) => {
         firstName,
         lastName,
         photoUrl,
-        bio: "Étudiant de 42",
+        bio: "42 student",
         fallbackLogin: userData.login
     });
 
     res.json({
         success: true,
-        message: "Connexion 42 réussie",
+        message: "42 login successful",
         token,
         user: {
             id: user.id,
@@ -239,10 +239,10 @@ router.post("/google", async (req: Request, res: Response) => {
     const { code } = req.body;
 
     if (!code) {
-        throw new HttpError(400, "Code d'autorisation manquant");
+        throw new HttpError(400, "Missing authorization code");
     }
 
-    // ÉTAPE A : Échange du code d'autorisation contre un Access Token chez Google
+    // STEP A: Exchange the authorization code for a Google access token
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: {
@@ -259,7 +259,7 @@ router.post("/google", async (req: Request, res: Response) => {
 
     const tokenData = await tokenResponse.json() as any;
     if (!tokenResponse.ok) {
-        throw new HttpError(400, "Échec du token Google");
+        throw new HttpError(400, "Failed to retrieve Google token");
     }
 
     const accessToken = tokenData.access_token;
@@ -272,7 +272,7 @@ router.post("/google", async (req: Request, res: Response) => {
 
     const userData = await userResponse.json() as any;
     if (!userResponse.ok) {
-        throw new HttpError(400, "Échec récupération profil Google");
+        throw new HttpError(400, "Failed to retrieve Google profile");
     }
 
     const email = userData.email?.toLowerCase().trim();
@@ -281,22 +281,22 @@ router.post("/google", async (req: Request, res: Response) => {
     const photoUrl = userData.picture || null;
 
     if (!email) {
-        throw new HttpError(400, "Email manquant chez Google");
+        throw new HttpError(400, "Missing email from Google");
     }
 
-    // ÉTAPE B : Recherche ou création de l'utilisateur
+    // STEP B: Find or create the user
     const { token, user } = await findOrCreateOauthUser({
         email,
         firstName,
         lastName,
         photoUrl,
-        bio: "Utilisateur Google",
+        bio: "Google user",
         fallbackLogin: userData.given_name
     });
 
     res.json({
         success: true,
-        message: "Connexion Google réussie",
+        message: "Google login successful",
         token,
         user: {
             id: user.id,

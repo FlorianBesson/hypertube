@@ -8,9 +8,9 @@ const ResetPasswordSchema = z.object({
     token: z.string("Token is required").min(1, "Token is required"),
     password: z
         .string("New password is required")
-        .min(8, "Le nouveau mot de passe doit faire au moins 8 caractères")
-        .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
-        .regex(/[\p{P}\p{S}]/u, "Le mot de passe doit contenir au moins un caractère spécial")
+        .min(8, "New password must be at least 8 characters long")
+        .regex(/[0-9]/, "Password must contain at least one digit")
+        .regex(/[\p{P}\p{S}]/u, "Password must contain at least one special character")
 })
 
 export const resetPasswordHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {

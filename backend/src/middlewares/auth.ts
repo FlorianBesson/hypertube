@@ -14,7 +14,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     // If no token is provided, deny access with a 401 Unauthorized status
     if (!token) {
-        return next(new HttpError(401, "Token d'authentification manquant"));
+        return next(new HttpError(401, "Missing authentication token"));
     }
 
     // Verify the validity of the token using the secret key.
@@ -22,7 +22,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     // be forwarded via next() rather than thrown.
     jwt.verify(token, JWT_SECRET, (err, decoded: any) => {
         if (err) {
-            return next(new HttpError(403, "Token invalide ou expiré"));
+            return next(new HttpError(403, "Invalid or expired token"));
         }
 
         // Attach the decoded token payload (containing user info) to the request object for downstream routes

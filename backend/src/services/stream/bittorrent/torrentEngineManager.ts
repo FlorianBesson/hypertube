@@ -63,7 +63,7 @@ export class TorrentEngineManager {
     const metadataTimer = setTimeout(() => {
       if (!activeEngine.isReady) {
         this.activeEngines.delete(torrentHash);
-        rejectReady(new Error("Aucun seeder actif trouvé pour ce torrent. Le film ne peut pas être téléchargé."));
+        rejectReady(new Error("No active seeder found for this torrent. The movie cannot be downloaded."));
       }
     }, 15000);
 

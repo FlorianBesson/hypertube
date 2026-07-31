@@ -7,7 +7,6 @@ import { checkDbConnection } from './db/utils';
 // Import modular router packages for each domain
 import authRoutes from './routes/auth';
 import { meRouter, communityRouter } from './routes/users';
-import torrentRoutes from './routes/torrent';
 import movieRoutes from './routes/movies';
 
 import { initCronJobs } from './services/maintenance';
@@ -25,7 +24,6 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', meRouter);
 app.use('/api/users', communityRouter);
-app.use('/api/torrent', torrentRoutes);
 app.use('/api/movies', movieRoutes);
 
 /**

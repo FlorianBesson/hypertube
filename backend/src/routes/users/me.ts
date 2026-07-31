@@ -22,12 +22,12 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response, next: Ne
     upload.single('avatar')(req, res, async (err) => {
         // Handle upload errors (size limit exceeded, wrong file type)
         if (err) {
-            return next(new HttpError(400, err.message || "Erreur lors du téléversement"));
+            return next(new HttpError(400, err.message || "Error while uploading file"));
         }
 
         // Verify if a file was actually sent
         if (!req.file) {
-            return next(new HttpError(400, "Aucun fichier téléversé"));
+            return next(new HttpError(400, "No file uploaded"));
         }
 
         try {
@@ -42,7 +42,7 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response, next: Ne
 
             res.json({
                 success: true,
-                message: "Photo de profil mise à jour avec succès",
+                message: "Profile photo updated successfully",
                 user: {
                     id: updatedUser.id,
                     email: updatedUser.email,
@@ -74,7 +74,7 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
     });
 
     if (!user) {
-        throw new HttpError(404, "Utilisateur non trouvé");
+        throw new HttpError(404, "User not found");
     }
 
     if (user.photo) {
@@ -96,7 +96,7 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
 
     res.json({
         success: true,
-        message: "Photo de profil supprimée avec succès",
+        message: "Profile photo deleted successfully",
         user: {
             id: updatedUser.id,
             email: updatedUser.email,
@@ -120,17 +120,17 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
     const { firstName, lastName, email, bio, preferredLanguage } = req.body;
 
     if (firstName !== undefined && !firstName.trim()) {
-        throw new HttpError(400, "Le prénom est requis");
+        throw new HttpError(400, "First name is required");
     }
     if (lastName !== undefined && !lastName.trim()) {
-        throw new HttpError(400, "Le nom est requis");
+        throw new HttpError(400, "Last name is required");
     }
 
     // Validate the email format if provided
     if (email) {
         const cleanEmail = email.toLowerCase().trim();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-            throw new HttpError(400, "Format d'adresse email invalide");
+            throw new HttpError(400, "Invalid email address format");
         }
 
         // Ensure the new email is not already taken by another registered user
@@ -138,14 +138,14 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
             where: { email: cleanEmail }
         });
         if (existingUser && existingUser.id !== userId) {
-            throw new HttpError(400, "Cette adresse email est déjà utilisée");
+            throw new HttpError(400, "This email address is already in use");
         }
     }
 
     // Validate preferred language code format if provided (e.g. 2-letter ISO code)
     if (preferredLanguage !== undefined) {
         if (typeof preferredLanguage !== 'string' || !/^[a-z]{2,3}$/i.test(preferredLanguage.trim())) {
-            throw new HttpError(400, "Code langue préféré invalide (ex: 'fr', 'en', 'es')");
+            throw new HttpError(400, "Invalid preferred language code (e.g. 'fr', 'en', 'es')");
         }
     }
 
@@ -163,7 +163,7 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
 
     res.json({
         success: true,
-        message: "Profil mis à jour avec succès",
+        message: "Profile updated successfully",
         user: {
             id: updatedUser.id,
             email: updatedUser.email,
@@ -184,12 +184,12 @@ router.put("/profile", authenticateToken, async (req: Request, res: Response) =>
  * Authenticated: Yes
  */
 const PasswordSchema = z.object({
-    currentPassword: z.string().min(1, "L'ancien mot de passe est requis"),
+    currentPassword: z.string().min(1, "Current password is required"),
     newPassword: z
         .string()
-        .min(8, "Le nouveau mot de passe doit faire au moins 8 caractères")
-        .regex(/[0-9]/, "Le mot de passe doit contenir au moins un chiffre")
-        .regex(/[\p{P}\p{S}]/u, "Le mot de passe doit contenir au moins un caractère spécial")
+        .min(8, "New password must be at least 8 characters long")
+        .regex(/[0-9]/, "Password must contain at least one digit")
+        .regex(/[\p{P}\p{S}]/u, "Password must contain at least one special character")
 });
 
 router.put("/password", authenticateToken, async (req: Request, res: Response) => {
@@ -206,12 +206,12 @@ router.put("/password", authenticateToken, async (req: Request, res: Response) =
     });
 
     if (!user) {
-        throw new HttpError(404, "Utilisateur non trouvé");
+        throw new HttpError(404, "User not found");
     }
 
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
-        throw new HttpError(400, "L'ancien mot de passe est incorrect");
+        throw new HttpError(400, "Current password is incorrect");
     }
 
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
@@ -224,7 +224,7 @@ router.put("/password", authenticateToken, async (req: Request, res: Response) =
 
     res.json({
         success: true,
-        message: "Mot de passe modifié avec succès"
+        message: "Password changed successfully"
     });
 });
 

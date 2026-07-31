@@ -14,7 +14,7 @@ router.get("/:imdbId/:lang", async (req: Request, res: Response) => {
     const rawLang = Array.isArray(req.params.lang) ? req.params.lang[0] : req.params.lang;
 
     if (!rawImdbId || !rawLang) {
-        throw new HttpError(400, "Paramètres IMDb ID et langue requis");
+        throw new HttpError(400, "IMDb ID and language are required");
     }
 
     const cleanImdb = normalizeImdbId(rawImdbId);
@@ -23,7 +23,7 @@ router.get("/:imdbId/:lang", async (req: Request, res: Response) => {
     const filePath = await SubtitleService.fetchAndSaveSubtitle(cleanImdb, cleanLang);
 
     if (!filePath || !fs.existsSync(filePath)) {
-        throw new HttpError(404, "Sous-titres introuvables");
+        throw new HttpError(404, "Subtitles not found");
     }
 
     res.setHeader('Content-Type', 'text/vtt');
