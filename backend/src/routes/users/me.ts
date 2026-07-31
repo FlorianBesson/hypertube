@@ -6,9 +6,12 @@ import { authenticateToken } from '../../middlewares/auth';
 import { upload, uploadDirectory } from '../../config/multer';
 import * as z from "zod";
 import bcrypt from "bcrypt";
+import { fromFile as fileTypeFromFile } from 'file-type';
 import { HttpError } from '../../errors';
 
 const router = Router();
+
+const ALLOWED_AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
  * Route: POST /api/user/avatar
@@ -28,6 +31,14 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response, next: Ne
         // Verify if a file was actually sent
         if (!req.file) {
             return next(new HttpError(400, "No file uploaded"));
+        }
+
+        // Verify the actual file content (magic bytes) matches an allowed image type,
+        // since the extension/mimetype checked by multer's fileFilter are client-supplied and spoofable
+        const detectedType = await fileTypeFromFile(req.file.path);
+        if (!detectedType || !ALLOWED_AVATAR_MIME_TYPES.includes(detectedType.mime)) {
+            fs.unlinkSync(req.file.path);
+            return next(new HttpError(400, "Uploaded file content does not match an allowed image type"));
         }
 
         try {

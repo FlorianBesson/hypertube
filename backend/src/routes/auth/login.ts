@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { prisma } from '../../prisma';
 import { HttpError } from '../../errors';
 import { JWT_SECRET } from '../../config/jwt';
@@ -44,7 +45,8 @@ async function findOrCreateOauthUser({ email, firstName, lastName, photoUrl, bio
             counter++;
         }
 
-        const randomPassword = Math.random().toString(36).slice(-12) + "A1!";
+        const randomPassword = crypto.randomBytes(18).toString('base64');
+        const hashedPassword = await bcrypt.hash(randomPassword, 10);
         user = await prisma.user.create({
             data: {
                 email,
@@ -52,7 +54,7 @@ async function findOrCreateOauthUser({ email, firstName, lastName, photoUrl, bio
                 firstName,
                 lastName,
                 photo: photoUrl,
-                password: randomPassword,
+                password: hashedPassword,
                 bio
             }
         });
