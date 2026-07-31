@@ -6,7 +6,7 @@ import MovieCard from './MovieCard'
 import MovieToolbar from './MovieToolbar'
 import StatusMessage from './StatusMessage'
 import { useWatchedMovies } from '../../../hooks/useWatchedMovies'
-import { useInternetArchiveMovies } from '../../../hooks/useInternetArchiveMovies'
+import { useMovieCatalog } from '../../../hooks/useMovieCatalog'
 import { filterMovies, sortMovies } from '../../../utils/movieFilters'
 
 export type { Movie, Torrent } from '../../../types/movie'
@@ -47,7 +47,7 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     page,
     setPage,
     hasMore
-  } = useInternetArchiveMovies({ lang })
+  } = useMovieCatalog({ lang })
 
   // Changing any filter/sort criteria restarts pagination from page 1
   const withPageReset = <T,>(setter: (value: T) => void) => (value: T) => {
