@@ -5,18 +5,13 @@ import type { TranslationType } from '../../../locales/translations'
 import type { Movie } from '../../../types/movie'
 import { fetchTmdbMovieDetails, type TmdbMovieDetails } from '../../../services/internetArchiveTmdb'
 import { getLanguageDisplayName } from '../../../utils/language'
+import { formatRuntime } from '../../../utils/format'
 
 interface MovieDetailsProps {
   movie: Movie
   onClose: () => void
   t: TranslationType['dashboard']
   lang: 'en' | 'fr'
-}
-
-function formatRuntime(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return hours > 0 ? `${hours}h ${mins.toString().padStart(2, '0')}` : `${mins}min`
 }
 
 function formatCurrency(amount: number): string {

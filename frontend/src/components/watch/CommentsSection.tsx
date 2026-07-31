@@ -18,21 +18,17 @@ export interface ApiComment {
 }
 
 interface CommentsSectionProps {
-  isCollapsed: boolean
-  onToggleCollapse: () => void
+  onClose: () => void
   t: TranslationType['watch']
   user: LoggedUser | null
   imdbId?: string
-  showControls?: boolean
 }
 
 export default function CommentsSection({
-  isCollapsed,
-  onToggleCollapse,
+  onClose,
   t,
   user,
-  imdbId,
-  showControls = true
+  imdbId
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<ApiComment[]>([])
   const [newCommentText, setNewCommentText] = useState('')
@@ -102,19 +98,6 @@ export default function CommentsSection({
     }
   }
 
-  // When collapsed, only render the floating reopen button over the video
-  if (isCollapsed) {
-    return (
-      <button
-        onClick={onToggleCollapse}
-        className={`absolute top-4 right-4 z-40 p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        title={t.expandComments}
-      >
-        <MessageSquare className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
-      </button>
-    )
-  }
-
   return (
     <div className="absolute top-0 right-0 z-40 w-full sm:w-80 lg:w-96 h-full flex flex-col bg-neutral-950/95 border-l border-white/10 p-4 sm:p-5 shadow-2xl backdrop-blur-xl transition-all duration-300 animate-in slide-in-from-right">
       {/* Header */}
@@ -131,7 +114,7 @@ export default function CommentsSection({
 
         {/* Collapse Button */}
         <button
-          onClick={onToggleCollapse}
+          onClick={onClose}
           className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-all cursor-pointer border border-white/10"
           title={t.collapseComments}
         >

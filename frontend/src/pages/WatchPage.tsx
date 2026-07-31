@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { Info, LogOut, MessageSquare } from 'lucide-react'
 import VideoPlayer from '../components/watch/VideoPlayer'
 import CommentsSection from '../components/watch/CommentsSection'
+import InfoPanel from '../components/watch/InfoPanel'
 import { translations } from '../locales/translations'
 import type { LoggedUser } from '../App'
 import type { Movie } from '../types/movie'
@@ -15,6 +16,8 @@ interface WatchPageProps {
   onLogout: () => void
 }
 
+type WatchSidePanel = 'info' | 'comments' | null
+
 export default function WatchPage({ lang, user, onLogout }: WatchPageProps) {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
@@ -25,7 +28,7 @@ export default function WatchPage({ lang, user, onLogout }: WatchPageProps) {
   const initialMovie = (location.state as { movie?: Movie } | null)?.movie || null
   const { movie, isLoading, loadingSeconds } = useMovieFallback(id, initialMovie, lang)
 
-  const [isCommentsCollapsed, setIsCommentsCollapsed] = useState(true)
+  const [activePanel, setActivePanel] = useState<WatchSidePanel>(null)
   const [showControls, setShowControls] = useState(true)
 
   useMarkMovieAsWatched(id || movie?.id)
@@ -47,25 +50,46 @@ export default function WatchPage({ lang, user, onLogout }: WatchPageProps) {
             <VideoPlayer movie={movie} t={t} lang={lang} onControlsVisibilityChange={setShowControls} />
           </div>
 
-          {/* Right Side Overlay Comments Section */}
-          <CommentsSection
-            isCollapsed={isCommentsCollapsed}
-            onToggleCollapse={() => setIsCommentsCollapsed(!isCommentsCollapsed)}
-            t={t}
-            user={user}
-            imdbId={movie?.imdbId || id || movie?.id}
-            showControls={showControls}
-          />
+          {/* Right Side Overlay Panels */}
+          {activePanel === 'info' && (
+            <InfoPanel movie={movie} lang={lang} t={t} onClose={() => setActivePanel(null)} />
+          )}
+          {activePanel === 'comments' && (
+            <CommentsSection
+              t={t}
+              user={user}
+              imdbId={movie?.imdbId || id || movie?.id}
+              onClose={() => setActivePanel(null)}
+            />
+          )}
 
-          {/* Floating Logout Button, stacked below the comments toggle */}
-          {isCommentsCollapsed && (
-            <button
-              onClick={onLogout}
-              className={`absolute top-20 right-4 z-40 p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-              title={tHeader.logout}
+          {/* Floating Icon Stack: info, comments, logout */}
+          {activePanel === null && (
+            <div
+              className={`absolute top-4 right-4 z-40 flex flex-col gap-3 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             >
-              <LogOut className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
-            </button>
+              <button
+                onClick={() => setActivePanel('info')}
+                className="p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group"
+                title={t.expandInfo}
+              >
+                <Info className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+              </button>
+              <button
+                onClick={() => setActivePanel('comments')}
+                className="p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group"
+                title={t.expandComments}
+              >
+                <MessageSquare className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+              </button>
+              <button
+                onClick={onLogout}
+                className="p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group"
+                title={tHeader.logout}
+              >
+                <LogOut className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
           )}
         </>
       )}
