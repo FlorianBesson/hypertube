@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import type { LoggedUser } from '../App'
 import { translations } from '../locales/translations'
 import { DashboardMovies, DashboardMembers } from '../components/dashboard'
 import { useCommunityMembers } from '../hooks/useCommunityMembers'
+import { useLocalStorageState } from '../hooks/useLocalStorageState'
 
 interface DashboardPageProps {
   user: LoggedUser
@@ -15,7 +15,11 @@ export default function DashboardPage({
 }: DashboardPageProps) {
   const t = translations[lang].dashboard
 
-  const [showCommunity, setShowCommunity] = useState(false)
+  const [showCommunity, setShowCommunity] = useLocalStorageState(
+    'dashboard.showCommunity',
+    false,
+    (raw) => raw === 'true'
+  )
   const { otherUsers, loadingMembers, errorMembers } = useCommunityMembers(user.id)
 
   return (
