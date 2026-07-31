@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
 import VideoPlayer from '../components/watch/VideoPlayer'
 import CommentsSection from '../components/watch/CommentsSection'
 import { translations } from '../locales/translations'
@@ -11,12 +12,14 @@ import { useMarkMovieAsWatched } from '../hooks/useMarkMovieAsWatched'
 interface WatchPageProps {
   lang: 'en' | 'fr'
   user: LoggedUser | null
+  onLogout: () => void
 }
 
-export default function WatchPage({ lang, user }: WatchPageProps) {
+export default function WatchPage({ lang, user, onLogout }: WatchPageProps) {
   const { id } = useParams<{ id: string }>()
   const location = useLocation()
   const t = translations[lang].watch
+  const tHeader = translations[lang].header
 
   // If movie was passed via location state from MovieDetailsModal, use it directly
   const initialMovie = (location.state as { movie?: Movie } | null)?.movie || null
@@ -53,6 +56,17 @@ export default function WatchPage({ lang, user }: WatchPageProps) {
             imdbId={movie?.imdbId || id || movie?.id}
             showControls={showControls}
           />
+
+          {/* Floating Logout Button, stacked below the comments toggle */}
+          {isCommentsCollapsed && (
+            <button
+              onClick={onLogout}
+              className={`absolute top-20 right-4 z-40 p-3 rounded-full bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-md shadow-2xl transition-all duration-300 cursor-pointer hover:scale-110 flex items-center justify-center group ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              title={tHeader.logout}
+            >
+              <LogOut className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
         </>
       )}
     </div>
