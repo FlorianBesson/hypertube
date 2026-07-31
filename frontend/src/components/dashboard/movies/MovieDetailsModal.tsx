@@ -24,10 +24,8 @@ function formatCurrency(amount: number): string {
 
 export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDetailsProps) {
     const navigate = useNavigate()
-    const [imageError, setImageError] = useState(false)
     const [details, setDetails] = useState<TmdbMovieDetails | null>(null)
-
-    const posterUrl = movie.image
+    const [imageError, setImageError] = useState(false)
 
     useEffect(() => {
         const apiKey = import.meta.env.VITE_TMDB_API_KEY
@@ -90,125 +88,152 @@ export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDeta
                             src={details.backdropPath}
                             alt=""
                             referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover object-top"
                         />
                         <div className="absolute inset-0 bg-linear-to-t from-neutral-900 via-neutral-900/40 to-transparent" />
                     </div>
                 )}
 
                 {/* Contenu principal */}
-                <div className="p-6 sm:p-8 relative z-10 flex flex-col md:flex-row gap-6">
-                    {/* Affiche du film */}
-                    <div className="w-36 sm:w-48 aspect-2/3 rounded-xl border border-white/10 overflow-hidden shrink-0 shadow-xl bg-neutral-950">
-                        {!imageError && posterUrl ? (
-                            <img 
-                                src={posterUrl} 
-                                alt={movie.title} 
-                                referrerPolicy="no-referrer"
-                                onError={() => setImageError(true)}
-                                className="w-full h-full object-cover" 
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-neutral-800 flex items-center justify-center p-4 text-center text-xs text-neutral-500 font-bold">
-                                {movie.title}
-                            </div>
-                        )}
-                    </div>
+                <div className="p-6 sm:p-8 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-[8rem_1fr_12rem] gap-6">
+                        {/* Colonne 1 : affiche */}
+                        <div className="w-32 h-48 mx-auto md:mx-0 rounded-xl border border-white/10 overflow-hidden shrink-0 shadow-xl bg-neutral-950">
+                            {!imageError && movie.image ? (
+                                <img
+                                    src={movie.image}
+                                    alt={movie.title}
+                                    referrerPolicy="no-referrer"
+                                    onError={() => setImageError(true)}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-neutral-800 flex items-center justify-center p-3 text-center text-xs text-neutral-500 font-bold">
+                                    {movie.title}
+                                </div>
+                            )}
+                        </div>
 
-                    {/* Informations textuelles */}
-                    <div className="flex-1 flex flex-col gap-4 text-neutral-200">
-                        <div>
-                            <div className="flex items-center gap-2 pr-12">
-                                <span className="text-xs font-extrabold text-red-500 uppercase tracking-widest">
-                                    {details?.genres?.join(', ') || movie.genre}
-                                </span>
-                                {movie.source && (
-                                    <span className="text-[10px] bg-white/10 text-neutral-300 px-2 py-0.5 rounded border border-white/10 font-mono">
-                                        {movie.source}
+                        {/* Colonne 2 : informations */}
+                        <div className="flex flex-col gap-4 text-neutral-200 min-w-0">
+                            <div>
+                                <div className="flex items-center gap-2 pr-12">
+                                    <span className="text-xs font-extrabold text-red-500 uppercase tracking-widest">
+                                        {details?.genres?.join(', ') || movie.genre}
                                     </span>
-                                )}
+                                    {movie.source && (
+                                        <span className="text-[10px] bg-white/10 text-neutral-300 px-2 py-0.5 rounded border border-white/10 font-mono">
+                                            {movie.source}
+                                        </span>
+                                    )}
+                                </div>
+                                <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 pr-12">{movie.title}</h1>
+
+                                {/* Badges Année, Durée, Note */}
+                                <div className="flex flex-wrap items-center gap-4 mt-2 text-xs font-semibold text-neutral-400">
+                                    <span>{movie.year}</span>
+                                    {details?.runtime !== undefined && details.runtime > 0 && (
+                                        <>
+                                            <span>•</span>
+                                            <span>{formatRuntime(details.runtime)}</span>
+                                        </>
+                                    )}
+                                    {movie.rating > 0 && <span>•</span>}
+                                    {movie.rating > 0 && (
+                                    <span className="flex items-center gap-1 text-amber-400 font-bold">
+                                        ★ {movie.rating.toFixed(1)} / 10
+                                    </span>
+                                    )}
+                                </div>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-1 pr-12">{movie.title}</h1>
 
-                            {/* Badges Année, Durée, Note */}
-                            <div className="flex flex-wrap items-center gap-4 mt-2 text-xs font-semibold text-neutral-400">
-                                <span>{movie.year}</span>
-                                {details?.runtime !== undefined && details.runtime > 0 && (
-                                    <>
-                                        <span>•</span>
-                                        <span>{formatRuntime(details.runtime)}</span>
-                                    </>
-                                )}
-                                {movie.rating > 0 && <span>•</span>}
-                                {movie.rating > 0 && (
-                                <span className="flex items-center gap-1 text-amber-400 font-bold">
-                                    ★ {movie.rating.toFixed(1)} / 10
-                                </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Synopsis */}
-                        <div>
-                            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{t.description || 'Description'}</h3>
-                            <p className="text-sm text-neutral-300 leading-relaxed">
-                                {movie.description || t.noDescription || 'Aucune description disponible.'}
-                            </p>
-                        </div>
-
-                        {/* Internet Archive metadata */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10 text-xs">
+                            {/* Synopsis */}
                             <div>
-                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.creator || 'Créateur'}</span>
-                                <span className="text-white font-medium">{movie.creator || t.notSpecified || 'Non renseigné'}</span>
+                                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{t.description || 'Description'}</h3>
+                                <p className="text-sm text-neutral-300 leading-relaxed">
+                                    {movie.description || t.noDescription || 'Aucune description disponible.'}
+                                </p>
                             </div>
-                            <div>
-                                <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.language || 'Langue'}</span>
-                                <span className="text-white font-medium">{movie.language || t.notSpecified || 'Non renseigné'}</span>
+
+                            {/* Internet Archive metadata */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10 text-xs">
+                                {details?.director && (
+                                    <div>
+                                        <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.director || 'Réalisateur'}</span>
+                                        <span className="text-white font-medium">{details.director}</span>
+                                    </div>
+                                )}
+                                <div>
+                                    <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.language || 'Langue'}</span>
+                                    <span className="text-white font-medium">{movie.language || t.notSpecified || 'Non renseigné'}</span>
+                                </div>
+                                {details?.budget !== undefined && details.budget > 0 && (
+                                    <div>
+                                        <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.budget || 'Budget'}</span>
+                                        <span className="text-white font-medium">{formatCurrency(details.budget)}</span>
+                                    </div>
+                                )}
+                                {details?.revenue !== undefined && details.revenue > 0 && (
+                                    <div>
+                                        <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.revenue || 'Recettes'}</span>
+                                        <span className="text-white font-medium">{formatCurrency(details.revenue)}</span>
+                                    </div>
+                                )}
                             </div>
-                            {details?.director && (
-                                <div>
-                                    <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.director || 'Réalisateur'}</span>
-                                    <span className="text-white font-medium">{details.director}</span>
-                                </div>
-                            )}
-                            {details?.budget !== undefined && details.budget > 0 && (
-                                <div>
-                                    <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.budget || 'Budget'}</span>
-                                    <span className="text-white font-medium">{formatCurrency(details.budget)}</span>
-                                </div>
-                            )}
-                            {details?.revenue !== undefined && details.revenue > 0 && (
-                                <div>
-                                    <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.revenue || 'Recettes'}</span>
-                                    <span className="text-white font-medium">{formatCurrency(details.revenue)}</span>
-                                </div>
-                            )}
+
+                            {/* Bouton de Lancement Vidéo */}
+                            <div className="pt-4 flex items-center gap-4">
+                                <button
+                                    onClick={() => {
+                                        onClose()
+                                        navigate(`/watch/${movie.id}`, { state: { movie } })
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer hover:scale-105"
+                                >
+                                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    {t.playMovie || 'Lancer la vidéo'}
+                                </button>
+                                {details?.trailerUrl && (
+                                    <a
+                                        href={details.trailerUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-white/5 hover:bg-white/10 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 border border-white/10 transition-all cursor-pointer hover:scale-105"
+                                    >
+                                        <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                            <path d="M21.6 7.2c-.2-1-1-1.7-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3c-1 .2-1.7 1-1.9 1.9C2 8.9 2 12 2 12s0 3.1.4 4.8c.2 1 1 1.7 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3c1-.2 1.7-1 1.9-1.9.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.5v-7l6 3.5-6 3.5z" />
+                                        </svg>
+                                        {t.watchTrailer || 'Bande-annonce'}
+                                    </a>
+                                )}
+                            </div>
                         </div>
 
-                        {/* Casting principal */}
+                        {/* Colonne 3 : casting principal */}
                         {details?.cast && details.cast.length > 0 && (
-                            <div className="pt-2 border-t border-white/10">
-                                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">{t.cast || 'Casting principal'}</h3>
-                                <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-col gap-3 md:border-l md:border-white/10 md:pl-6">
+                                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{t.cast || 'Casting principal'}</h3>
+                                <div className="flex flex-col gap-3">
                                     {details.cast.map((member, index) => (
-                                        <div key={index} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pr-3 pl-1 py-1">
+                                        <div key={index} className="flex items-center gap-3">
                                             {member.profilePath ? (
                                                 <img
                                                     src={member.profilePath}
                                                     alt={member.name}
                                                     referrerPolicy="no-referrer"
-                                                    className="w-7 h-7 rounded-full object-cover"
+                                                    className="w-9 h-9 rounded-full object-cover shrink-0"
                                                 />
                                             ) : (
-                                                <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center text-[10px] font-bold text-neutral-400">
+                                                <div className="w-9 h-9 rounded-full bg-neutral-700 flex items-center justify-center text-[10px] font-bold text-neutral-400 shrink-0">
                                                     {member.name.charAt(0)}
                                                 </div>
                                             )}
-                                            <div className="text-xs leading-tight">
-                                                <div className="text-white font-semibold">{member.name}</div>
+                                            <div className="text-xs leading-tight min-w-0">
+                                                <div className="text-white font-semibold truncate">{member.name}</div>
                                                 {member.character && (
-                                                    <div className="text-neutral-400">{member.character}</div>
+                                                    <div className="text-neutral-400 truncate">{member.character}</div>
                                                 )}
                                             </div>
                                         </div>
@@ -216,35 +241,6 @@ export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDeta
                                 </div>
                             </div>
                         )}
-
-                        {/* Bouton de Lancement Vidéo */}
-                        <div className="pt-4 flex items-center gap-4">
-                            <button
-                                onClick={() => {
-                                    onClose()
-                                    navigate(`/watch/${movie.id}`, { state: { movie } })
-                                }}
-                                className="bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 shadow-lg shadow-red-600/30 transition-all cursor-pointer hover:scale-105"
-                            >
-                                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
-                                {t.playMovie || 'Lancer la vidéo'}
-                            </button>
-                            {details?.trailerUrl && (
-                                <a
-                                    href={details.trailerUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-white/5 hover:bg-white/10 text-white font-bold text-sm px-6 py-3 rounded-full flex items-center gap-2 border border-white/10 transition-all cursor-pointer hover:scale-105"
-                                >
-                                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                        <path d="M21.6 7.2c-.2-1-1-1.7-1.9-1.9C18 5 12 5 12 5s-6 0-7.7.3c-1 .2-1.7 1-1.9 1.9C2 8.9 2 12 2 12s0 3.1.4 4.8c.2 1 1 1.7 1.9 1.9C6 19 12 19 12 19s6 0 7.7-.3c1-.2 1.7-1 1.9-1.9.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.5v-7l6 3.5-6 3.5z" />
-                                    </svg>
-                                    {t.watchTrailer || 'Bande-annonce'}
-                                </a>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>
