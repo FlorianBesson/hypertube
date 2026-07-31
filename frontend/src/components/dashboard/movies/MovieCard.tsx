@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../../locales/translations'
 import type { Movie } from '../../../types/movie'
 
@@ -11,6 +12,12 @@ export interface MovieCardProps {
 
 export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
+  const navigate = useNavigate()
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigate(`/watch/${movie.id}`, { state: { movie } })
+  }
 
   // Generate fallback gradients
   const fallbackGradients = [
@@ -98,7 +105,12 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
 
       {/* Hover Play Button Overlay */}
       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/35 backdrop-blur-[1px] z-10">
-        <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 scale-75 group-hover:scale-100 transition-all duration-300">
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          title={t.playMovie}
+          className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 scale-75 group-hover:scale-100 transition-all duration-300 hover:bg-red-500 hover:scale-110 cursor-pointer"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="currentColor"
@@ -107,7 +119,7 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
           >
             <path d="M8 5v14l11-7z" />
           </svg>
-        </div>
+        </button>
       </div>
 
       {/* Movie Metadata */}
