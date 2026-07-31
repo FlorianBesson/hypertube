@@ -9,6 +9,7 @@ import { useSubtitles } from '../../hooks/useSubtitles'
 import { resolveStreamIdentifier, buildStreamUrl, fetchStreamErrorMessage } from '../../services/videoStream'
 import SubtitlesMenu from './SubtitlesMenu'
 import SubtitleOverlay from './SubtitleOverlay'
+import { useVideoShortcuts } from '../../hooks/useVideoShortcuts'
 
 interface VideoPlayerProps {
   movie: Movie | null
@@ -111,24 +112,35 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
     })
   }, [streamUrl])
 
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (!videoRef.current) return
-    if (isPlaying) {
-      userPausedRef.current = true
-      videoRef.current.pause()
-    } else {
+    if (videoRef.current.paused) {
       userPausedRef.current = false
       videoRef.current.play().catch((err) => {
         console.error('Play error:', err)
       })
+    } else {
+      userPausedRef.current = true
+      videoRef.current.pause()
     }
-  }
+  }, [])
 
   const toggleMute = () => {
     if (!videoRef.current) return
     videoRef.current.muted = !isMuted
     setIsMuted(!isMuted)
   }
+
+  const toggleFullscreen = () => {
+    const elem = document.documentElement
+    if (!document.fullscreenElement) {
+      elem.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }
+
+  useVideoShortcuts(togglePlay, toggleFullscreen, () => navigate('/dashboard'))
 
   const handleSeek = (posPercentage: number) => {
     if (!videoRef.current || !duration) return
@@ -348,14 +360,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
             />
 
             <button
-              onClick={() => {
-                const elem = document.documentElement
-                if (!document.fullscreenElement) {
-                  elem.requestFullscreen().catch(() => {})
-                } else {
-                  document.exitFullscreen().catch(() => {})
-                }
-              }}
+              onClick={toggleFullscreen}
               className="hover:text-red-500 transition-colors cursor-pointer p-1.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/10"
               title="Fullscreen"
             >
