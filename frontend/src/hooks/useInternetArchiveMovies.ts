@@ -148,6 +148,8 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
       setError(false)
 
       try {
+        const limit = selectedSource === 'all' ? 15 : 30
+
         const fetchedMovies = await movieSourceAggregator.fetchMovies(
           selectedSource,
           {
@@ -157,7 +159,7 @@ export function useInternetArchiveMovies({ lang }: UseInternetArchiveMoviesProps
             sortBy,
             order,
             page,
-            limit: 20,
+            limit,
             lang,
             signal: controller.signal
           },
