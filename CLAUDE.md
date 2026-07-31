@@ -61,6 +61,19 @@ Auth: `middlewares/auth.ts` (`authenticateToken`) verifies the JWT from `Authori
 
 Prisma schema (`backend/prisma/schema.prisma`) is intentionally small: `User`, `Movie` (cache/download tracking keyed by `imdbId`, not full movie metadata — that comes from TMDB/source providers at request time), `Comment` and `WatchedMovie` (both keyed by `imdbId` + `userId`, cascade-deleted with the user).
 
+## Clean Code
+
+Apply clean code principles to all changes in this repo:
+
+- Small functions/handlers, one responsibility each. Keep routes thin (parse + delegate), logic in `services/`, per existing layering above.
+- Meaningful names — no abbreviations, no single-letter vars outside tight loops. Match existing naming (e.g. `movieSourceAggregator`, `torrentService`) not generic names.
+- No premature abstraction. Don't add a new provider/service layer or config flag until a second real case needs it.
+- No dead code, no commented-out code, no unused exports/params.
+- No comments explaining *what* the code does (names should do that) — only *why*, for a non-obvious constraint or workaround, one line.
+- DRY within reason: extract shared logic (e.g. shared range-request handling in `stream.ts`) only when duplication is real and load-bearing, not speculative.
+- Consistent error handling: throw `HttpError` in services/routes, never swallow errors silently — log or propagate.
+- Keep functions' side effects explicit (DB writes, disk I/O, network) — don't bury them inside innocuous-looking helpers.
+
 ### Infra
 
 `compose.dev.yml` runs `vite`, `api-express`, `postgres_db`, and an on-demand `prisma-studio` container on a shared `prisma-network`; `compose.prod.yml` + `caddy/` add the reverse proxy for production. Both frontend and backend Dockerfiles have `dev`/`prod` build targets selected via `--target`.
