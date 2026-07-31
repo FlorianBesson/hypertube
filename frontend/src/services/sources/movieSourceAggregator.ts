@@ -5,6 +5,7 @@ import { PublicDomainTorrentsSourceProvider } from './publicDomainTorrentsSource
 import { enrichInternetArchiveMoviesWithTmdb, resolveSearchTitles } from '../internetArchiveTmdb'
 import { PUBLIC_DOMAIN_YEAR_CUTOFF } from '../../utils/internetArchiveUtils'
 import { movieMatchesLanguage } from '../../utils/language'
+import { sortMovies } from '../../utils/movieFilters'
 
 export class MovieSourceAggregator {
   private providers: Map<MovieSourceId, IMovieSourceProvider> = new Map()
@@ -16,16 +17,6 @@ export class MovieSourceAggregator {
 
   public registerProvider(provider: IMovieSourceProvider): void {
     this.providers.set(provider.id, provider)
-  }
-
-  public getAvailableSources(): { id: MovieSourceId; name: string }[] {
-    const list: { id: MovieSourceId; name: string }[] = [
-      { id: 'all', name: 'Toutes les sources' }
-    ]
-    this.providers.forEach(p => {
-      list.push({ id: p.id, name: p.name })
-    })
-    return list
   }
 
   public async fetchMovies(
@@ -97,21 +88,7 @@ export class MovieSourceAggregator {
 
     // Sort unified results
     const { sortBy = 'download_count', order = 'desc' } = params
-    movies.sort((a, b) => {
-      let comparison = 0
-      if (sortBy === 'title') {
-        comparison = a.title.localeCompare(b.title)
-      } else if (sortBy === 'year') {
-        const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
-        const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
-        comparison = yearA - yearB
-      } else if (sortBy === 'rating') {
-        comparison = a.rating - b.rating
-      } else if (sortBy === 'download_count') {
-        comparison = (a.downloads || 0) - (b.downloads || 0)
-      }
-      return order === 'asc' ? comparison : -comparison
-    })
+    movies = sortMovies(movies, sortBy, order)
 
     // Optionally enrich with TMDB
     if (movies.length > 0) {

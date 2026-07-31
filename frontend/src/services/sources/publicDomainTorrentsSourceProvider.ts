@@ -1,5 +1,6 @@
 import type { Movie } from '../../types/movie'
 import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './types'
+import { sortMovies } from '../../utils/movieFilters'
 
 import rawScrapedTorrents from './public_domain_torrents.json'
 
@@ -117,21 +118,7 @@ export class PublicDomainTorrentsSourceProvider implements IMovieSourceProvider 
     }
 
     // 4. Sorting
-    filtered.sort((a, b) => {
-      let comparison = 0
-      if (sortBy === 'title') {
-        comparison = a.title.localeCompare(b.title)
-      } else if (sortBy === 'year') {
-        const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
-        const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
-        comparison = yearA - yearB
-      } else if (sortBy === 'rating') {
-        comparison = a.rating - b.rating
-      } else if (sortBy === 'download_count') {
-        comparison = (a.downloads || 0) - (b.downloads || 0)
-      }
-      return order === 'asc' ? comparison : -comparison
-    })
+    filtered = sortMovies(filtered, sortBy, order)
 
     // 5. Pagination
     const startIndex = (page - 1) * limit

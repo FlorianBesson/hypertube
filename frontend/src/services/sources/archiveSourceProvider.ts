@@ -6,7 +6,11 @@ import {
   isLikelyMovie,
   metadataText,
   metadataValues,
-  metadataYear
+  metadataYear,
+  normalizeArchiveRatingToTenScale,
+  buildArchiveImageUrl,
+  buildArchiveTorrentUrl,
+  buildArchiveDetailsUrl
 } from '../../utils/internetArchiveUtils'
 import { LANGUAGE_TOKENS } from '../../utils/language'
 
@@ -87,15 +91,15 @@ export class ArchiveSourceProvider implements IMovieSourceProvider {
       title: metadataText(movie.title) || movie.identifier,
       genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
       year: metadataYear(movie),
-      rating: Math.min(10, Math.max(0, Number(movie.avg_rating || 0) * 2)),
-      image: `https://archive.org/services/img/${encodeURIComponent(movie.identifier)}`,
+      rating: normalizeArchiveRatingToTenScale(movie.avg_rating),
+      image: buildArchiveImageUrl(movie.identifier),
       source: this.name,
       description: metadataText(movie.description),
       creator: metadataText(movie.creator),
       language: metadataText(movie.language),
       downloads: Number(movie.downloads || 0),
-      torrentUrl: `https://archive.org/download/${encodeURIComponent(movie.identifier)}/${encodeURIComponent(movie.identifier)}_archive.torrent`,
-      detailsUrl: `https://archive.org/details/${encodeURIComponent(movie.identifier)}`
+      torrentUrl: buildArchiveTorrentUrl(movie.identifier),
+      detailsUrl: buildArchiveDetailsUrl(movie.identifier)
     }))
   }
 }
