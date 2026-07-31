@@ -52,7 +52,13 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     if (process.env.NODE_ENV === 'dev') {
         console.error(err);
     }
-    
+
+    // Streaming routes may have already started writing the response body;
+    // delegate to Express's default handler so it just closes the connection.
+    if (res.headersSent) {
+        return next(err);
+    }
+
     if (err instanceof HttpError) {
         return res.status(err.status).json({ success: false, message: err.message });
     }

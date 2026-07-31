@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../prisma';
 import { authenticateToken } from '../../middlewares/auth';
+import { HttpError } from '../../errors';
 
 const router = Router();
 
@@ -10,22 +11,17 @@ const router = Router();
  * Authenticated: Yes
  */
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const users = await prisma.user.findMany({
-            select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                photo: true
-            }
-        });
+    const users = await prisma.user.findMany({
+        select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            photo: true
+        }
+    });
 
-        res.json({ success: true, users });
-    } catch (error) {
-        console.error("Fetch users error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération des utilisateurs" });
-    }
+    res.json({ success: true, users });
 });
 
 /**
@@ -34,57 +30,49 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
  * Authenticated: Yes
  */
 router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const idParam = req.params.id;
-        if (!idParam) {
-            res.status(400).json({ success: false, message: "Identifiant manquant" });
-            return;
-        }
-        // Normalize parameter if array, parse to integer ID
-        const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
-        const targetId = parseInt(idStr, 10);
-        if (isNaN(targetId)) {
-            res.status(400).json({ success: false, message: "Identifiant invalide" });
-            return;
-        }
-
-        // Fetch limited set of fields for public safety (no password, no raw email)
-        const user = await prisma.user.findUnique({
-            where: { id: targetId },
-            select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                photo: true,
-                createdAt: true,
-                bio: true,
-                lastLogin: true
-            }
-        });
-
-        if (!user) {
-            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
-            return;
-        }
-
-        res.json({
-            success: true,
-            user: {
-                id: user.id,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                photo: user.photo,
-                createdAt: user.createdAt,
-                bio: user.bio,
-                lastLogin: user.lastLogin
-            }
-        });
-    } catch (error) {
-        console.error("Fetch user details error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération du profil" });
+    const idParam = req.params.id;
+    if (!idParam) {
+        throw new HttpError(400, "Identifiant manquant");
     }
+    // Normalize parameter if array, parse to integer ID
+    const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
+    const targetId = parseInt(idStr, 10);
+    if (isNaN(targetId)) {
+        throw new HttpError(400, "Identifiant invalide");
+    }
+
+    // Fetch limited set of fields for public safety (no password, no raw email)
+    const user = await prisma.user.findUnique({
+        where: { id: targetId },
+        select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            photo: true,
+            createdAt: true,
+            bio: true,
+            lastLogin: true
+        }
+    });
+
+    if (!user) {
+        throw new HttpError(404, "Utilisateur non trouvé");
+    }
+
+    res.json({
+        success: true,
+        user: {
+            id: user.id,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            photo: user.photo,
+            createdAt: user.createdAt,
+            bio: user.bio,
+            lastLogin: user.lastLogin
+        }
+    });
 });
 
 export default router;

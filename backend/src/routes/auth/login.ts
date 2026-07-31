@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { prisma } from '../../prisma';
+import { HttpError } from '../../errors';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
@@ -75,67 +76,58 @@ async function findOrCreateOauthUser({ email, firstName, lastName, photoUrl, bio
 
 // Login Endpoint (mounted at /api/auth/login)
 router.post("/login", async (req: Request, res: Response) => {
-    try {
-        const { username, password } = req.body;
+    const { username, password } = req.body;
 
-        // Basic payload validation
-        if (!username || !password) {
-            res.status(400).json({ success: false, message: "Nom d'utilisateur et mot de passe requis" });
-            return;
-        }
-
-        // Search for user in database by normalized username
-        const user = await prisma.user.findUnique({
-            where: { username: username.toLowerCase().trim() }
-        });
-
-        // Fail if user is not found
-        if (!user) {
-            res.status(401).json({ success: false, message: "Identifiants incorrects" });
-            return;
-        }
-
-        // Verify password match using bcrypt
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            res.status(401).json({ success: false, message: "Identifiants incorrects" });
-            return;
-        }
-
-        // Update last login timestamp in the database
-        const updatedUser = await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() }
-        });
-
-        // Sign a new JWT token containing user details, valid for 1 day
-        const token = jwt.sign(
-            { userId: updatedUser.id, email: updatedUser.email, username: updatedUser.username },
-            JWT_SECRET,
-            { expiresIn: '1d' }
-        );
-
-        // Send successful response with signed token and user profile details
-        res.json({
-            success: true,
-            message: "Connexion réussie",
-            token,
-            user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                username: updatedUser.username,
-                firstName: updatedUser.firstName,
-                lastName: updatedUser.lastName,
-                photo: updatedUser.photo,
-                bio: updatedUser.bio,
-                lastLogin: updatedUser.lastLogin
-            }
-        });
-    } catch (error) {
-        if (process.env.NODE_ENV === 'dev')
-            console.error("Login error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur" });
+    // Basic payload validation
+    if (!username || !password) {
+        throw new HttpError(400, "Nom d'utilisateur et mot de passe requis");
     }
+
+    // Search for user in database by normalized username
+    const user = await prisma.user.findUnique({
+        where: { username: username.toLowerCase().trim() }
+    });
+
+    // Fail if user is not found
+    if (!user) {
+        throw new HttpError(401, "Identifiants incorrects");
+    }
+
+    // Verify password match using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+        throw new HttpError(401, "Identifiants incorrects");
+    }
+
+    // Update last login timestamp in the database
+    const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+    });
+
+    // Sign a new JWT token containing user details, valid for 1 day
+    const token = jwt.sign(
+        { userId: updatedUser.id, email: updatedUser.email, username: updatedUser.username },
+        JWT_SECRET,
+        { expiresIn: '1d' }
+    );
+
+    // Send successful response with signed token and user profile details
+    res.json({
+        success: true,
+        message: "Connexion réussie",
+        token,
+        user: {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            username: updatedUser.username,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            photo: updatedUser.photo,
+            bio: updatedUser.bio,
+            lastLogin: updatedUser.lastLogin
+        }
+    });
 });
 
 router.get("/42", (req: Request, res: Response) => {
@@ -152,95 +144,82 @@ router.get("/42", (req: Request, res: Response) => {
 });
 
 router.post("/42", async (req: Request, res: Response) => {
-    try {
-        const { code } = req.body;
+    const { code } = req.body;
 
-        if (!code) {
-            console.error("POST /api/auth/42 - Missing authorization code");
-            res.status(400).json({ success: false, message: "Code d'autorisation manquant" });
-            return;
-        }
-
-        // 1. Exchange authorization code for access token
-        const tokenResponse = await fetch("https://api.intra.42.fr/oauth/token", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: new URLSearchParams({
-                grant_type: "authorization_code",
-                client_id: process.env.FORTYTWO_CLIENT_ID || "",
-                client_secret: process.env.FORTYTWO_CLIENT_SECRET || "",
-                code: code,
-                redirect_uri: process.env.FORTYTWO_REDIRECT_URI || ""
-            })
-        });
-
-        const tokenData = await tokenResponse.json() as any;
-
-        if (!tokenResponse.ok) {
-            console.error("POST /api/auth/42 - 42 token exchange error:", tokenData);
-            res.status(400).json({ success: false, message: "Échec de la récupération du token 42" });
-            return;
-        }
-
-        const accessToken = tokenData.access_token;
-
-        // 2. Fetch user information from 42 API
-        const userResponse = await fetch("https://api.intra.42.fr/v2/me", {
-            headers: {
-                "Authorization": `Bearer ${accessToken}`
-            }
-        });
-
-        const userData = await userResponse.json() as any;
-
-        if (!userResponse.ok) {
-            console.error("POST /api/auth/42 - 42 user fetch error:", userData);
-            res.status(400).json({ success: false, message: "Échec de la récupération des infos utilisateur 42" });
-            return;
-        }
-
-        const email = userData.email?.toLowerCase().trim();
-        const firstName = userData.first_name || userData.displayname || userData.login;
-        const lastName = userData.last_name || '';
-        const photoUrl = userData.image?.link || userData.image?.versions?.medium || null;
-
-        if (!email) {
-            console.error("POST /api/auth/42 - Email field is missing in 42 profile response");
-            res.status(400).json({ success: false, message: "Adresse email manquante sur le compte 42" });
-            return;
-        }
-
-        // 3. Find or create the user in the database (Refactored)
-        const { token, user } = await findOrCreateOauthUser({
-            email,
-            firstName,
-            lastName,
-            photoUrl,
-            bio: "Étudiant de 42",
-            fallbackLogin: userData.login
-        });
-
-        res.json({
-            success: true,
-            message: "Connexion 42 réussie",
-            token,
-            user: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                photo: user.photo,
-                bio: user.bio,
-                lastLogin: user.lastLogin
-            }
-        });
-    } catch (error) {
-        console.error("POST /api/auth/42 - 42 login route error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la connexion 42" });
+    if (!code) {
+        throw new HttpError(400, "Code d'autorisation manquant");
     }
+
+    // 1. Exchange authorization code for access token
+    const tokenResponse = await fetch("https://api.intra.42.fr/oauth/token", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            grant_type: "authorization_code",
+            client_id: process.env.FORTYTWO_CLIENT_ID || "",
+            client_secret: process.env.FORTYTWO_CLIENT_SECRET || "",
+            code: code,
+            redirect_uri: process.env.FORTYTWO_REDIRECT_URI || ""
+        })
+    });
+
+    const tokenData = await tokenResponse.json() as any;
+
+    if (!tokenResponse.ok) {
+        throw new HttpError(400, "Échec de la récupération du token 42");
+    }
+
+    const accessToken = tokenData.access_token;
+
+    // 2. Fetch user information from 42 API
+    const userResponse = await fetch("https://api.intra.42.fr/v2/me", {
+        headers: {
+            "Authorization": `Bearer ${accessToken}`
+        }
+    });
+
+    const userData = await userResponse.json() as any;
+
+    if (!userResponse.ok) {
+        throw new HttpError(400, "Échec de la récupération des infos utilisateur 42");
+    }
+
+    const email = userData.email?.toLowerCase().trim();
+    const firstName = userData.first_name || userData.displayname || userData.login;
+    const lastName = userData.last_name || '';
+    const photoUrl = userData.image?.link || userData.image?.versions?.medium || null;
+
+    if (!email) {
+        throw new HttpError(400, "Adresse email manquante sur le compte 42");
+    }
+
+    // 3. Find or create the user in the database
+    const { token, user } = await findOrCreateOauthUser({
+        email,
+        firstName,
+        lastName,
+        photoUrl,
+        bio: "Étudiant de 42",
+        fallbackLogin: userData.login
+    });
+
+    res.json({
+        success: true,
+        message: "Connexion 42 réussie",
+        token,
+        user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            photo: user.photo,
+            bio: user.bio,
+            lastLogin: user.lastLogin
+        }
+    });
 });
 
 router.get("/google", (req: Request, res: Response) => {
@@ -257,91 +236,79 @@ router.get("/google", (req: Request, res: Response) => {
 });
 
 router.post("/google", async (req: Request, res: Response) => {
-    try {
-        const { code } = req.body;
+    const { code } = req.body;
 
-        if (!code) {
-            res.status(400).json({ success: false, message: "Code d'autorisation manquant" });
-            return;
-        }
-
-        // ÉTAPE A : Échange du code d'autorisation contre un Access Token chez Google
-        const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: new URLSearchParams({
-                grant_type: "authorization_code",
-                client_id: process.env.GOOGLE_CLIENT_ID || "",
-                client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
-                code: code,
-                redirect_uri: process.env.GOOGLE_REDIRECT_URI || ""
-            })
-        });
-
-        const tokenData = await tokenResponse.json() as any;
-        if (!tokenResponse.ok) {
-            console.error("Google token exchange error:", tokenData);
-            res.status(400).json({ success: false, message: "Échec du token Google" });
-            return;
-        }
-
-        const accessToken = tokenData.access_token;
-
-        const userResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: {
-                "Authorization": `Bearer ${accessToken}`
-            }
-        });
-
-        const userData = await userResponse.json() as any;
-        if (!userResponse.ok) {
-            console.error("Google user fetch error:", userData);
-            res.status(400).json({ success: false, message: "Échec récupération profil Google" });
-            return;
-        }
-
-        const email = userData.email?.toLowerCase().trim();
-        const firstName = userData.given_name || userData.name || "Google";
-        const lastName = userData.family_name || '';
-        const photoUrl = userData.picture || null;
-
-        if (!email) {
-            res.status(400).json({ success: false, message: "Email manquant chez Google" });
-            return;
-        }
-
-        // ÉTAPE B : Recherche ou création de l'utilisateur (Refactored)
-        const { token, user } = await findOrCreateOauthUser({
-            email,
-            firstName,
-            lastName,
-            photoUrl,
-            bio: "Utilisateur Google",
-            fallbackLogin: userData.given_name
-        });
-
-        res.json({
-            success: true,
-            message: "Connexion Google réussie",
-            token,
-            user: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                photo: user.photo,
-                bio: user.bio,
-                lastLogin: user.lastLogin
-            }
-        });
-
-    } catch (error) {
-        console.error("Google login route error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur Google" });
+    if (!code) {
+        throw new HttpError(400, "Code d'autorisation manquant");
     }
+
+    // ÉTAPE A : Échange du code d'autorisation contre un Access Token chez Google
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            grant_type: "authorization_code",
+            client_id: process.env.GOOGLE_CLIENT_ID || "",
+            client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+            code: code,
+            redirect_uri: process.env.GOOGLE_REDIRECT_URI || ""
+        })
+    });
+
+    const tokenData = await tokenResponse.json() as any;
+    if (!tokenResponse.ok) {
+        throw new HttpError(400, "Échec du token Google");
+    }
+
+    const accessToken = tokenData.access_token;
+
+    const userResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: {
+            "Authorization": `Bearer ${accessToken}`
+        }
+    });
+
+    const userData = await userResponse.json() as any;
+    if (!userResponse.ok) {
+        throw new HttpError(400, "Échec récupération profil Google");
+    }
+
+    const email = userData.email?.toLowerCase().trim();
+    const firstName = userData.given_name || userData.name || "Google";
+    const lastName = userData.family_name || '';
+    const photoUrl = userData.picture || null;
+
+    if (!email) {
+        throw new HttpError(400, "Email manquant chez Google");
+    }
+
+    // ÉTAPE B : Recherche ou création de l'utilisateur
+    const { token, user } = await findOrCreateOauthUser({
+        email,
+        firstName,
+        lastName,
+        photoUrl,
+        bio: "Utilisateur Google",
+        fallbackLogin: userData.given_name
+    });
+
+    res.json({
+        success: true,
+        message: "Connexion Google réussie",
+        token,
+        user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            photo: user.photo,
+            bio: user.bio,
+            lastLogin: user.lastLogin
+        }
+    });
 });
 
 export default router;

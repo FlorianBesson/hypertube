@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { prisma } from '../../prisma';
@@ -6,6 +6,7 @@ import { authenticateToken } from '../../middlewares/auth';
 import { upload, uploadDirectory } from '../../config/multer';
 import * as z from "zod";
 import bcrypt from "bcrypt";
+import { HttpError } from '../../errors';
 
 const router = Router();
 
@@ -14,19 +15,19 @@ const router = Router();
  * Description: Uploads and sets a new profile avatar image for the authenticated user.
  * Authenticated: Yes
  */
-router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
-    // Process single file upload under key 'avatar'
+router.post("/avatar", authenticateToken, (req: Request, res: Response, next: NextFunction) => {
+    // Process single file upload under key 'avatar'. multer invokes this callback
+    // outside of Express's own call stack, so errors must go through next()
+    // rather than being thrown, to reach the centralized error handler.
     upload.single('avatar')(req, res, async (err) => {
         // Handle upload errors (size limit exceeded, wrong file type)
         if (err) {
-            res.status(400).json({ success: false, message: err.message || "Erreur lors du téléversement" });
-            return;
+            return next(new HttpError(400, err.message || "Erreur lors du téléversement"));
         }
 
         // Verify if a file was actually sent
         if (!req.file) {
-            res.status(400).json({ success: false, message: "Aucun fichier téléversé" });
-            return;
+            return next(new HttpError(400, "Aucun fichier téléversé"));
         }
 
         try {
@@ -54,8 +55,7 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
                 }
             });
         } catch (error) {
-            console.error("Avatar update error:", error);
-            res.status(500).json({ success: false, message: "Erreur serveur lors de la mise à jour" });
+            next(error);
         }
     });
 });
@@ -66,54 +66,48 @@ router.post("/avatar", authenticateToken, (req: Request, res: Response) => {
  * Authenticated: Yes
  */
 router.delete("/avatar", authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).user.userId;
+    const userId = (req as any).user.userId;
 
-        // Fetch current user details to check for an existing photo
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
+    // Fetch current user details to check for an existing photo
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    });
 
-        if (!user) {
-            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
-            return;
-        }
-
-        if (user.photo) {
-            // Delete the physical file from the disk if it resides in our avatars folder
-            if (user.photo.startsWith('/uploads/avatars/')) {
-                const fileName = user.photo.replace('/uploads/avatars/', '');
-                const filePath = path.join(uploadDirectory, fileName);
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath); // Sync delete operation
-                }
-            }
-        }
-
-        // Remove the avatar reference in the database
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: { photo: null }
-        });
-
-        res.json({
-            success: true,
-            message: "Photo de profil supprimée avec succès",
-            user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                username: updatedUser.username,
-                firstName: updatedUser.firstName,
-                lastName: updatedUser.lastName,
-                photo: updatedUser.photo,
-                bio: updatedUser.bio,
-                lastLogin: updatedUser.lastLogin
-            }
-        });
-    } catch (error) {
-        console.error("Avatar delete error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la suppression de la photo de profil" });
+    if (!user) {
+        throw new HttpError(404, "Utilisateur non trouvé");
     }
+
+    if (user.photo) {
+        // Delete the physical file from the disk if it resides in our avatars folder
+        if (user.photo.startsWith('/uploads/avatars/')) {
+            const fileName = user.photo.replace('/uploads/avatars/', '');
+            const filePath = path.join(uploadDirectory, fileName);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); // Sync delete operation
+            }
+        }
+    }
+
+    // Remove the avatar reference in the database
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { photo: null }
+    });
+
+    res.json({
+        success: true,
+        message: "Photo de profil supprimée avec succès",
+        user: {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            username: updatedUser.username,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            photo: updatedUser.photo,
+            bio: updatedUser.bio,
+            lastLogin: updatedUser.lastLogin
+        }
+    });
 });
 
 /**
@@ -122,76 +116,66 @@ router.delete("/avatar", authenticateToken, async (req: Request, res: Response) 
  * Authenticated: Yes
  */
 router.put("/profile", authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).user.userId;
-        const { firstName, lastName, email, bio, preferredLanguage } = req.body;
+    const userId = (req as any).user.userId;
+    const { firstName, lastName, email, bio, preferredLanguage } = req.body;
 
-        if (firstName !== undefined && !firstName.trim()) {
-            res.status(400).json({ success: false, message: "Le prénom est requis" });
-            return;
-        }
-        if (lastName !== undefined && !lastName.trim()) {
-            res.status(400).json({ success: false, message: "Le nom est requis" });
-            return;
-        }
-
-        // Validate the email format if provided
-        if (email) {
-            const cleanEmail = email.toLowerCase().trim();
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-                res.status(400).json({ success: false, message: "Format d'adresse email invalide" });
-                return;
-            }
-
-            // Ensure the new email is not already taken by another registered user
-            const existingUser = await prisma.user.findUnique({
-                where: { email: cleanEmail }
-            });
-            if (existingUser && existingUser.id !== userId) {
-                res.status(400).json({ success: false, message: "Cette adresse email est déjà utilisée" });
-                return;
-            }
-        }
-
-        // Validate preferred language code format if provided (e.g. 2-letter ISO code)
-        if (preferredLanguage !== undefined) {
-            if (typeof preferredLanguage !== 'string' || !/^[a-z]{2,3}$/i.test(preferredLanguage.trim())) {
-                res.status(400).json({ success: false, message: "Code langue préféré invalide (ex: 'fr', 'en', 'es')" });
-                return;
-            }
-        }
-
-        // Update the user properties in Postgres via Prisma
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
-                firstName: firstName !== undefined ? firstName.trim() : undefined,
-                lastName: lastName !== undefined ? lastName.trim() : undefined,
-                email: email !== undefined ? email.toLowerCase().trim() : undefined,
-                bio: bio !== undefined ? bio : undefined,
-                preferredLanguage: preferredLanguage !== undefined ? preferredLanguage.trim().toLowerCase() : undefined,
-            }
-        });
-
-        res.json({
-            success: true,
-            message: "Profil mis à jour avec succès",
-            user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                username: updatedUser.username,
-                firstName: updatedUser.firstName,
-                lastName: updatedUser.lastName,
-                photo: updatedUser.photo,
-                bio: updatedUser.bio,
-                preferredLanguage: updatedUser.preferredLanguage,
-                lastLogin: updatedUser.lastLogin
-            }
-        });
-    } catch (error) {
-        console.error("Profile update error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la mise à jour" });
+    if (firstName !== undefined && !firstName.trim()) {
+        throw new HttpError(400, "Le prénom est requis");
     }
+    if (lastName !== undefined && !lastName.trim()) {
+        throw new HttpError(400, "Le nom est requis");
+    }
+
+    // Validate the email format if provided
+    if (email) {
+        const cleanEmail = email.toLowerCase().trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+            throw new HttpError(400, "Format d'adresse email invalide");
+        }
+
+        // Ensure the new email is not already taken by another registered user
+        const existingUser = await prisma.user.findUnique({
+            where: { email: cleanEmail }
+        });
+        if (existingUser && existingUser.id !== userId) {
+            throw new HttpError(400, "Cette adresse email est déjà utilisée");
+        }
+    }
+
+    // Validate preferred language code format if provided (e.g. 2-letter ISO code)
+    if (preferredLanguage !== undefined) {
+        if (typeof preferredLanguage !== 'string' || !/^[a-z]{2,3}$/i.test(preferredLanguage.trim())) {
+            throw new HttpError(400, "Code langue préféré invalide (ex: 'fr', 'en', 'es')");
+        }
+    }
+
+    // Update the user properties in Postgres via Prisma
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            firstName: firstName !== undefined ? firstName.trim() : undefined,
+            lastName: lastName !== undefined ? lastName.trim() : undefined,
+            email: email !== undefined ? email.toLowerCase().trim() : undefined,
+            bio: bio !== undefined ? bio : undefined,
+            preferredLanguage: preferredLanguage !== undefined ? preferredLanguage.trim().toLowerCase() : undefined,
+        }
+    });
+
+    res.json({
+        success: true,
+        message: "Profil mis à jour avec succès",
+        user: {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            username: updatedUser.username,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            photo: updatedUser.photo,
+            bio: updatedUser.bio,
+            preferredLanguage: updatedUser.preferredLanguage,
+            lastLogin: updatedUser.lastLogin
+        }
+    });
 });
 
 /**
@@ -209,47 +193,39 @@ const PasswordSchema = z.object({
 });
 
 router.put("/password", authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).user.userId;
-        
-        const result = PasswordSchema.safeParse(req.body);
-        if (!result.success) {
-            res.status(400).json({ success: false, message: result.error.issues[0].message });
-            return;
-        }        
-        const { currentPassword, newPassword } = result.data;
+    const userId = (req as any).user.userId;
 
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
-
-        if (!user) {
-            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
-            return;
-        }
-        
-        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-        if (!isPasswordValid) {
-            res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
-            return;
-        }
-        
-        const newPasswordHash = await bcrypt.hash(newPassword, 10);
-
-        // Update password in DB
-        await prisma.user.update({
-            where: { id: userId },
-            data: { password: newPasswordHash }
-        });
-
-        res.json({
-            success: true,
-            message: "Mot de passe modifié avec succès"
-        });
-    } catch (error) {
-        console.error("Password update error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors du changement de mot de passe" });
+    const result = PasswordSchema.safeParse(req.body);
+    if (!result.success) {
+        throw new HttpError(400, result.error.issues[0].message);
     }
+    const { currentPassword, newPassword } = result.data;
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    });
+
+    if (!user) {
+        throw new HttpError(404, "Utilisateur non trouvé");
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+        throw new HttpError(400, "L'ancien mot de passe est incorrect");
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password in DB
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: newPasswordHash }
+    });
+
+    res.json({
+        success: true,
+        message: "Mot de passe modifié avec succès"
+    });
 });
 
 export default router;

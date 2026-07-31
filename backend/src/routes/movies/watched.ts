@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../../middlewares/auth';
 import { prisma } from '../../prisma';
+import { HttpError } from '../../errors';
 
 const router = Router();
 
@@ -18,23 +19,17 @@ function getUserId(req: Request): number | null {
  * Access: Authenticated
  */
 router.get('/', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const userId = getUserId(req);
-    if (!userId) {
-      res.status(401).json({ success: false, message: 'Utilisateur non identifié' });
-      return;
-    }
-
-    const records = await prisma.watchedMovie.findMany({
-      where: { userId },
-      select: { imdbId: true },
-    });
-    const watched = records.map((r) => r.imdbId);
-    res.json({ success: true, watched });
-  } catch (error: any) {
-    console.error('Error fetching watched movies:', error);
-    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des films vus' });
+  const userId = getUserId(req);
+  if (!userId) {
+    throw new HttpError(401, 'Utilisateur non identifié');
   }
+
+  const records = await prisma.watchedMovie.findMany({
+    where: { userId },
+    select: { imdbId: true },
+  });
+  const watched = records.map((r) => r.imdbId);
+  res.json({ success: true, watched });
 });
 
 /**
@@ -43,42 +38,35 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
  * Access: Authenticated
  */
 router.post('/:imdbId', authenticateToken, async (req: Request, res: Response) => {
-  try {
-    const userId = getUserId(req);
-    if (!userId) {
-      res.status(401).json({ success: false, message: 'Utilisateur non identifié' });
-      return;
-    }
+  const userId = getUserId(req);
+  if (!userId) {
+    throw new HttpError(401, 'Utilisateur non identifié');
+  }
 
-    const rawImdbId = req.params.imdbId;
-    const imdbId = Array.isArray(rawImdbId) ? rawImdbId[0] : rawImdbId;
+  const rawImdbId = req.params.imdbId;
+  const imdbId = Array.isArray(rawImdbId) ? rawImdbId[0] : rawImdbId;
 
-    if (!imdbId) {
-      res.status(400).json({ success: false, message: 'ID de film manquant' });
-      return;
-    }
+  if (!imdbId) {
+    throw new HttpError(400, 'ID de film manquant');
+  }
 
-    await prisma.watchedMovie.upsert({
-      where: {
-        userId_imdbId: {
-          userId,
-          imdbId,
-        },
-      },
-      update: {
-        watchedAt: new Date(),
-      },
-      create: {
+  await prisma.watchedMovie.upsert({
+    where: {
+      userId_imdbId: {
         userId,
         imdbId,
       },
-    });
+    },
+    update: {
+      watchedAt: new Date(),
+    },
+    create: {
+      userId,
+      imdbId,
+    },
+  });
 
-    res.json({ success: true, message: 'Film marqué comme vu' });
-  } catch (error: any) {
-    console.error('Error marking movie as watched:', error);
-    res.status(500).json({ success: false, message: 'Erreur lors de l\'enregistrement du film vu' });
-  }
+  res.json({ success: true, message: 'Film marqué comme vu' });
 });
 
 export default router;

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { HttpError } from '../errors';
 
 // Secret key used to sign and verify JSON Web Tokens.
 const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
@@ -15,18 +16,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     // If no token is provided, deny access with a 401 Unauthorized status
     if (!token) {
-        res.status(401).json({ success: false, message: "Token d'authentification manquant" });
-        return;
+        return next(new HttpError(401, "Token d'authentification manquant"));
     }
 
-    // Verify the validity of the token using the secret key
+    // Verify the validity of the token using the secret key.
+    // jwt.verify's callback runs outside Express's call stack, so errors must
+    // be forwarded via next() rather than thrown.
     jwt.verify(token, JWT_SECRET, (err, decoded: any) => {
-        // If verification fails (e.g. token expired, tampered with, or signed with old secret), return 403 Forbidden
         if (err) {
-            res.status(403).json({ success: false, message: "Token invalide ou expiré" });
-            return;
+            return next(new HttpError(403, "Token invalide ou expiré"));
         }
-        
+
         // Attach the decoded token payload (containing user info) to the request object for downstream routes
         (req as any).user = decoded;
         next();
