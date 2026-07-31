@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../../locales/translations'
 import type { Movie } from '../../../types/movie'
+import { formatCount } from '../../../utils/format'
 
 export interface MovieCardProps {
   movie: Movie
@@ -141,6 +142,9 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
               </svg>
               {movie.rating.toFixed(1)}
+              {typeof movie.downloads === 'number' && (
+                <span className="text-neutral-500 font-normal">({formatCount(movie.downloads)})</span>
+              )}
             </span>
           )}
         </div>
