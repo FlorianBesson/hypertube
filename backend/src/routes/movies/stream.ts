@@ -4,8 +4,8 @@ import jwt from 'jsonwebtoken';
 import { torrentService } from '../../services/stream';
 import { prisma } from '../../prisma';
 import { HttpError } from '../../errors';
+import { JWT_SECRET } from '../../config/jwt';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 const router = Router();
 
 /**

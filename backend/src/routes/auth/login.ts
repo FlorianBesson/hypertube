@@ -3,9 +3,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { prisma } from '../../prisma';
 import { HttpError } from '../../errors';
+import { JWT_SECRET } from '../../config/jwt';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
 
 interface OauthProfile {
     email: string;

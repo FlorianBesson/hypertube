@@ -4,8 +4,7 @@ import { prisma } from '../../prisma';
 import bcrypt from 'bcrypt'
 import { HttpError } from '../../errors';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'magneto_super_secret_key';
+import { JWT_SECRET } from '../../config/jwt';
 
 const RegisterSchema = z.object({
     email: z.
