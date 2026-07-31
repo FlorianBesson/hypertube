@@ -4,9 +4,10 @@ import type { Movie } from '../../../types/movie'
 import MovieDetailsModal from './MovieDetailsModal'
 import MovieCard from './MovieCard'
 import MovieToolbar from './MovieToolbar'
+import StatusMessage from './StatusMessage'
 import { useWatchedMovies } from '../../../hooks/useWatchedMovies'
 import { useInternetArchiveMovies } from '../../../hooks/useInternetArchiveMovies'
-import { movieMatchesLanguage } from '../../../utils/language'
+import { filterMovies, sortMovies } from '../../../utils/movieFilters'
 
 export type { Movie, Torrent } from '../../../types/movie'
 
@@ -48,6 +49,12 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     hasMore
   } = useInternetArchiveMovies({ lang })
 
+  // Changing any filter/sort criteria restarts pagination from page 1
+  const withPageReset = <T,>(setter: (value: T) => void) => (value: T) => {
+    setter(value)
+    setPage(1)
+  }
+
   // IntersectionObserver for infinite scroll
   useEffect(() => {
     const target = observerTarget.current
@@ -73,42 +80,14 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
 
   // Client-side filtering & sorting
   const displayedMovies = useMemo(() => {
-    return movies
-      .filter(movie => {
-        const isWatched = watchedMovies.includes(movie.id)
-        if (watchedFilter === 'watched' && !isWatched) return false
-        if (watchedFilter === 'unwatched' && isWatched) return false
-
-        if (selectedGenre) {
-          const movieGenreLower = (movie.genre || '').toLowerCase()
-          if (!movieGenreLower.includes(selectedGenre.toLowerCase())) {
-            return false
-          }
-        }
-
-        if (selectedMinRating > 0 && movie.rating < selectedMinRating) {
-          return false
-        }
-
-        if (selectedLanguage && !movieMatchesLanguage(movie.language, selectedLanguage)) {
-          return false
-        }
-
-        return true
-      })
-      .sort((a, b) => {
-        let comparison = 0
-        if (sortBy === 'title') {
-          comparison = a.title.localeCompare(b.title)
-        } else if (sortBy === 'year') {
-          const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
-          const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
-          comparison = yearA - yearB
-        } else if (sortBy === 'rating') {
-          comparison = a.rating - b.rating
-        }
-        return order === 'asc' ? comparison : -comparison
-      })
+    const filtered = filterMovies(movies, {
+      watchedMovies,
+      watchedFilter,
+      selectedGenre,
+      selectedMinRating,
+      selectedLanguage
+    })
+    return sortMovies(filtered, sortBy, order)
   }, [movies, watchedMovies, watchedFilter, selectedGenre, selectedMinRating, selectedLanguage, sortBy, order])
 
   return (
@@ -152,35 +131,17 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         selectedSource={selectedSource}
-        onSourceChange={(s) => {
-          setSelectedSource(s)
-          setPage(1)
-        }}
+        onSourceChange={withPageReset(setSelectedSource)}
         selectedGenre={selectedGenre}
-        onGenreChange={(g) => {
-          setSelectedGenre(g)
-          setPage(1)
-        }}
+        onGenreChange={withPageReset(setSelectedGenre)}
         selectedMinRating={selectedMinRating}
-        onMinRatingChange={(r) => {
-          setSelectedMinRating(r)
-          setPage(1)
-        }}
+        onMinRatingChange={withPageReset(setSelectedMinRating)}
         selectedLanguage={selectedLanguage}
-        onLanguageChange={(l) => {
-          setSelectedLanguage(l)
-          setPage(1)
-        }}
+        onLanguageChange={withPageReset(setSelectedLanguage)}
         watchedFilter={watchedFilter}
-        onWatchedFilterChange={(f) => {
-          setWatchedFilter(f)
-          setPage(1)
-        }}
+        onWatchedFilterChange={withPageReset(setWatchedFilter)}
         sortBy={sortBy}
-        onSortByChange={(s) => {
-          setSortBy(s)
-          setPage(1)
-        }}
+        onSortByChange={withPageReset(setSortBy)}
         order={order}
         onOrderToggle={() => {
           setOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
@@ -213,35 +174,23 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           </div>
         </div>
       ) : error ? (
-        <div className="relative z-10 py-16 flex flex-col items-center justify-center text-center">
-          <svg
-            className="w-12 h-12 text-red-500/80 mb-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.008v.008H12v-.008z" />
-          </svg>
-          <p className="text-neutral-400 text-sm font-semibold max-w-sm">
-            {t.errorLoadingMovies || "An error occurred while loading video databases."}
-          </p>
-        </div>
+        <StatusMessage
+          icon={
+            <svg className="w-12 h-12 text-red-500/80 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.008v.008H12v-.008z" />
+            </svg>
+          }
+          message={t.errorLoadingMovies || 'An error occurred while loading video databases.'}
+        />
       ) : displayedMovies.length === 0 ? (
-        <div className="relative z-10 py-16 flex flex-col items-center justify-center text-center">
-          <svg
-            className="w-12 h-12 text-neutral-600 mb-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-          </svg>
-          <p className="text-neutral-400 text-sm font-semibold">{t.noMoviesFound || "No films found matching search query."}</p>
-        </div>
+        <StatusMessage
+          icon={
+            <svg className="w-12 h-12 text-neutral-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+          }
+          message={t.noMoviesFound || 'No films found matching search query.'}
+        />
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 relative z-10 pt-2">
