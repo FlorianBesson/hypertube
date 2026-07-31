@@ -6,6 +6,7 @@ import { checkDbConnection } from './db/utils';
 
 // Import modular router packages for each domain
 import authRoutes from './routes/auth';
+import { oauthTokenHandler } from './routes/auth/oauth';
 import { meRouter, communityRouter } from './routes/users';
 import torrentRoutes from './routes/torrent';
 import movieRoutes from './routes/movies';
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Register main API endpoints with their mount paths
+app.post('/oauth/token', oauthTokenHandler);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', meRouter);
 app.use('/api/users', communityRouter);
