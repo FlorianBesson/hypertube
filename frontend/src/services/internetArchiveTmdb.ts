@@ -91,8 +91,9 @@ function matchScore(movie: Movie, candidate: TmdbMovie): number {
     const difference = Math.abs(archiveYear - tmdbYear)
     if (difference === 0) return titleScore + 0.25
     if (difference === 1) return titleScore + 0.1
-    if (difference > 2) return titleScore - 0.5
-    return titleScore
+    if (difference <= 3) return titleScore
+    if (difference <= 6) return titleScore - 0.2
+    return titleScore - 0.5
   }
 
   // If no year in source metadata, penalize modern releases (> 1980) to avoid false positive remakes
