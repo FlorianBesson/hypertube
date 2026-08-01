@@ -79,8 +79,8 @@ export default function ProfilePage({
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/user/avatar', {
-        method: 'POST',
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -115,11 +115,13 @@ export default function ProfilePage({
     setDeleting(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/user/avatar', {
-        method: 'DELETE',
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ photo: '' })
       })
 
       const data = await response.json()
@@ -243,6 +245,7 @@ export default function ProfilePage({
           />
 
           <PasswordChangeForm
+            user={user}
             lang={lang}
             showStatus={showStatus}
           />
