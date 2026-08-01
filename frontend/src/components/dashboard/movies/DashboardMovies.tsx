@@ -14,11 +14,11 @@ export type { Movie, Torrent } from '../../../types/movie'
 export interface DashboardMoviesProps {
   t: TranslationType['dashboard']
   lang: 'en' | 'fr'
-  showCommunity: boolean
-  setShowCommunity: (val: boolean) => void
+  showSidebar: boolean
+  setShowSidebar: (val: boolean) => void
 }
 
-export default function DashboardMovies({ t, lang, showCommunity, setShowCommunity }: DashboardMoviesProps) {
+export default function DashboardMovies({ t, lang, showSidebar, setShowSidebar }: DashboardMoviesProps) {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const observerTarget = useRef<HTMLDivElement>(null)
 
@@ -127,8 +127,8 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
           setOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))
           setPage(1)
         }}
-        showCommunity={showCommunity}
-        onToggleCommunity={() => setShowCommunity(!showCommunity)}
+        showSidebar={showSidebar}
+        onToggleSidebar={() => setShowSidebar(!showSidebar)}
         t={t}
       />
 

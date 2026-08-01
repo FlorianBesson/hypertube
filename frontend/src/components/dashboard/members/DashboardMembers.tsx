@@ -54,7 +54,7 @@ export default function DashboardMembers({ t, loadingMembers, errorMembers, othe
   }
 
   return (
-    <div className="w-full lg:w-80 shrink-0 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md flex flex-col gap-6 relative overflow-hidden animate-in fade-in slide-in-from-right-8 duration-300 min-h-75">
+    <div className="w-full bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md flex flex-col gap-6 relative overflow-hidden animate-in fade-in slide-in-from-right-8 duration-300 min-h-75">
       <div className="absolute top-0 right-0 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}

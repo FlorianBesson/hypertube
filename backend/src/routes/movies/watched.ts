@@ -33,6 +33,30 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
 });
 
 /**
+ * Route: GET /api/movies/watched/history
+ * Description: Fetches the most recently watched movies of the authenticated user, newest first.
+ * Access: Authenticated
+ */
+router.get('/history', authenticateToken, async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    throw new HttpError(401, 'Unauthenticated user');
+  }
+
+  const requestedLimit = Number(req.query.limit);
+  const limit = Number.isInteger(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 20) : 6;
+
+  const history = await prisma.watchedMovie.findMany({
+    where: { userId },
+    select: { imdbId: true, watchedAt: true },
+    orderBy: { watchedAt: 'desc' },
+    take: limit,
+  });
+
+  res.json({ success: true, history });
+});
+
+/**
  * Route: POST /api/movies/watched/:imdbId
  * Description: Marks a movie as watched by the authenticated user in BDD.
  * Access: Authenticated
