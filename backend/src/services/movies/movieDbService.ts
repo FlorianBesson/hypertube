@@ -19,11 +19,15 @@ export async function getCompletedMovie(
 ): Promise<CompletedMovieFile | null> {
   try {
     const existing = await repository.findMovieRecord(torrentHash, imdbId);
-    if (existing && existing.isCompleted && existing.filePath) {
-      const completedFile = scanner.checkExistingPath(existing.filePath, existing.fileSize);
-      if (completedFile) {
-        return completedFile;
+
+    // A record is authoritative: it carries the expected size. Scanning the downloads dir
+    // as a fallback cannot tell a partial download from a finished one, so never let it
+    // override what the record already says about this movie.
+    if (existing) {
+      if (!existing.isCompleted || !existing.filePath) {
+        return null;
       }
+      return scanner.checkExistingPath(existing.filePath, existing.fileSize);
     }
   } catch (err) {
     console.warn(`[movieDbService] DB check warning for ${torrentHash}:`, err);

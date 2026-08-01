@@ -4,10 +4,10 @@ import path from 'path';
 import { prisma } from '../../prisma';
 
 /**
- * Nettoie les fichiers vidéo et sous-titres associés des films non visionnés depuis plus de 30 jours.
- * - Supprime le fichier (ou dossier) physique du disque s'il existe.
- * - Réinitialise les champs BDD `filePath`, `isCompleted` et `fileSize`.
- * - Affiche un log détaillé avec le nombre de films supprimés et l'espace libéré.
+ * Cleans up video files and associated subtitles for movies not watched in over 30 days.
+ * - Deletes the physical file (or folder) from disk if it exists.
+ * - Resets the DB fields `filePath`, `isCompleted` and `fileSize`.
+ * - Logs the number of movies purged and the space freed.
  */
 export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBytes: number }> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -42,7 +42,7 @@ export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBy
                     } else {
                         await fs.promises.unlink(movie.filePath);
 
-                        // Nettoyage éventuel des sous-titres associés s'ils partagent le même nom de base ou dossier
+                        // Also clean up associated subtitles if they share the same base name or folder
                         const dir = path.dirname(movie.filePath);
                         const ext = path.extname(movie.filePath);
                         const baseName = path.basename(movie.filePath, ext);
@@ -63,10 +63,10 @@ export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBy
                     }
                 }
             } catch (err) {
-                console.error(`[CRON] Erreur lors de la suppression du fichier pour le film ID ${movie.id} (${movie.filePath}):`, err);
+                console.error(`[CRON] Error deleting file for movie ID ${movie.id} (${movie.filePath}):`, err);
             }
 
-            // Réinitialisation en base de données
+            // Reset the database fields
             await prisma.movie.update({
                 where: { id: movie.id },
                 data: {
@@ -81,17 +81,17 @@ export async function cleanupOldMovies(): Promise<{ purgedCount: number; freedBy
         }
 
     } catch (error) {
-        console.error('[CRON] Erreur globale lors du nettoyage des vidéos inactives:', error);
+        console.error('[CRON] Global error while cleaning up inactive videos:', error);
     }
 
     return { purgedCount, freedBytes };
 }
 
 /**
- * Initialise le planificateur Cron pour exécuter le nettoyage quotidien à 3h00 du matin.
+ * Initializes the Cron scheduler to run the daily cleanup at 3:00 AM.
  */
 export function initCronJobs(): void {
-    // Exécution tous les jours à 3h00 du matin ('0 3 * * *')
+    // Runs every day at 3:00 AM ('0 3 * * *')
     cron.schedule('0 3 * * *', async () => {
         await cleanupOldMovies();
     });

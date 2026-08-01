@@ -63,7 +63,7 @@ export class TorrentEngineManager {
     const metadataTimer = setTimeout(() => {
       if (!activeEngine.isReady) {
         this.activeEngines.delete(torrentHash);
-        rejectReady(new Error("Aucun seeder actif trouvé pour ce torrent. Le film ne peut pas être téléchargé."));
+        rejectReady(new Error("No active seeder found for this torrent. The movie cannot be downloaded."));
       }
     }, 15000);
 
@@ -100,11 +100,22 @@ export class TorrentEngineManager {
     });
 
     engine.on('idle', async () => {
-      if (activeEngine.videoFile) {
-        const fullFilePath = path.join(downloadFolder, activeEngine.videoFile.path);
-        const identifier = imdbId || torrentHash;
-        await movieDbService.markMovieCompleted(identifier, torrentHash, fullFilePath, BigInt(activeEngine.videoFile.length));
+      if (!activeEngine.videoFile) {
+        return;
       }
+
+      const fullFilePath = path.join(downloadFolder, activeEngine.videoFile.path);
+      const expectedLength = activeEngine.videoFile.length;
+
+      // 'idle' only means no piece is currently selected, which also happens when a reader
+      // finishes a partial range; marking that as completed would cap later seeks to the
+      // bytes already on disk.
+      if (!fs.existsSync(fullFilePath) || fs.statSync(fullFilePath).size !== expectedLength) {
+        return;
+      }
+
+      const identifier = imdbId || torrentHash;
+      await movieDbService.markMovieCompleted(identifier, torrentHash, fullFilePath, BigInt(expectedLength));
     });
 
     engine.on('error', (err: any) => {

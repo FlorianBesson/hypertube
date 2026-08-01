@@ -1,3 +1,4 @@
+import { Router } from 'express';
 import moviesListRouter from './list';
 import streamRouter from './stream';
 import commentsRouter from './comments';

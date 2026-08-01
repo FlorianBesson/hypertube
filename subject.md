@@ -1,84 +1,219 @@
-# Hypertube - Technical Specification & Requirements
+# Hypertube
 
-> **Instructions for AI Agents (Claude, Gemini, Antigravity, etc.):**  
-> This file is the primary reference specification for the Hypertube project. When assisting on this codebase, you must strictly comply with all mandatory rules, constraints, security guidelines, and architectural requirements detailed below.
+## Introduction
 
----
+This project aims to create a web application that enables user's to search for and
+watch videos.
 
-## 1. Project Overview & General Constraints
+The player will integrated directly into the site, and the videos will be downloaded
+using the BitTorrent protocol.
 
-- **Objective**: Create a web application that enables users to search for and watch videos. The video player is integrated into the site, downloading and streaming video content via BitTorrent in real-time.
-- **Allowed Video Sources**: Only legal, royalty-free, or legally distributable content sources may be queried (e.g., [legittorrents.info](http://www.legittorrents.info), [archive.org](https://archive.org)). The search engine must query **at least 2 external sources**.
-- **Torrent Video Stream Restrictions**: Libraries that provide out-of-the-box torrent video streaming (such as `webtorrent`, `pulsar`, or `peerflix`) are **strictly forbidden**. Torrent handling and streaming must be managed customly on the server side in a non-blocking background process.
-- **Tech Stack & Server**: Any programming language, web server (Apache, Nginx, built-in), or framework is allowed (except forbidden torrent streaming libraries).
-- **Browser & UI Requirements**: Compatible with the latest Chrome and Firefox. Layout must include at least a Header, Main section, and Footer. Fully responsive for mobile devices and small screen resolutions.
-- **Security & Secret Storage**:
-  - All credentials, API keys, and environment variables **must** be stored in `.env` (excluded by `.gitignore`). Hardcoding secrets in git leads to automatic failure (grade 0).
-  - Passwords must be hashed (never stored in plain text).
-  - All forms, inputs, and uploads must be sanitized and protected against SQL Injections, XSS (HTML/JS code injection), and unauthorized upload content.
-- **Console Output**: Zero client-side or server-side console errors, warnings, or notices.
+**Important** : In order to comply with copyright legislation and avoid any illegal
+torrenting activity, you must only use external sources that provide royalty-free or
+legally distributable content.
 
----
+Examples of allowed sources include:
+- https://www.publicdomaintorrents.info/
+- https://archive.org
 
-## 2. Mandatory Features
+You are responsible for ensuring that the sources you use comply with the copyright
+laws and regulations applicable in your country. Any download or stream of copyrighted
+material without proper rights is strictly prohibited.
 
-### 2.1 User Interface & Authentication
-- **Registration**: Requires at least email address, username, last name, first name, and a hashed/protected password.
-- **Omniauth / OAuth**: Support at least 2 login strategies: 42 Strategy + 1 other strategy of choice.
-- **Login & Reset**: Login via username + password. Password reset link sent via email upon request.
-- **Session**: Single-click logout available on all pages.
-- **Language**: Preferred language selection (defaults to English).
-- **User Profiles**:
-  - Users can update their own email, profile picture, and user info.
-  - Users can view any other user's profile picture and info.
-  - Email addresses **must remain private** and only visible to the profile owner.
+To enhance search capabilities, the research engine will query at least two external
+sources of your choice, provided they meet the legal requirements above.
 
-### 2.2 Library & Search
-- **Access**: Restricted to authenticated users.
-- **Search Engine**: Queries at least 2 legal sources and displays results as video thumbnails sorted by name.
-- **Default View**: When no search query is active, displays the most popular videos from external sources (sorted by downloads, peers, seeders, etc.).
-- **Thumbnails**:
-  - Displays video title, production year (if available), IMDb rating (OMDb/TMDb, if available), and cover image.
-  - Visual differentiation between watched and unwatched videos.
-  - Infinite scroll pagination: Next page loads asynchronously on scroll (no links or manual buttons to load pages).
-  - Sortable and filterable by criteria (name, genre, IMDb score, production year).
+Once a selection is made, the video will be downloaded from the server and streamed
+on the web player simultaneously.
+This means that the player will not only display the video after the download is
+complete but also stream the video feed directly.
 
-### 2.3 Video Player, Streaming & Subtitles
-- **Access**: Restricted to authenticated users.
-- **Video Detail Page**: Displays video player, summary (if available), cast details (producer, director, main cast), production year, length, IMDb rating, cover image, and comments list.
-- **Interactive Comments**: Authenticated users can post comments; prior comments are listed.
-- **Background Torrenting & Streaming**:
-  - Selecting an un-downloaded movie triggers torrent downloading on the server in the background (non-blocking).
-  - Video streaming to web player starts as soon as enough buffer data is downloaded.
-  - Fully downloaded movies are saved on the server. Movies unwatched for 1 month are automatically deleted.
-- **Transcoding**: If the video format is not natively supported by browsers (MP4, WebM), it must be converted on the fly into an acceptable format (**MKV support mandatory** at minimum).
-- **Subtitles**: Download and provide English subtitles if available. If the movie language differs from the user's preferred language, download and allow selection of preferred language subtitles.
+## General Instructions
 
-### 2.4 RESTful API & Documentation
-- **Auth**: OAuth2 token endpoint (`POST oauth/token` expecting client + secret).
-- **Access Control**: Authenticated users can view profiles, but can **only update their own profile** (return `403` on unauthorized update attempts). Unauthenticated users can access the frontpage top movies list.
-- **API Endpoints Table**:
+- For this project you are free to use any programming language of your choice.
+- All frameworks, micro-frameworks, libraries, etc. are allowed, except for those
+  that are used to create a video stream from a torrent. This restriction is to
+  ensure that the educational purpose of the project is not compromised. For
+  example, libraries such as webtorrent, pulsar and peerflix are not permitted.
+- You are free to use any web server of your choice, such as Apache, Nginx or even
+  a built-in web server.
+- Your entire application must be compatible with the latest versions of Firefox
+  and Chrome.
+- Your website must have a decent layout including at least a header, a main
+  section and a footer.
+- Your website must be usable on a mobile phone and maintain an acceptable layout
+  on small resolutions.
+- All your forms must have correct validations and the entire website must be
+  secure. This part is mandatory and will be extensively checked during the
+  defense. To give you an idea, here are a few elements that are not considered
+  secure:
+  - Storing a « plain text » password in your database.
+  - Allowing injection of HTML or « user » Javascript code in unprotected
+    variables.
+  - Allowing the upload of unwanted content.
+  - Allowing alteration of an SQL request.
 
-| Method | Endpoint | Description & Expected Data |
-| :--- | :--- | :--- |
-| `POST` | `oauth/token` | Expects `client` + `secret`, returns authentication token |
-| `GET` | `/users` | Returns list of users with `id` and `username` |
-| `GET` | `/users/:id` | Returns `username` and `profile_picture_url`. Email address excluded unless requester is profile owner |
-| `PATCH` | `/users/:id` | Expected: `username`, `email`, `password`, `profile_picture_url`. Restricted to own profile (`403` otherwise) |
-| `GET` | `/movies` | Returns list of frontpage movies (`id`, `name`) |
-| `GET` | `/movies/:id` | Returns movie `name`, `id`, IMDb score, production year, length, available subtitles, comment count |
-| `GET` | `/comments` | Returns list of latest comments (`author_username`, `date`, `content`, `id`) |
-| `GET` | `/comments/:id` | Returns comment content, `author_username`, `id`, `date` |
-| `PATCH` | `/comments/:id` | Expected: `comment`, `username` |
-| `DELETE` | `/comments/:id` | Deletes target comment |
-| `POST` | `/comments` or `/movies/:movie_id/comments` | Expected: `comment`, `movie_id`. Remaining fields populated by server |
+For obvious security reasons, any credentials, API keys, environment variables,
+etc. must be saved locally in a `.env` file and excluded from git. Storing
+credentials publicly will result in automatic failure of the project.
 
-- **Restricted Access**: Any unhandled API call must return the appropriate HTTP error code. Evidence of RESTful compliance required during defense.
+## Mandatory Part
 
----
+You will need to create a web application with the following features:
 
-## 3. Defense & Eliminatory Rules
+### User Interface
 
-- Zero errors, warnings, or notices in server or client browser consoles.
+- The app must allow a user to register asking for at least their email address,
+  username, last name, first name and a password that is somehow protected.
+- The user must be able to register and log in via Omniauth. You must implement
+  at least 2 strategies: the 42 strategy and another one of your choice.
+- The user must be able to log in with their username and password. They must be
+  able to receive an email allowing them to reset their password should they
+  forget it.
+- The user must be able to log out with one click from any pages on the site.
+- The user must be able to select a preferred language that will default to
+  English.
+
+A user must also be able to:
+- Modify their email address, profile picture and information.
+- View the profile of any other user, including their profile picture and
+  information. However, the email address will remain private.
+
+### Library part
+
+This section can only be accessed by authenticated users.
+
+This section must have at a minimum:
+- A search field.
+- A list of video thumbnails.
+
+#### Search
+
+The search engine will query at least two external sources (of your choice) that
+exclusively provide video content. These sources must be royalty-free or legally
+distributable, and you must ensure that their use complies with the copyright
+laws applicable in your country.
+
+Examples of allowed sources include:
+- https://www.publicdomaintorrents.info/
+- https://archive.org
+
+The results must be displayed in the form of thumbnails.
+
+#### Thumbnails
+
+- If search has been done, the results will be displayed as thumbnails, sorted
+  by names.
+- If no research was done, the app will display the most popular video from the
+  external sources, sorted by the criteria of your choice (downloads, peers,
+  seeders, etc.)
+- Each thumbnail must display the name of the video, its production year (if
+  available), its IMDb (TMDb for free API) rating (if available), and a
+  cover image.
+- Watched and unwatched videos should be differentiate in the thumbnails.
+- The list will be paginated, with the next page being loaded asynchronously as
+  the user scrolls down. There should be no link to load the next page.
+- The page will be sortable and filterable according to criteria such as name,
+  genre, IMDb (TMDb for free API) grade, production year, etc.
+
+### Video Part
+
+This section can only be accessed by authenticated users.
+
+- This section will present the details of a video, including a video player,
+  if available summary, casting (at least producer, director, main cast etc.),
+  the production year, length, IMDb (TMDb for free API) grade, a cover
+  image and anything else relevant.
+- Users will have the option of leaving a comment on the video, and the list of
+  prior comments will be shown.
+- To launch the video on the server we must, if the file was not downloaded
+  prior, the associated torrent on the server will be launched, and the video
+  stream will be initiated as soon as enough data has been downloaded to ensure
+  a seamless watching experience. Any treatment must be done in the background
+  in a non-blocking manner.
+- Once the movie is entirely downloaded, it will be saved on the server, to
+  avoid the need to re-downloading in the future. However, if a movie is
+  unwatched for a month, it will be erased.
+- If English subtitles are available for the video, they will be downloaded and
+  made available for the video player. Additionally, if the language of the
+  video does not match the preferred language of the user and subtitles are
+  available, the subtitles will be downloaded and selectable.
+- If the video is not natively readable for the browser[^1], it will be
+  converted on the fly into an acceptable format. At minimum, mkv support is
+  required.
+
+[^1]: i.e., not in mp4, or webm format
+
+### API
+
+Develop a RESTful API with an OAuth2 authentication that can be used to obtain
+basic information about this project.
+
+- Authenticated users are allowed to retrieve any profile, but may only update
+  their own profile.
+- Any user can access the website's « front page », which displays basic
+  information about the top movies.
+- A GET request on a movie should return all the relevant information that has
+  been previously collected.
+- Authenticated users can access user comments via `/comments/:id` and
+  `/movie/:id/comments`. They can also post a comment using an appropriate
+  payload.
+- Any other API call should not be usable. Return the appropriate HTTP code.
+
+Here's a basic documentation:
+
+**POST** `/oauth/token`
+Expects client + secret, returns an auth token
+
+**GET** `/users`
+returns a list of users with their id and their username
+
+**GET** `/users/:id`
+returns username and profile picture URL. The email address must not be
+returned when the requester is not the profile owner.
+
+**PATCH** `/users/:id`
+Expected data: username, email, password, profile picture URL. This endpoint
+must be restricted to the authenticated user's own profile. Any attempt to
+modify another user's profile must return 403.
+
+**GET** `/movies`
+returns the list of movies available on the frontpage, with their id and their
+name
+
+**GET** `/movies/:id`
+return a movie's name, id, imdB (TMDb for free API) mark, production
+year, length, available subtitles, number of comments
+
+**GET** `/comments`
+returns a list of latest comments which includes comment's author username,
+date, content, and id.
+
+**GET** `/comments/:id`
+returns comment, author's username, comment id, date posted
+
+**PATCH** `/comments/:id`
+Expected data: comment, username
+
+**DELETE** `/comments/:id`
+
+**POST** `/comments` OR **POST** `/movies/:movie_id/comments`
+Expected data: comment, movie_id. Rest is filled by the server.
+
+During the evaluation, you will be asked to provide evidence that your API is
+truly RESTful.
+
+## Submission and peer-evaluation
+
+The following instructions will be part of your defense. Be cautious when you
+apply them as they will be graded with a non-negotiable 0.
+
+### Eliminatory rules
+
+- Your code cannot produce any errors, warnings or notices either from the
+  server or the client side in the web console.
 - Anything not specifically authorized is forbidden.
-- Any security breach (plain-text passwords in DB, SQL injection, unvalidated uploads/forms) results in a non-negotiable **grade of 0**.
+- The slightest security breach will give you 0. You must at least manage what
+  is indicated in the general instructions, ie NOT have plain text passwords
+  stored in your database, be protected against SQL injections, and have a
+  validation of all the forms and upload.

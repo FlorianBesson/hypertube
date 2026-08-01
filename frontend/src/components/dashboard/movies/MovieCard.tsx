@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../../locales/translations'
 import type { Movie } from '../../../types/movie'
+import MovieGenreBadges from './MovieGenreBadges'
 
 export interface MovieCardProps {
   movie: Movie
@@ -13,6 +14,10 @@ export interface MovieCardProps {
 export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
   const navigate = useNavigate()
+
+  const genres = (movie.genres?.length ? movie.genres : (movie.genre || '').split(','))
+    .map(genre => genre.trim())
+    .filter(Boolean)
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -33,7 +38,7 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
   return (
     <div
       onClick={() => onSelectMovie(movie)}
-      className={`group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer border-white/5 hover:border-red-600/30}`}
+      className="group relative aspect-2/3 rounded-xl border overflow-hidden bg-neutral-900 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.12)] cursor-pointer border-white/5 hover:border-red-600/30"
     >
       {/* Movie Poster Image */}
       <div className="absolute inset-0 bg-neutral-900">
@@ -124,7 +129,7 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
 
       {/* Movie Metadata */}
       <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-0.5 z-10">
-        <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest truncate">{movie.genre}</span>
+        {genres.length > 0 && <MovieGenreBadges genres={genres} key={genres.join('|')} />}
         <h3 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors" title={movie.title}>
           {movie.title}
         </h3>

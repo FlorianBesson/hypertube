@@ -42,6 +42,8 @@ export function sortMovies(movies: Movie[], sortBy: SortByOption, order: SortOrd
       comparison = yearA - yearB
     } else if (sortBy === 'rating') {
       comparison = a.rating - b.rating
+    } else if (sortBy === 'download_count') {
+      comparison = (a.downloads ?? 0) - (b.downloads ?? 0)
     }
     return order === 'asc' ? comparison : -comparison
   })

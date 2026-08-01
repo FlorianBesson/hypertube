@@ -1,36 +1,29 @@
 import type { ArchiveMetadataValue, Movie } from '../types/movie'
 import { enrichInternetArchiveMoviesWithTmdb } from './internetArchiveTmdb'
 import { PUBLIC_DOMAIN_TORRENTS_DATABASE } from './sources/publicDomainTorrentsSourceProvider'
-
-const YEAR_PATTERN = /\b(?:18|19|20)\d{2}\b/
-
-function flattenMetadataField(value: ArchiveMetadataValue | undefined): string {
-  const values = Array.isArray(value) ? value : value == null ? [] : [value]
-  return values.map(String).join(', ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
-function normalizeArchiveRatingToTenScale(rawRating: number | undefined): number {
-  return Math.min(10, Math.max(0, Number(rawRating || 0) * 2))
-}
+import {
+  metadataText,
+  metadataYear,
+  normalizeArchiveRatingToTenScale,
+  buildArchiveImageUrl,
+  buildArchiveTorrentUrl,
+  buildArchiveDetailsUrl
+} from '../utils/internetArchiveUtils'
 
 function buildMovieFromArchiveMetadata(id: string, metadata: Record<string, ArchiveMetadataValue>): Movie {
-  const encodedId = encodeURIComponent(id)
-  const date = flattenMetadataField(metadata.year) || flattenMetadataField(metadata.date)
-  const year = date.match(YEAR_PATTERN)?.[0] || 'N/A'
-
   return {
     id,
-    title: flattenMetadataField(metadata.title) || id,
-    genre: flattenMetadataField(metadata.subject) || 'Movie',
-    year,
+    title: metadataText(metadata.title) || id,
+    genre: metadataText(metadata.subject) || 'Movie',
+    year: metadataYear({ year: metadata.year, date: metadata.date }),
     rating: normalizeArchiveRatingToTenScale(metadata.avg_rating as number | undefined),
-    image: `https://archive.org/services/img/${encodedId}`,
+    image: buildArchiveImageUrl(id),
     source: 'Internet Archive',
-    description: flattenMetadataField(metadata.description),
-    creator: flattenMetadataField(metadata.creator),
-    language: flattenMetadataField(metadata.language),
-    torrentUrl: `https://archive.org/download/${encodedId}/${encodedId}_archive.torrent`,
-    detailsUrl: `https://archive.org/details/${encodedId}`
+    description: metadataText(metadata.description),
+    creator: metadataText(metadata.creator),
+    language: metadataText(metadata.language),
+    torrentUrl: buildArchiveTorrentUrl(id),
+    detailsUrl: buildArchiveDetailsUrl(id)
   }
 }
 

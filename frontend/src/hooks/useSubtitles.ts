@@ -12,10 +12,11 @@ export interface SubtitleTrack {
 
 export function useSubtitles(
   videoRef: RefObject<HTMLVideoElement | null>,
-  imdbId: string,
-  t: TranslationType['watch']
+  imdbId: string | undefined,
+  t: TranslationType['watch'],
+  lang: 'en' | 'fr'
 ) {
-  const [selectedSubLang, setSelectedSubLang] = useState('fr')
+  const [selectedSubLang, setSelectedSubLang] = useState<string>(lang)
   const [showSubMenu, setShowSubMenu] = useState(false)
   const [activeCueText, setActiveCueText] = useState('')
   const [subOffset, setSubOffset] = useState(0)
@@ -83,11 +84,19 @@ export function useSubtitles(
     const trackObj = subTracks.find(tr => tr.code === code)
     const label = trackObj?.label || code
 
+    if (!imdbId) {
+      const msg = (t.subtitlesUnavailable || 'Sous-titres indisponibles en {lang} pour ce film').replace('{lang}', label)
+      showSubToast(msg)
+      setSelectedSubLang('off')
+      setActiveCueText('')
+      return
+    }
+
     try {
       const res = await fetch(`/api/movies/subtitles/${encodeURIComponent(imdbId)}/${code}`)
       if (!res.ok) {
         const msg = (t.subtitlesUnavailable || 'Sous-titres indisponibles en {lang} pour ce film').replace('{lang}', label)
-        showSubToast(`⚠️ ${msg}`)
+        showSubToast(msg)
         setSelectedSubLang('off')
         setActiveCueText('')
         return
@@ -96,7 +105,7 @@ export function useSubtitles(
       syncActiveCue(code)
     } catch {
       const msg = (t.subtitlesError || 'Erreur lors de la récupération des sous-titres en {lang}').replace('{lang}', label)
-      showSubToast(`⚠️ ${msg}`)
+      showSubToast(msg)
       setSelectedSubLang('off')
       setActiveCueText('')
     }

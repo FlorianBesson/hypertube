@@ -4,15 +4,18 @@ import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
 import type { Movie } from '../../types/movie'
 import { useControlsVisibility } from '../../hooks/useControlsVisibility'
+import { useWatchProgress } from '../../hooks/useWatchProgress'
 import { useRealtimeSeeds } from '../../hooks/useRealtimeSeeds'
 import { useSubtitles } from '../../hooks/useSubtitles'
 import { resolveStreamIdentifier, buildStreamUrl, fetchStreamErrorMessage } from '../../services/videoStream'
 import SubtitlesMenu from './SubtitlesMenu'
 import SubtitleOverlay from './SubtitleOverlay'
+import { useVideoShortcuts } from '../../hooks/useVideoShortcuts'
 
 interface VideoPlayerProps {
   movie: Movie | null
   t: TranslationType['watch']
+  lang: 'en' | 'fr'
   onControlsVisibilityChange?: (visible: boolean) => void
 }
 
@@ -30,7 +33,7 @@ function formatTime(seconds: number): string {
   return `${pad(m)}:${pad(s)}`
 }
 
-export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: VideoPlayerProps) {
+export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange }: VideoPlayerProps) {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -44,8 +47,11 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
   const [bufferingSeconds, setBufferingSeconds] = useState(0)
   const [streamError, setStreamError] = useState<string | null>(null)
   const userPausedRef = useRef(false)
+  const resumedMovieIdRef = useRef<string | null>(null)
+  const latestPositionRef = useRef({ currentSeconds: 0, durationSeconds: 0 })
 
   const { showControls, handleMouseMove } = useControlsVisibility(isPlaying, onControlsVisibilityChange)
+  const { resumeAtSeconds, isProgressLoaded, saveProgress } = useWatchProgress(movie?.id)
 
   const resumeIfNotUserPaused = useCallback(() => {
     if (videoRef.current && videoRef.current.paused && !userPausedRef.current) {
@@ -75,7 +81,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
 
   const realtimeSeeds = useRealtimeSeeds(streamIdentifier, Boolean(streamError))
 
-  const imdbId = movie?.imdbId || movie?.id || 'tt0133093'
+  const imdbId = movie?.imdbId || movie?.id
   const {
     subTracks,
     selectedSubLang,
@@ -88,7 +94,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     selectSubtitle,
     adjustOffset,
     resetOffset
-  } = useSubtitles(videoRef, imdbId, t)
+  } = useSubtitles(videoRef, imdbId, t, lang)
 
   useEffect(() => {
     if (videoRef.current) {
@@ -110,24 +116,54 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
     })
   }, [streamUrl])
 
-  const togglePlay = () => {
+  // Seeking needs both the saved position and a loaded duration, whichever arrives last.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !movie?.id || !isProgressLoaded || !duration) return
+    if (resumedMovieIdRef.current === movie.id) return
+
+    if (resumeAtSeconds > 0) {
+      video.currentTime = resumeAtSeconds
+    }
+    resumedMovieIdRef.current = movie.id
+  }, [isProgressLoaded, resumeAtSeconds, duration, movie?.id])
+
+  useEffect(() => {
+    return () => {
+      const { currentSeconds, durationSeconds } = latestPositionRef.current
+      saveProgress(currentSeconds, durationSeconds, true)
+    }
+  }, [saveProgress])
+
+  const togglePlay = useCallback(() => {
     if (!videoRef.current) return
-    if (isPlaying) {
-      userPausedRef.current = true
-      videoRef.current.pause()
-    } else {
+    if (videoRef.current.paused) {
       userPausedRef.current = false
       videoRef.current.play().catch((err) => {
         console.error('Play error:', err)
       })
+    } else {
+      userPausedRef.current = true
+      videoRef.current.pause()
     }
-  }
+  }, [])
 
   const toggleMute = () => {
     if (!videoRef.current) return
     videoRef.current.muted = !isMuted
     setIsMuted(!isMuted)
   }
+
+  const toggleFullscreen = () => {
+    const elem = document.documentElement
+    if (!document.fullscreenElement) {
+      elem.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }
+
+  useVideoShortcuts(togglePlay, toggleFullscreen, () => navigate('/dashboard'))
 
   const handleSeek = (posPercentage: number) => {
     if (!videoRef.current || !duration) return
@@ -150,7 +186,11 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
         playsInline
         autoPlay
         onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false)
+          const { currentSeconds, durationSeconds } = latestPositionRef.current
+          saveProgress(currentSeconds, durationSeconds, true)
+        }}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => {
           setIsBuffering(false)
@@ -174,6 +214,8 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
             if (dur > 0) {
               setProgress((cur / dur) * 100)
             }
+            latestPositionRef.current = { currentSeconds: cur, durationSeconds: dur }
+            saveProgress(cur, dur)
             syncActiveCue()
           }
         }}
@@ -186,7 +228,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
           }
         }}
       >
-        {subTracks.map((tr) => (
+        {imdbId && subTracks.map((tr) => (
           <track
             key={tr.code}
             kind="subtitles"
@@ -347,14 +389,7 @@ export default function VideoPlayer({ movie, t, onControlsVisibilityChange }: Vi
             />
 
             <button
-              onClick={() => {
-                const elem = document.documentElement
-                if (!document.fullscreenElement) {
-                  elem.requestFullscreen().catch(() => {})
-                } else {
-                  document.exitFullscreen().catch(() => {})
-                }
-              }}
+              onClick={toggleFullscreen}
               className="hover:text-red-500 transition-colors cursor-pointer p-1.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/10"
               title="Fullscreen"
             >

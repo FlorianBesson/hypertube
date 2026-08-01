@@ -7,17 +7,27 @@ export interface CompletedMovieFile {
 }
 
 /**
- * Checks if a file exists on disk at the given path.
+ * Checks if a fully downloaded file exists on disk at the given path.
  */
-export function checkExistingPath(existingPath?: string | null, fallbackFileSize?: bigint | null): CompletedMovieFile | null {
-  if (existingPath && fs.existsSync(existingPath)) {
-    const fileSize = fallbackFileSize || BigInt(fs.statSync(existingPath).size);
-    return {
-      filePath: existingPath,
-      fileSize,
-    };
+export function checkExistingPath(existingPath?: string | null, expectedFileSize?: bigint | null): CompletedMovieFile | null {
+  if (!existingPath || !fs.existsSync(existingPath)) {
+    return null;
   }
-  return null;
+
+  const actualFileSize = BigInt(fs.statSync(existingPath).size);
+
+  // A torrent writes each piece at its own offset, so a partially downloaded file already
+  // exists at a smaller size. Serving it would cap seeking to whatever landed on disk,
+  // so fall back to P2P streaming, which knows the real length and fetches on demand.
+  if (expectedFileSize && actualFileSize !== expectedFileSize) {
+    console.warn(`[movieFileScanner] ${existingPath} is incomplete (${actualFileSize}/${expectedFileSize} bytes), ignoring cached copy`);
+    return null;
+  }
+
+  return {
+    filePath: existingPath,
+    fileSize: actualFileSize,
+  };
 }
 
 /**

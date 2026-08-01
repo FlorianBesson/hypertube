@@ -176,7 +176,6 @@ export default function ProfilePage({
             <Avatar
               photo={user.photo}
               name={user.username}
-              email={user.email}
               size="lg"
               onClick={handlePhotoClick}
             >

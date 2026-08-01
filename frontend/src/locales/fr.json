@@ -1,6 +1,7 @@
 {
   "header": {
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "profile": "Profil"
   },
   "footer": {
     "allRightsReserved": "Tous droits réservés."
@@ -55,8 +56,14 @@
   "dashboard": {
     "moviesTitle": "Films",
     "moviesSubtitle": "Explorez et découvrez des films",
-    "showCommunity": "Afficher les membres",
-    "hideCommunity": "Masquer les membres",
+    "showSidebar": "Afficher le panneau",
+    "hideSidebar": "Masquer le panneau",
+    "historyTitle": "Vus récemment",
+    "historySubtitle": "Vos derniers films visionnés",
+    "resumeAt": "Reprendre à",
+    "noHistory": "Aucun film visionné pour le moment.",
+    "loadingHistory": "Chargement de votre historique...",
+    "failedHistory": "Échec du chargement de l'historique.",
     "communityTitle": "Membres",
     "communitySubtitle": "Sélectionnez un membre pour voir son profil",
     "viewProfile": "Consulter le profil",
@@ -70,7 +77,7 @@
     "errorLoadingMovies": "Échec de la récupération du contenu vidéo. Veuillez réessayer.",
     "sortBy": "Trier par",
     "filterBy": "Filtrer par",
-    "sortTitle": "Titre (A-Z)",
+    "sortTitle": "Titre",
     "sortYear": "Année",
     "sortRating": "Note",
     "sortPopularity": "Popularité",
@@ -179,6 +186,13 @@
     "sendButton": "Publier",
     "collapseComments": "Masquer les commentaires",
     "expandComments": "Afficher les commentaires",
+    "infoTitle": "Détails",
+    "expandInfo": "Afficher les détails",
+    "collapseInfo": "Masquer les détails",
+    "description": "Description",
+    "noDescription": "Aucune description disponible.",
+    "director": "Réalisateur",
+    "cast": "Casting principal",
     "torrentSpeed": "Streaming BitTorrent : 3.4 Mo/s (28 seeds)",
     "noComments": "Aucun commentaire pour le moment. Soyez le premier !",
     "movieNotFound": "Film non trouvé",

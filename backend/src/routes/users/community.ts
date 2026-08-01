@@ -5,6 +5,7 @@ import { upload, uploadDirectory } from '../../config/multer';
 import bcrypt from 'bcrypt';
 import path from 'path';
 import fs from 'fs';
+import { HttpError } from '../../errors';
 
 const router = Router();
 
@@ -39,17 +40,18 @@ const checkProfileOwner = (req: Request, res: Response, next: NextFunction) => {
 
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
     try {
-        const users = await prisma.user.findMany({
-            select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                photo: true
-            }
-        });
+    const users = await prisma.user.findMany({
+        select: {
+            id: true,
+            username: true,
+            firstName: true,
+            lastName: true,
+            photo: true
+        }
+    });
 
-        res.json({ success: true, users });
+    res.json({ success: true, users });
+    
     } catch (error) {
         console.error("Fetch users error:", error);
         res.status(500).json({ success: false, message: "Server error while fetching users" });

@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is missing from environment variables");
-}
+import { HttpError } from '../errors';
+import { JWT_SECRET } from '../config/jwt';
 
 /**
  * Express middleware to authenticate requests using JSON Web Tokens (JWT).
@@ -17,18 +14,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     // If no token is provided, deny access with a 401 Unauthorized status
     if (!token) {
-        res.status(401).json({ success: false, message: "Token d'authentification manquant" });
-        return;
+        return next(new HttpError(401, "Missing authentication token"));
     }
 
-    // Verify the validity of the token using the secret key
+    // Verify the validity of the token using the secret key.
+    // jwt.verify's callback runs outside Express's call stack, so errors must
+    // be forwarded via next() rather than thrown.
     jwt.verify(token, JWT_SECRET, (err, decoded: any) => {
-        // If verification fails (e.g. token expired, tampered with, or signed with old secret), return 403 Forbidden
         if (err) {
-            res.status(403).json({ success: false, message: "Token invalide ou expiré" });
-            return;
+            return next(new HttpError(403, "Invalid or expired token"));
         }
-        
+
         // Attach the decoded token payload (containing user info) to the request object for downstream routes
         (req as any).user = decoded;
         next();

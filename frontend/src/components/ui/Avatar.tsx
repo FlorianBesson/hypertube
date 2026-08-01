@@ -1,10 +1,18 @@
 import React from 'react'
 
+export type AvatarSize = 'xs' | 'sm' | 'base' | 'lg'
+
+const SIZE_CLASSES: Record<AvatarSize, string> = {
+  xs: 'w-7 h-7 border text-[10px]',
+  sm: 'w-8 h-8 border text-xs',
+  base: 'w-10 h-10 border-2 text-xs',
+  lg: 'w-28 h-28 border-[3px] text-4xl'
+}
+
 interface AvatarProps {
   photo?: string
   name?: string
-  email?: string
-  size?: 'sm' | 'lg'
+  size?: AvatarSize
   active?: boolean
   onClick?: () => void
   className?: string
@@ -14,16 +22,16 @@ interface AvatarProps {
 export default function Avatar({
   photo,
   name = '',
-  size = 'sm',
+  size = 'base',
   active = false,
   onClick,
   className = '',
   children,
 }: AvatarProps) {
 
-  const isSm = size === 'sm'
+  const isLarge = size === 'lg'
 
-  const sizeClasses = isSm ? 'w-10 h-10 border-2 text-xs' : 'w-28 h-28 border-[3px] text-4xl'
+  const sizeClasses = SIZE_CLASSES[size]
 
   const borderClasses = active
     ? 'border-red-500 scale-105'
@@ -31,7 +39,7 @@ export default function Avatar({
 
   const containerClasses = `rounded-full flex items-center justify-center transition-all select-none relative overflow-hidden ${
     onClick ? 'cursor-pointer' : ''
-  } ${sizeClasses} ${isSm ? borderClasses : 'border-red-600/40 hover:border-red-500 shadow-2xl'}`
+  } ${sizeClasses} ${isLarge ? 'border-red-600/40 hover:border-red-500 shadow-2xl' : borderClasses}`
 
   return (
     <div onClick={onClick} className={`${containerClasses} ${className}`}>
@@ -39,7 +47,7 @@ export default function Avatar({
         <img
           src={photo}
           alt={name || 'avatar'}
-          className={`w-full h-full object-cover ${size === 'lg' ? 'transition-transform duration-500 group-hover:scale-110' : ''}`}
+          className={`w-full h-full object-cover ${isLarge ? 'transition-transform duration-500 group-hover:scale-110' : ''}`}
         />
       ) : (
         <div className="w-full h-full bg-neutral-800 flex items-center justify-center">

@@ -1,5 +1,6 @@
 import type { Movie } from '../../types/movie'
 import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './types'
+import { sortMovies } from '../../utils/movieFilters'
 
 import rawScrapedTorrents from './public_domain_torrents.json'
 
@@ -75,7 +76,6 @@ const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as RawPublicDomainMovie[]).m
     image: m.poster_path || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
     source: 'Public Domain Torrents',
     description: m.overview || `A classic movie: ${m.title}. Available for free and legal streaming via public domain torrent distribution.`,
-    downloads: 1000,
     torrentUrl: defaultTorrentUrl,
     detailsUrl: m.detail_url,
     torrents: formattedTorrents,
@@ -117,21 +117,7 @@ export class PublicDomainTorrentsSourceProvider implements IMovieSourceProvider 
     }
 
     // 4. Sorting
-    filtered.sort((a, b) => {
-      let comparison = 0
-      if (sortBy === 'title') {
-        comparison = a.title.localeCompare(b.title)
-      } else if (sortBy === 'year') {
-        const yearA = typeof a.year === 'number' ? a.year : parseInt(String(a.year)) || 0
-        const yearB = typeof b.year === 'number' ? b.year : parseInt(String(b.year)) || 0
-        comparison = yearA - yearB
-      } else if (sortBy === 'rating') {
-        comparison = a.rating - b.rating
-      } else if (sortBy === 'download_count') {
-        comparison = (a.downloads || 0) - (b.downloads || 0)
-      }
-      return order === 'asc' ? comparison : -comparison
-    })
+    filtered = sortMovies(filtered, sortBy, order)
 
     // 5. Pagination
     const startIndex = (page - 1) * limit

@@ -104,5 +104,9 @@ restart: dev-restart ## Alias for dev-restart
 down: dev-down ## Alias for dev-down
 logs: ## Show all container logs
 	docker compose -f compose.dev.yml logs -f --tail 100
-re: down dev
+re: down clean-downloads dev
+
+clean-downloads: ## Remove backend/downloads dir
+	@echo "$(BLUE)Removing backend/downloads...$(NC)"
+	rm -rf backend/downloads
 h: help

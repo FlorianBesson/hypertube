@@ -160,7 +160,7 @@ function AppRoutes({
         path="watch/:id"
         element={
           isAuthenticated ? (
-            <WatchPage lang={lang} user={user} />
+            <WatchPage lang={lang} user={user} onLogout={onLogout} />
           ) : (
             <Navigate to="/" replace />
           )

@@ -31,12 +31,30 @@ export function metadataText(value?: ArchiveMetadataValue): string {
     .trim()
 }
 
-export function metadataYear(movie: InternetArchiveRawMovie): string | number {
+export function metadataYear(movie: Pick<InternetArchiveRawMovie, 'year' | 'date'>): string | number {
   const explicitYear = metadataValues(movie.year)[0]
   if (explicitYear) return explicitYear
 
   const date = metadataValues(movie.date)[0]
   return date?.match(/\b(?:18|19|20)\d{2}\b/)?.[0] || 'N/A'
+}
+
+// Internet Archive's avg_rating is on a 0-5 scale; the app displays ratings out of 10.
+export function normalizeArchiveRatingToTenScale(rawRating: number | undefined): number {
+  return Math.min(10, Math.max(0, Number(rawRating || 0) * 2))
+}
+
+export function buildArchiveImageUrl(identifier: string): string {
+  return `https://archive.org/services/img/${encodeURIComponent(identifier)}`
+}
+
+export function buildArchiveTorrentUrl(identifier: string): string {
+  const encoded = encodeURIComponent(identifier)
+  return `https://archive.org/download/${encoded}/${encoded}_archive.torrent`
+}
+
+export function buildArchiveDetailsUrl(identifier: string): string {
+  return `https://archive.org/details/${encodeURIComponent(identifier)}`
 }
 
 export function escapeInternetArchiveQuery(value: string): string {

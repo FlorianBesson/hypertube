@@ -51,11 +51,13 @@ model Comment {
 }
 
 model WatchedMovie {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  imdbId    String
-  watchedAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  imdbId          String
+  watchedAt       DateTime @default(now())
+  progressSeconds Int      @default(0)
+  durationSeconds Int?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, imdbId])
   @@index([userId])

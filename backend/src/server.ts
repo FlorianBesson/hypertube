@@ -8,7 +8,6 @@ import { checkDbConnection } from './db/utils';
 import authRoutes from './routes/auth';
 import { oauthTokenHandler } from './routes/auth/oauth';
 import { communityRouter } from './routes/users';
-import torrentRoutes from './routes/torrent';
 import movieRoutes from './routes/movies';
 
 import { initCronJobs } from './services/maintenance';
@@ -27,7 +26,6 @@ app.post('/oauth/token', oauthTokenHandler);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', communityRouter);
 app.use('/users', communityRouter);
-app.use('/api/torrent', torrentRoutes);
 app.use('/api/movies', movieRoutes);
 app.use('/movies', movieRoutes);
 
@@ -60,7 +58,13 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     if (process.env.NODE_ENV === 'dev') {
         console.error(err);
     }
-    
+
+    // Streaming routes may have already started writing the response body;
+    // delegate to Express's default handler so it just closes the connection.
+    if (res.headersSent) {
+        return next(err);
+    }
+
     if (err instanceof HttpError) {
         return res.status(err.status).json({ success: false, message: err.message });
     }

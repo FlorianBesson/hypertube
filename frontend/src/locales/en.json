@@ -1,6 +1,7 @@
 {
   "header": {
-    "logout": "Logout"
+    "logout": "Logout",
+    "profile": "Profile"
   },
   "footer": {
     "allRightsReserved": "All rights reserved."
@@ -55,8 +56,14 @@
   "dashboard": {
     "moviesTitle": "Movies",
     "moviesSubtitle": "Explore and discover films",
-    "showCommunity": "Show members",
-    "hideCommunity": "Hide members",
+    "showSidebar": "Show panel",
+    "hideSidebar": "Hide panel",
+    "historyTitle": "Recently watched",
+    "historySubtitle": "Your last watched movies",
+    "resumeAt": "Resume at",
+    "noHistory": "No movie watched yet.",
+    "loadingHistory": "Loading your watch history...",
+    "failedHistory": "Failed to load watch history.",
     "communityTitle": "Members",
     "communitySubtitle": "Select any member to view their profile",
     "viewProfile": "View Profile",
@@ -70,7 +77,7 @@
     "errorLoadingMovies": "Failed to fetch video content from external sources. Please try again.",
     "sortBy": "Sort by",
     "filterBy": "Filter by",
-    "sortTitle": "Title (A-Z)",
+    "sortTitle": "Title",
     "sortYear": "Year",
     "sortRating": "Rating",
     "sortPopularity": "Popularity",
@@ -179,6 +186,13 @@
     "sendButton": "Post",
     "collapseComments": "Hide comments",
     "expandComments": "Show comments",
+    "infoTitle": "Details",
+    "expandInfo": "Show details",
+    "collapseInfo": "Hide details",
+    "description": "Description",
+    "noDescription": "No description available.",
+    "director": "Director",
+    "cast": "Main cast",
     "torrentSpeed": "Streaming BitTorrent: 3.4 MB/s (28 seeds)",
     "noComments": "No comments yet. Be the first to share your thoughts!",
     "movieNotFound": "Movie not found",

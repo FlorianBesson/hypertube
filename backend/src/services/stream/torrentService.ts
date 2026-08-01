@@ -1,7 +1,7 @@
 import path from 'path';
 import { getMimeType } from './mimeService';
 import { movieDbService } from '../movies/movieDbService';
-import * as archiveService from './archiveService';
+import { getArchiveIdentifier } from './archive/archiveUtils';
 import * as bittorrentService from './bittorrentService';
 import { TorrentStreamFile } from './bittorrentService';
 
@@ -31,20 +31,6 @@ export async function getCompletedMovie(torrentHash: string, imdbId?: string): P
 }
 
 /**
- * Delegates Archive identifier check.
- */
-export function isArchiveIdentifier(torrentHash: string): boolean {
-  return archiveService.isArchiveIdentifier(torrentHash);
-}
-
-/**
- * Delegates Internet Archive CDN progressive streaming.
- */
-export async function streamArchiveMovie(identifier: string, rangeHeader: string | undefined, res: any, clientUserAgent?: string): Promise<void> {
-  return archiveService.streamArchiveMovie(identifier, rangeHeader, res, clientUserAgent, downloadsBaseDir);
-}
-
-/**
  * Delegates BitTorrent live stream engine initialization.
  */
 export async function getOrStartTorrent(torrentHash: string, imdbId?: string): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
@@ -58,9 +44,7 @@ export const torrentService = {
   getMimeType: getTorrentMimeType,
   updateLastWatched,
   getCompletedMovie,
-  isArchiveIdentifier,
-  getArchiveIdentifier: archiveService.getArchiveIdentifier,
-  streamArchiveMovie,
+  getArchiveIdentifier,
   getOrStartTorrent,
   getTorrentStats: bittorrentService.getTorrentStats,
 };

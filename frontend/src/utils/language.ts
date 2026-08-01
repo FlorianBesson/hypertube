@@ -19,6 +19,13 @@ export const LANGUAGE_TOKENS: Record<string, string[]> = {
   arabic: ['ar', 'ara', 'arabic']
 }
 
+// Every language the filter can match on (see movieMatchesLanguage below), exposed
+// as select options so the UI doesn't silently support languages users can't pick.
+export const MOVIE_LANGUAGE_OPTIONS = Object.keys(LANGUAGE_TOKENS).map(code => ({
+  value: code,
+  label: code.charAt(0).toUpperCase() + code.slice(1)
+}))
+
 export function movieMatchesLanguage(movieLanguage: string | undefined, selectedLanguage: string): boolean {
   if (!selectedLanguage) return true
 
@@ -27,7 +34,7 @@ export function movieMatchesLanguage(movieLanguage: string | undefined, selected
   // untagged movie as English rather than excluding it from every filter.
   if (!movieLanguage) return selectedLanguage === 'english'
 
-  const tokens = movieLanguage.toLowerCase().match(/[a-z]+/g) || []
+  const tokens: string[] = movieLanguage.toLowerCase().match(/[a-z]+/g) || []
   const acceptedTokens = LANGUAGE_TOKENS[selectedLanguage] || [selectedLanguage]
 
   return acceptedTokens.some(token => tokens.includes(token))

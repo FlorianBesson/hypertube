@@ -38,7 +38,7 @@ export const upload = multer({
         if (extname && mimetype) {
             cb(null, true); // Allow upload
         } else {
-            cb(new Error("Seules les images (jpeg, jpg, png, webp) sont autorisées")); // Reject upload
+            cb(new Error("Only image files (jpeg, jpg, png, webp) are allowed")); // Reject upload
         }
     }
 });

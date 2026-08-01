@@ -11,6 +11,7 @@ interface TmdbMovie {
   vote_average?: number
   genre_ids?: number[]
   imdb_id?: string
+  popularity?: number
 }
 
 interface TmdbSearchResponse {
@@ -240,6 +241,7 @@ function mergeTmdbMatch(movie: Movie, match: TmdbMovie | null): Movie {
     description: match.overview || movie.description,
     language: match.original_language || movie.language,
     source: movie.source,
+    downloads: match.popularity ?? 0,
     tmdbId: match.id,
     imdbId: match.imdb_id || undefined
   }
