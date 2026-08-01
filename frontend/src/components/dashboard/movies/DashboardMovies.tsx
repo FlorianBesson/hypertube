@@ -7,7 +7,7 @@ import MovieToolbar from './MovieToolbar'
 import StatusMessage from './StatusMessage'
 import { useWatchedMovies } from '../../../hooks/useWatchedMovies'
 import { useMovieCatalog } from '../../../hooks/useMovieCatalog'
-import { filterMovies, sortMovies } from '../../../utils/movieFilters'
+import { filterMovies } from '../../../utils/movieFilters'
 
 export type { Movie, Torrent } from '../../../types/movie'
 
@@ -78,17 +78,16 @@ export default function DashboardMovies({ t, lang, showCommunity, setShowCommuni
     }
   }, [observerTarget, hasMore, loading, loadingMore, setPage])
 
-  // Client-side filtering & sorting
-  const displayedMovies = useMemo(() => {
-    const filtered = filterMovies(movies, {
-      watchedMovies,
-      watchedFilter,
-      selectedGenre,
-      selectedMinRating,
-      selectedLanguage
-    })
-    return sortMovies(filtered, sortBy, order)
-  }, [movies, watchedMovies, watchedFilter, selectedGenre, selectedMinRating, selectedLanguage, sortBy, order])
+  // Sorting stays server-side (each fetched batch arrives sorted, and changing
+  // the sort refetches from page 1) so newly loaded pages append to the grid
+  // instead of being reshuffled into the already-displayed movies.
+  const displayedMovies = useMemo(() => filterMovies(movies, {
+    watchedMovies,
+    watchedFilter,
+    selectedGenre,
+    selectedMinRating,
+    selectedLanguage
+  }), [movies, watchedMovies, watchedFilter, selectedGenre, selectedMinRating, selectedLanguage])
 
   return (
     <div className="flex-1 bg-neutral-900/60 border border-white/10 rounded-2xl p-6 backdrop-blur-md w-full flex flex-col gap-6 relative overflow-hidden min-h-125 animate-in fade-in duration-300">

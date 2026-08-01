@@ -76,7 +76,6 @@ const SCRAPED_MOVIES: Movie[] = (rawScrapedTorrents as RawPublicDomainMovie[]).m
     image: m.poster_path || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
     source: 'Public Domain Torrents',
     description: m.overview || `A classic movie: ${m.title}. Available for free and legal streaming via public domain torrent distribution.`,
-    downloads: 1000,
     torrentUrl: defaultTorrentUrl,
     detailsUrl: m.detail_url,
     torrents: formattedTorrents,
