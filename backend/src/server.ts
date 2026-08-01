@@ -29,6 +29,7 @@ app.use('/api/users', communityRouter);
 app.use('/users', communityRouter);
 app.use('/api/torrent', torrentRoutes);
 app.use('/api/movies', movieRoutes);
+app.use('/movies', movieRoutes);
 
 /**
  * Health check endpoint for testing database connectivity.
@@ -47,6 +48,11 @@ app.get("/api/db-check", async (req, res) => {
 // Basic server test ping endpoint
 app.get('/api/ping', (req: Request, res: Response) => {
     res.send('Hello, TypeScript + Express!');
+});
+
+// 404 Catch-all handler for unhandled API endpoints
+app.use((req: Request, res: Response, next: NextFunction) => {
+    res.status(404).json({ success: false, message: "Route not found" });
 });
 
 // Error handling middleware

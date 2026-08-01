@@ -11,25 +11,25 @@ const router = Router();
 const checkProfileOwner = (req: Request, res: Response, next: NextFunction) => {
     const idParam = req.params.id;
     if (!idParam) {
-        res.status(400).json({ success: false, message: "Identifiant manquant" });
+        res.status(400).json({ success: false, message: "Missing user ID" });
         return;
     }
     const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
     const targetId = parseInt(idStr, 10);
     if (isNaN(targetId)) {
-        res.status(400).json({ success: false, message: "Identifiant invalide" });
+        res.status(400).json({ success: false, message: "Invalid user ID" });
         return;
     }
 
     const rawUserId = (req as any).user?.userId;
     if (!rawUserId) {
-        res.status(401).json({ success: false, message: "Non authentifié" });
+        res.status(401).json({ success: false, message: "Unauthenticated" });
         return;
     }
 
     const requesterId = Number(rawUserId);
     if (requesterId !== targetId) {
-        res.status(403).json({ success: false, message: "Accès refusé. Vous ne pouvez modifier que votre propre profil." });
+        res.status(403).json({ success: false, message: "Access denied. You can only modify your own profile." });
         return;
     }
 
@@ -52,7 +52,7 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
         res.json({ success: true, users });
     } catch (error) {
         console.error("Fetch users error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération des utilisateurs" });
+        res.status(500).json({ success: false, message: "Server error while fetching users" });
     }
 });
 
@@ -60,14 +60,14 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
     try {
         const idParam = req.params.id;
         if (!idParam) {
-            res.status(400).json({ success: false, message: "Identifiant manquant" });
+            res.status(400).json({ success: false, message: "Missing user ID" });
             return;
         }
         // Normalize parameter if array, parse to integer ID
         const idStr = Array.isArray(idParam) ? idParam[0] : idParam;
         const targetId = parseInt(idStr, 10);
         if (isNaN(targetId)) {
-            res.status(400).json({ success: false, message: "Identifiant invalide" });
+            res.status(400).json({ success: false, message: "Invalid user ID" });
             return;
         }
 
@@ -93,7 +93,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
         });
 
         if (!user) {
-            res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+            res.status(404).json({ success: false, message: "User not found" });
             return;
         }
 
@@ -114,7 +114,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("Fetch user details error:", error);
-        res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération du profil" });
+        res.status(500).json({ success: false, message: "Server error while fetching user profile" });
     }
 });
 
@@ -128,7 +128,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
 router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: Response) => {
     upload.single('avatar')(req, res, async (err) => {
         if (err) {
-            res.status(400).json({ success: false, message: err.message || "Erreur lors du téléversement de la photo" });
+            res.status(400).json({ success: false, message: err.message || "Error uploading avatar photo" });
             return;
         }
 
@@ -138,7 +138,7 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
             // Fetch current user details from DB to check old photo & password
             const currentUser = await prisma.user.findUnique({ where: { id: targetId } });
             if (!currentUser) {
-                res.status(404).json({ success: false, message: "Utilisateur non trouvé" });
+                res.status(404).json({ success: false, message: "User not found" });
                 return;
             }
 
@@ -175,12 +175,12 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
             if (username !== undefined) {
                 const cleanUsername = username.trim();
                 if (cleanUsername.length < 3) {
-                    res.status(400).json({ success: false, message: "Le nom d'utilisateur doit contenir au moins 3 caractères" });
+                    res.status(400).json({ success: false, message: "Username must be at least 3 characters long" });
                     return;
                 }
                 const existing = await prisma.user.findUnique({ where: { username: cleanUsername } });
                 if (existing && existing.id !== targetId) {
-                    res.status(400).json({ success: false, message: "Ce nom d'utilisateur est déjà pris" });
+                    res.status(400).json({ success: false, message: "Username is already taken" });
                     return;
                 }
                 updateData.username = cleanUsername;
@@ -190,12 +190,12 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
             if (email !== undefined) {
                 const cleanEmail = email.toLowerCase().trim();
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-                    res.status(400).json({ success: false, message: "Format d'adresse email invalide" });
+                    res.status(400).json({ success: false, message: "Invalid email address format" });
                     return;
                 }
                 const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
                 if (existing && existing.id !== targetId) {
-                    res.status(400).json({ success: false, message: "Cette adresse email est déjà utilisée" });
+                    res.status(400).json({ success: false, message: "Email address is already in use" });
                     return;
                 }
                 updateData.email = cleanEmail;
@@ -204,16 +204,16 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
             // 4. Validate & Update Password (Requires currentPassword verification)
             if (password !== undefined && password !== "") {
                 if (password.length < 8) {
-                    res.status(400).json({ success: false, message: "Le mot de passe doit contenir au moins 8 caractères" });
+                    res.status(400).json({ success: false, message: "Password must be at least 8 characters long" });
                     return;
                 }
                 if (!currentPassword) {
-                    res.status(400).json({ success: false, message: "L'ancien mot de passe est requis pour modifier le mot de passe" });
+                    res.status(400).json({ success: false, message: "Current password is required to change password" });
                     return;
                 }
                 const isPasswordValid = await bcrypt.compare(currentPassword, currentUser.password);
                 if (!isPasswordValid) {
-                    res.status(400).json({ success: false, message: "L'ancien mot de passe est incorrect" });
+                    res.status(400).json({ success: false, message: "Incorrect current password" });
                     return;
                 }
                 updateData.password = await bcrypt.hash(password, 10);
@@ -232,7 +232,7 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
 
             res.json({
                 success: true,
-                message: "Profil mis à jour avec succès",
+                message: "Profile updated successfully",
                 user: {
                     id: updatedUser.id,
                     username: updatedUser.username,
@@ -248,7 +248,7 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
             });
         } catch (error) {
             console.error("PATCH user profile error:", error);
-            res.status(500).json({ success: false, message: "Erreur serveur lors de la mise à jour du profil" });
+            res.status(500).json({ success: false, message: "Server error while updating profile" });
         }
     });
 });

@@ -1,10 +1,13 @@
-import { Router } from 'express';
+import moviesListRouter from './list';
 import streamRouter from './stream';
 import commentsRouter from './comments';
 import subtitlesRouter from './subtitles';
 import watchedRouter from './watched';
 
 const router = Router();
+
+// List & detail endpoints (/api/movies and /api/movies/:id)
+router.use('/', moviesListRouter);
 
 // Streaming endpoint (/api/movies/stream/:torrentHash)
 router.use('/stream', streamRouter);
