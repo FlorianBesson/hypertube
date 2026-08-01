@@ -14,8 +14,11 @@ services:
             - ./.env:/config/.env:ro
         networks:
             - prisma-network
+        depends_on:
+            api-express:
+                condition: service_healthy
         restart: unless-stopped
-        
+
     api-express:
         build:
             context: ./backend
@@ -34,8 +37,13 @@ services:
         depends_on:
             postgres_db:
                 condition: service_healthy
+        healthcheck:
+                test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/api/ping"]
+                interval: 3s
+                timeout: 2s
+                retries: 20
         restart: unless-stopped
-        
+
     postgres_db:
         image: postgres:17
         hostname: postgres_db
