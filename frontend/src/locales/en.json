@@ -1,6 +1,7 @@
 {
   "header": {
-    "logout": "Logout"
+    "logout": "Logout",
+    "profile": "Profile"
   },
   "footer": {
     "allRightsReserved": "All rights reserved."

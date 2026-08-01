@@ -35,24 +35,29 @@ export default function Header({
           />
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5 h-12 px-1.5 rounded-full border border-neutral-800 bg-neutral-900/60 backdrop-blur-md shadow-lg">
           <LanguageSelector value={lang} onChange={onLanguageChange} />
           {showUserSection && (
             <>
-              <div className="flex items-center">
-                <Link to="/profile">
-                  <Avatar
-                    photo={user.photo}
-                    name={user.username}
-                    email={user.email}
-                    size="base"
-                    active={location.pathname === "/profile"}
-                  />
-                </Link>
-              </div>
+              <span aria-hidden className="w-px h-6 bg-white/10 mx-0.5" />
+              <Link
+                to="/profile"
+                aria-label={t.profile}
+                title={t.profile}
+                aria-current={location.pathname === "/profile" ? "page" : undefined}
+                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+              >
+                <Avatar
+                  photo={user.photo}
+                  name={user.username}
+                  size="sm"
+                  active={location.pathname === "/profile"}
+                />
+              </Link>
               <button
                 onClick={onLogout}
-                className="w-10 h-10 rounded-full border border-neutral-800 hover:border-red-600/60 bg-neutral-900/40 hover:bg-red-950/20 text-neutral-400 hover:text-red-500 transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center shadow-lg"
+                aria-label={t.logout}
+                className="w-8 h-8 rounded-full text-neutral-500 hover:text-red-400 hover:bg-red-950/40 transition-all duration-300 active:scale-90 cursor-pointer flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
                 title={t.logout}
               >
                 <svg
@@ -61,7 +66,7 @@ export default function Header({
                   viewBox="0 0 24 24"
                   strokeWidth={2}
                   stroke="currentColor"
-                  className="w-5 h-5"
+                  className="w-4.5 h-4.5"
                 >
                   <path
                     strokeLinecap="round"

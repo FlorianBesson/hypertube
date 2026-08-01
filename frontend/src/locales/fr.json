@@ -1,6 +1,7 @@
 {
   "header": {
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "profile": "Profil"
   },
   "footer": {
     "allRightsReserved": "Tous droits réservés."

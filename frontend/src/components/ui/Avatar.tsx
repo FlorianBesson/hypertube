@@ -12,7 +12,6 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
 interface AvatarProps {
   photo?: string
   name?: string
-  email?: string
   size?: AvatarSize
   active?: boolean
   onClick?: () => void
