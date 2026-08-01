@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../../locales/translations'
 import type { WatchHistoryEntry } from '../../../hooks/useWatchHistory'
+import { isResumable, formatWatchPosition } from '../../../utils/watchProgress'
 
 export interface HistoryCardProps {
   entry: WatchHistoryEntry
@@ -13,11 +14,14 @@ export default function HistoryCard({ entry, lang, t }: HistoryCardProps) {
   const [imageError, setImageError] = useState(false)
   const navigate = useNavigate()
 
-  const { movie, watchedAt } = entry
+  const { movie, watchedAt, progressSeconds, durationSeconds } = entry
   const watchedLabel = new Date(watchedAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
     day: 'numeric',
     month: 'short'
   })
+
+  const canResume = isResumable(progressSeconds, durationSeconds)
+  const progressPercentage = durationSeconds ? Math.min((progressSeconds / durationSeconds) * 100, 100) : 0
 
   return (
     <div
@@ -45,8 +49,13 @@ export default function HistoryCard({ entry, lang, t }: HistoryCardProps) {
           {movie.title}
         </p>
         <p className="text-[10px] text-neutral-500 uppercase mt-0.5 tracking-wider truncate">
-          {movie.year} · {watchedLabel}
+          {canResume ? `${t.resumeAt} ${formatWatchPosition(progressSeconds)}` : `${movie.year} · ${watchedLabel}`}
         </p>
+        {canResume && progressPercentage > 0 && (
+          <div className="h-1 mt-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full bg-red-600 rounded-full" style={{ width: `${progressPercentage}%` }} />
+          </div>
+        )}
       </div>
 
       <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-neutral-600 group-hover:text-red-500 transition-colors shrink-0">

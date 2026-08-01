@@ -59,6 +59,7 @@
     "hideSidebar": "Hide panel",
     "historyTitle": "Recently watched",
     "historySubtitle": "Your last watched movies",
+    "resumeAt": "Resume at",
     "noHistory": "No movie watched yet.",
     "loadingHistory": "Loading your watch history...",
     "failedHistory": "Failed to load watch history.",

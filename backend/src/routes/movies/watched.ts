@@ -13,6 +13,15 @@ function getUserId(req: Request): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+function getImdbIdParam(req: Request): string {
+  const rawImdbId = req.params.imdbId;
+  const imdbId = Array.isArray(rawImdbId) ? rawImdbId[0] : rawImdbId;
+  if (!imdbId) {
+    throw new HttpError(400, 'Missing movie ID');
+  }
+  return imdbId;
+}
+
 /**
  * Route: GET /api/movies/watched
  * Description: Fetches list of movie IDs (imdbId) watched by the authenticated user from BDD.
@@ -48,12 +57,66 @@ router.get('/history', authenticateToken, async (req: Request, res: Response) =>
 
   const history = await prisma.watchedMovie.findMany({
     where: { userId },
-    select: { imdbId: true, watchedAt: true },
+    select: { imdbId: true, watchedAt: true, progressSeconds: true, durationSeconds: true },
     orderBy: { watchedAt: 'desc' },
     take: limit,
   });
 
   res.json({ success: true, history });
+});
+
+/**
+ * Route: GET /api/movies/watched/:imdbId/progress
+ * Description: Fetches the playback position of a movie for the authenticated user.
+ * Access: Authenticated
+ */
+router.get('/:imdbId/progress', authenticateToken, async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    throw new HttpError(401, 'Unauthenticated user');
+  }
+
+  const record = await prisma.watchedMovie.findUnique({
+    where: { userId_imdbId: { userId, imdbId: getImdbIdParam(req) } },
+    select: { progressSeconds: true, durationSeconds: true },
+  });
+
+  res.json({
+    success: true,
+    progressSeconds: record?.progressSeconds ?? 0,
+    durationSeconds: record?.durationSeconds ?? null,
+  });
+});
+
+/**
+ * Route: PUT /api/movies/watched/:imdbId/progress
+ * Description: Saves the playback position of a movie so the user can resume it later.
+ * Access: Authenticated
+ */
+router.put('/:imdbId/progress', authenticateToken, async (req: Request, res: Response) => {
+  const userId = getUserId(req);
+  if (!userId) {
+    throw new HttpError(401, 'Unauthenticated user');
+  }
+
+  const imdbId = getImdbIdParam(req);
+  const progressSeconds = Math.floor(Number(req.body?.progressSeconds));
+  if (!Number.isFinite(progressSeconds) || progressSeconds < 0) {
+    throw new HttpError(400, 'Invalid playback position');
+  }
+
+  const rawDuration = req.body?.durationSeconds;
+  const parsedDuration = Math.floor(Number(rawDuration));
+  const durationSeconds =
+    rawDuration === undefined || !Number.isFinite(parsedDuration) || parsedDuration <= 0 ? null : parsedDuration;
+
+  await prisma.watchedMovie.upsert({
+    where: { userId_imdbId: { userId, imdbId } },
+    update: { progressSeconds, ...(durationSeconds !== null && { durationSeconds }) },
+    create: { userId, imdbId, progressSeconds, durationSeconds },
+  });
+
+  res.json({ success: true, message: 'Playback position saved' });
 });
 
 /**
@@ -67,12 +130,7 @@ router.post('/:imdbId', authenticateToken, async (req: Request, res: Response) =
     throw new HttpError(401, 'Unauthenticated user');
   }
 
-  const rawImdbId = req.params.imdbId;
-  const imdbId = Array.isArray(rawImdbId) ? rawImdbId[0] : rawImdbId;
-
-  if (!imdbId) {
-    throw new HttpError(400, 'Missing movie ID');
-  }
+  const imdbId = getImdbIdParam(req);
 
   await prisma.watchedMovie.upsert({
     where: {

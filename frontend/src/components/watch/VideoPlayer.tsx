@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
 import type { Movie } from '../../types/movie'
 import { useControlsVisibility } from '../../hooks/useControlsVisibility'
+import { useWatchProgress } from '../../hooks/useWatchProgress'
 import { useRealtimeSeeds } from '../../hooks/useRealtimeSeeds'
 import { useSubtitles } from '../../hooks/useSubtitles'
 import { resolveStreamIdentifier, buildStreamUrl, fetchStreamErrorMessage } from '../../services/videoStream'
@@ -46,8 +47,11 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const [bufferingSeconds, setBufferingSeconds] = useState(0)
   const [streamError, setStreamError] = useState<string | null>(null)
   const userPausedRef = useRef(false)
+  const resumedMovieIdRef = useRef<string | null>(null)
+  const latestPositionRef = useRef({ currentSeconds: 0, durationSeconds: 0 })
 
   const { showControls, handleMouseMove } = useControlsVisibility(isPlaying, onControlsVisibilityChange)
+  const { resumeAtSeconds, isProgressLoaded, saveProgress } = useWatchProgress(movie?.id)
 
   const resumeIfNotUserPaused = useCallback(() => {
     if (videoRef.current && videoRef.current.paused && !userPausedRef.current) {
@@ -112,6 +116,25 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
     })
   }, [streamUrl])
 
+  // Seeking needs both the saved position and a loaded duration, whichever arrives last.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !movie?.id || !isProgressLoaded || !duration) return
+    if (resumedMovieIdRef.current === movie.id) return
+
+    if (resumeAtSeconds > 0) {
+      video.currentTime = resumeAtSeconds
+    }
+    resumedMovieIdRef.current = movie.id
+  }, [isProgressLoaded, resumeAtSeconds, duration, movie?.id])
+
+  useEffect(() => {
+    return () => {
+      const { currentSeconds, durationSeconds } = latestPositionRef.current
+      saveProgress(currentSeconds, durationSeconds, true)
+    }
+  }, [saveProgress])
+
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return
     if (videoRef.current.paused) {
@@ -163,7 +186,11 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         playsInline
         autoPlay
         onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false)
+          const { currentSeconds, durationSeconds } = latestPositionRef.current
+          saveProgress(currentSeconds, durationSeconds, true)
+        }}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => {
           setIsBuffering(false)
@@ -187,6 +214,8 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
             if (dur > 0) {
               setProgress((cur / dur) * 100)
             }
+            latestPositionRef.current = { currentSeconds: cur, durationSeconds: dur }
+            saveProgress(cur, dur)
             syncActiveCue()
           }
         }}

@@ -59,6 +59,7 @@
     "hideSidebar": "Masquer le panneau",
     "historyTitle": "Vus récemment",
     "historySubtitle": "Vos derniers films visionnés",
+    "resumeAt": "Reprendre à",
     "noHistory": "Aucun film visionné pour le moment.",
     "loadingHistory": "Chargement de votre historique...",
     "failedHistory": "Échec du chargement de l'historique.",

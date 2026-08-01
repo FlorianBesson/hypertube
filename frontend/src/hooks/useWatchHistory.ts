@@ -5,11 +5,15 @@ import { resolveMovieById } from '../services/internetArchiveMetadata'
 export interface WatchHistoryEntry {
   movie: Movie
   watchedAt: string
+  progressSeconds: number
+  durationSeconds: number | null
 }
 
 interface WatchHistoryRecord {
   imdbId: string
   watchedAt: string
+  progressSeconds: number
+  durationSeconds: number | null
 }
 
 const HISTORY_LIMIT = 6
@@ -46,7 +50,7 @@ export function useWatchHistory(lang: 'en' | 'fr') {
           records.map(async (record) => {
             try {
               const movie = await resolveMovieById(record.imdbId, lang)
-              return movie ? { movie, watchedAt: record.watchedAt } : null
+              return movie ? { ...record, movie } : null
             } catch (err) {
               console.error(`Error resolving watched movie ${record.imdbId}:`, err)
               return null
