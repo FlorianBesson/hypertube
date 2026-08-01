@@ -45,7 +45,7 @@ export function useWatchProgress(movieId: string | undefined) {
     }
   }, [movieId])
 
-  const isProgressLoaded = loadedProgress?.movieId === movieId
+  const isProgressLoaded = loadedProgress !== null && loadedProgress.movieId === movieId
   const resumeAtSeconds = isProgressLoaded ? loadedProgress.resumeAtSeconds : 0
 
   /** Persists the position at most once per SAVE_INTERVAL_SECONDS unless forced (pause, unmount). */

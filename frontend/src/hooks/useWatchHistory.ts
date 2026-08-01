@@ -2,18 +2,15 @@ import { useState, useEffect } from 'react'
 import type { Movie } from '../types/movie'
 import { resolveMovieById } from '../services/internetArchiveMetadata'
 
-export interface WatchHistoryEntry {
-  movie: Movie
-  watchedAt: string
-  progressSeconds: number
-  durationSeconds: number | null
-}
-
 interface WatchHistoryRecord {
   imdbId: string
   watchedAt: string
   progressSeconds: number
   durationSeconds: number | null
+}
+
+export interface WatchHistoryEntry extends WatchHistoryRecord {
+  movie: Movie
 }
 
 const HISTORY_LIMIT = 6

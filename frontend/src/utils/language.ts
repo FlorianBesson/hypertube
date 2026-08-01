@@ -34,7 +34,7 @@ export function movieMatchesLanguage(movieLanguage: string | undefined, selected
   // untagged movie as English rather than excluding it from every filter.
   if (!movieLanguage) return selectedLanguage === 'english'
 
-  const tokens = movieLanguage.toLowerCase().match(/[a-z]+/g) || []
+  const tokens: string[] = movieLanguage.toLowerCase().match(/[a-z]+/g) || []
   const acceptedTokens = LANGUAGE_TOKENS[selectedLanguage] || [selectedLanguage]
 
   return acceptedTokens.some(token => tokens.includes(token))
