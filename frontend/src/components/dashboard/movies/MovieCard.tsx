@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../../locales/translations'
 import type { Movie } from '../../../types/movie'
@@ -10,9 +10,69 @@ export interface MovieCardProps {
   t: TranslationType['dashboard']
 }
 
+const GENRE_BADGE_GAP = 4
+
 export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieCardProps) {
   const [imageError, setImageError] = useState(false)
   const navigate = useNavigate()
+
+  const genres = useMemo(
+    () =>
+      (movie.genres?.length ? movie.genres : (movie.genre || '').split(','))
+        .map(genre => genre.trim())
+        .filter(Boolean),
+    [movie.genres, movie.genre]
+  )
+
+  const genreListRef = useRef<HTMLDivElement>(null)
+  const badgeWidthsRef = useRef<number[]>([])
+  const [visibleGenreCount, setVisibleGenreCount] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    badgeWidthsRef.current = []
+    setVisibleGenreCount(null)
+  }, [genres])
+
+  useLayoutEffect(() => {
+    const genreList = genreListRef.current
+    if (!genreList || !genres.length) return
+
+    // Widths are captured while every badge is rendered, so later passes can fit them without remounting.
+    if (!badgeWidthsRef.current.length) {
+      badgeWidthsRef.current = Array.from(genreList.children).map(badge => (badge as HTMLElement).offsetWidth)
+    }
+    const badgeWidths = badgeWidthsRef.current
+    const counterWidth = badgeWidths[badgeWidths.length - 1] ?? 0
+    const genreWidths = badgeWidths.slice(0, genres.length)
+
+    const fitGenres = () => {
+      const availableWidth = genreList.clientWidth
+      let usedWidth = 0
+      let fittingCount = 0
+
+      for (const genreWidth of genreWidths) {
+        const nextWidth = usedWidth + (fittingCount ? GENRE_BADGE_GAP : 0) + genreWidth
+        if (nextWidth > availableWidth) break
+        usedWidth = nextWidth
+        fittingCount += 1
+      }
+
+      while (fittingCount > 1 && fittingCount < genreWidths.length && usedWidth + GENRE_BADGE_GAP + counterWidth > availableWidth) {
+        fittingCount -= 1
+        usedWidth -= genreWidths[fittingCount] + GENRE_BADGE_GAP
+      }
+
+      setVisibleGenreCount(Math.max(fittingCount, 1))
+    }
+
+    fitGenres()
+    const resizeObserver = new ResizeObserver(fitGenres)
+    resizeObserver.observe(genreList)
+    return () => resizeObserver.disconnect()
+  }, [genres])
+
+  const visibleGenres = visibleGenreCount === null ? genres : genres.slice(0, visibleGenreCount)
+  const hiddenGenreCount = genres.length - visibleGenres.length
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -124,7 +184,27 @@ export default function MovieCard({ movie, isWatched, onSelectMovie, t }: MovieC
 
       {/* Movie Metadata */}
       <div className="absolute bottom-0 inset-x-0 p-3 flex flex-col gap-0.5 z-10">
-        <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest truncate">{movie.genre}</span>
+        {visibleGenres.length > 0 && (
+          <div
+            ref={genreListRef}
+            className={`flex items-center gap-1 mb-1 overflow-hidden ${visibleGenreCount === null ? 'invisible' : ''}`}
+            title={genres.join(', ')}
+          >
+            {visibleGenres.map(genre => (
+              <span
+                key={genre}
+                className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md tracking-wider shadow-md bg-red-600/20 text-red-300 border border-red-500/25 backdrop-blur-md whitespace-nowrap shrink-0"
+              >
+                {genre}
+              </span>
+            ))}
+            {(hiddenGenreCount > 0 || visibleGenreCount === null) && (
+              <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md tracking-wider shadow-md bg-black/70 text-neutral-300 border border-white/10 backdrop-blur-md shrink-0">
+                +{hiddenGenreCount || genres.length}
+              </span>
+            )}
+          </div>
+        )}
         <h3 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors" title={movie.title}>
           {movie.title}
         </h3>
