@@ -4,9 +4,9 @@ import type { MovieSourceId, SortByOption, SortOrder } from '../services/sources
 import { movieSourceAggregator } from '../services/sources/movieSourceAggregator'
 
 const SEARCH_DEBOUNCE_MS = 450
-const PAGE_LIMIT_ALL_SOURCES = 15
-const PAGE_LIMIT_SINGLE_SOURCE = 30
-const MIN_RESULTS_FOR_MORE_PAGES = 10
+const SOURCE_PAGE_SIZE_ALL_SOURCES = 10
+const SOURCE_PAGE_SIZE_SINGLE_SOURCE = 20
+const MOVIES_PER_PAGE = 20
 
 export interface UseMovieSearchParams {
   lang: 'en' | 'fr'
@@ -40,6 +40,10 @@ export function useMovieSearch({
   const [error, setError] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+
+  // Provider-side page cursor: one catalog page can consume several source
+  // pages, since TMDB/public-domain filtering drops a large share of results.
+  const sourcePageRef = useRef(1)
 
   // Always holds the latest sortBy/order, read (not depended upon) by the
   // debounce effect below so it can snapshot "the sort before this search"
@@ -91,9 +95,12 @@ export function useMovieSearch({
       setError(false)
 
       try {
-        const limit = selectedSource === 'all' ? PAGE_LIMIT_ALL_SOURCES : PAGE_LIMIT_SINGLE_SOURCE
+        const limit = selectedSource === 'all' ? SOURCE_PAGE_SIZE_ALL_SOURCES : SOURCE_PAGE_SIZE_SINGLE_SOURCE
+        if (page === 1) {
+          sourcePageRef.current = 1
+        }
 
-        const fetchedMovies = await movieSourceAggregator.fetchMovies(
+        const result = await movieSourceAggregator.fetchMovies(
           selectedSource,
           {
             query: debouncedQuery.trim(),
@@ -102,26 +109,28 @@ export function useMovieSearch({
             movieLanguage: selectedLanguage,
             sortBy,
             order,
-            page,
+            page: sourcePageRef.current,
             limit,
             lang,
             signal: controller.signal
           },
-          import.meta.env.VITE_TMDB_API_KEY
+          { tmdbApiKey: import.meta.env.VITE_TMDB_API_KEY, targetCount: MOVIES_PER_PAGE }
         )
 
         if (isMounted) {
+          sourcePageRef.current = result.nextPage
+
           if (page === 1) {
-            setMovies(fetchedMovies)
+            setMovies(result.movies)
           } else {
             setMovies(prev => {
-              const existingIds = new Set(prev.map(item => item.id))
-              const uniqueNew = fetchedMovies.filter(item => !existingIds.has(item.id))
+              const existingTmdbIds = new Set(prev.map(item => item.tmdbId))
+              const uniqueNew = result.movies.filter(item => !existingTmdbIds.has(item.tmdbId))
               return [...prev, ...uniqueNew]
             })
           }
 
-          setHasMore(fetchedMovies.length >= MIN_RESULTS_FOR_MORE_PAGES)
+          setHasMore(!result.exhausted)
         }
       } catch (err) {
         if (controller.signal.aborted) return
