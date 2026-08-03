@@ -9,6 +9,7 @@ import authRoutes from './routes/auth';
 import { oauthTokenHandler } from './routes/auth/oauth';
 import { communityRouter } from './routes/users';
 import movieRoutes from './routes/movies';
+import commentsRouter from './routes/movies/comments';
 
 import { initCronJobs } from './services/maintenance';
 
@@ -26,6 +27,8 @@ app.post('/oauth/token', oauthTokenHandler);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', communityRouter);
 app.use('/users', communityRouter);
+app.use('/api/comments', commentsRouter);
+app.use('/comments', commentsRouter);
 app.use('/api/movies', movieRoutes);
 app.use('/movies', movieRoutes);
 

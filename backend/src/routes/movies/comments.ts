@@ -11,16 +11,62 @@ const createCommentSchema = z.object({
     content: z.string().trim().min(1, "Comment cannot be empty").max(1000, "Comment cannot exceed 1000 characters")
 });
 
-/**
- * Route: GET /api/movies/comments/:imdbId
- * Description: Retrieves list of comments for a given movie, including author details.
- * Access: Authenticated users only
- */
+router.get("/", authenticateToken, async (req: Request, res: Response) => {
+    const comments = await prisma.comment.findMany({
+        orderBy: { createdAt: 'desc'},
+        select: {
+            id : true,
+            content: true,
+            createdAt: true,
+            user: {
+                select: {
+                    username: true
+                }
+            }
+        }
+    });
+
+    res.json({ success: true, comments});
+});
+
 router.get("/:imdbId", authenticateToken, async (req: Request, res: Response) => {
     const imdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
 
     if (!imdbId) {
         throw new HttpError(400, "Missing IMDb identifier");
+    }
+
+    // If param is a pure integer number, return single comment by comment ID (GET /comments/:id)
+    const numericId = parseInt(imdbId, 10);
+    if (!isNaN(numericId) && numericId.toString() === imdbId) {
+        const comment = await prisma.comment.findUnique({
+            where: { id: numericId },
+            select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                user: {
+                    select: {
+                        username: true
+                    }
+                }
+            }
+        });
+
+        if (!comment) {
+            throw new HttpError(404, "Comment not found");
+        }
+
+        res.json({
+            success: true,
+            comment: {
+                id: comment.id,
+                comment: comment.content,
+                username: comment.user.username,
+                date: comment.createdAt
+            }
+        });
+        return;
     }
 
     const comments = await prisma.comment.findMany({
@@ -45,11 +91,7 @@ router.get("/:imdbId", authenticateToken, async (req: Request, res: Response) =>
     res.json({ success: true, comments });
 });
 
-/**
- * Route: POST /api/movies/comments/:imdbId
- * Description: Creates a new comment for a movie by imdbId.
- * Access: Authenticated users only
- */
+
 router.post("/:imdbId", authenticateToken, async (req: Request, res: Response) => {
     const imdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
     const rawUserId = (req as any).user?.userId || (req as any).user?.id;
@@ -101,6 +143,96 @@ router.post("/:imdbId", authenticateToken, async (req: Request, res: Response) =
     });
 
     res.status(201).json({ success: true, comment });
+});
+
+router.patch("/:id", authenticateToken, async (req: Request, res: Response) => {
+    const rawUserId = (req as any).user?.userId || (req as any).user?.id;
+    const userId = typeof rawUserId === 'string' ? parseInt(rawUserId, 10) : Number(rawUserId);
+    const commentId = parseInt(req.params.id as string, 10);
+
+    if (isNaN(commentId)) {
+        throw new HttpError(400, "Invalid comment ID");
+    }
+
+    if (!userId || isNaN(userId)) {
+        throw new HttpError(401, "Unauthenticated user");
+    }
+
+    const existingComment = await prisma.comment.findUnique({
+        where: { id: commentId }
+    });
+
+    if (!existingComment) {
+        throw new HttpError(404, "Comment not found");
+    }
+
+    if (existingComment.userId !== userId) {
+        throw new HttpError(403, "Access denied. You can only modify your own comments.");
+    }
+
+    const validation = createCommentSchema.safeParse(req.body);
+    if (!validation.success) {
+        throw new HttpError(400, validation.error.issues[0]?.message || "Invalid data");
+    }
+
+    const { content } = validation.data;
+
+    const updatedComment = await prisma.comment.update({
+        where: { id: commentId },
+        data: { content },
+        select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            user: {
+                select: {
+                    username: true
+                }
+            }
+        }
+    });
+
+    res.json({
+        success: true,
+        comment: {
+            id: updatedComment.id,
+            comment: updatedComment.content,
+            username: updatedComment.user.username,
+            date: updatedComment.createdAt
+        }
+    });
+});
+
+router.delete("/:id", authenticateToken, async (req: Request, res: Response) => {
+    const rawUserId = (req as any).user?.userId || (req as any).user?.id;
+    const userId = typeof rawUserId === 'string' ? parseInt(rawUserId, 10) : Number(rawUserId);
+    const commentId = parseInt(req.params.id as string, 10);
+
+    if (isNaN(commentId)) {
+        throw new HttpError(400, "Invalid comment ID");
+    }
+
+    if (!userId || isNaN(userId)) {
+        throw new HttpError(401, "Unauthenticated user");
+    }
+
+    const existingComment = await prisma.comment.findUnique({
+        where: { id: commentId }
+    });
+
+    if (!existingComment) {
+        throw new HttpError(404, "Comment not found");
+    }
+
+    if (existingComment.userId !== userId) {
+        throw new HttpError(403, "Access denied. You can only delete your own comments.");
+    }
+
+    await prisma.comment.delete({
+        where: { id: commentId }
+    });
+
+    res.json({ success: true, message: "Comment deleted successfully" });
 });
 
 export default router;
