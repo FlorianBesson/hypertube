@@ -13,19 +13,20 @@ import {
   buildArchiveDetailsUrl
 } from '../../utils/internetArchiveUtils'
 import { LANGUAGE_TOKENS } from '../../utils/language'
+import { resolveTitleTerms } from './searchTerms'
+
+const SOURCE_ROWS_OVERFETCH_FACTOR = 2
 
 export class ArchiveSourceProvider implements IMovieSourceProvider {
   readonly id: MovieSourceId = 'archive'
   readonly name = 'Internet Archive'
 
   async searchMovies(params: MovieSearchParams): Promise<Movie[]> {
-    const { query, queryTerms, genre, minRating, movieLanguage, sortBy = 'download_count', order = 'desc', page, limit, signal } = params
+    const { genre, minRating, movieLanguage, sortBy = 'download_count', order = 'desc', page, limit, signal } = params
 
     const queryParts = [...INTERNET_ARCHIVE_BASE_QUERY]
 
-    const titleTerms = queryTerms && queryTerms.length > 0
-      ? queryTerms
-      : (query && query.trim() ? [query.trim()] : [])
+    const titleTerms = resolveTitleTerms(params)
 
     if (titleTerms.length > 0) {
       queryParts.push(`(${titleTerms.map(term => `title:(${escapeInternetArchiveQuery(term)})`).join(' OR ')})`)
@@ -53,7 +54,9 @@ export class ArchiveSourceProvider implements IMovieSourceProvider {
 
     const searchParams = new URLSearchParams({
       q: queryParts.join(' AND '),
-      rows: (limit * 2).toString(), // fetch extra to account for filtering non-movies
+      // Fetch extra: TMDB/public-domain filtering downstream drops a large
+      // share, and every row kept here saves chasing another source page.
+      rows: (limit * SOURCE_ROWS_OVERFETCH_FACTOR).toString(),
       page: page.toString(),
       output: 'json'
     })
@@ -86,7 +89,7 @@ export class ArchiveSourceProvider implements IMovieSourceProvider {
 
     const docs = rawDocs.filter(isLikelyMovie)
 
-    return docs.slice(0, limit).map(movie => ({
+    return docs.map(movie => ({
       id: movie.identifier,
       title: metadataText(movie.title) || movie.identifier,
       genre: metadataValues(movie.subject).slice(0, 3).join(', ') || 'Movie',
