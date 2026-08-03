@@ -6,7 +6,7 @@ Web app search + stream torrent video, royalty-free/legal sources only (publicdo
 
 - **Frontend**: React 19, Vite, TypeScript, Tailwind CSS 4, React Router
 - **Backend**: Express 5, TypeScript, Prisma 7 + PostgreSQL
-- **Streaming**: BitTorrent (torrent-stream) + Archive.org direct downloader
+- **Streaming**: in-house BitTorrent client (no torrent library) + Archive.org direct downloader
 - **Auth**: JWT, bcrypt, OAuth (42, Google)
 - **Email**: Nodemailer (Brevo SMTP) — password reset
 - **Infra**: Docker Compose, Caddy
