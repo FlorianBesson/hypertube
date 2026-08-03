@@ -175,7 +175,7 @@ router.patch("/:id", authenticateToken, checkProfileOwner, (req: Request, res: R
 
             // 2. Validate & Update Username
             if (username !== undefined) {
-                const cleanUsername = username.trim();
+                const cleanUsername = username.toLowerCase().trim();
                 if (cleanUsername.length < 3) {
                     res.status(400).json({ success: false, message: "Username must be at least 3 characters long" });
                     return;
