@@ -100,6 +100,11 @@ export class MovieSourceAggregator {
     }
   }
 
+  /** Sources list the same film several times (different rips of one archive
+   * item). Both dedup passes — by title here, by TMDB id in fetchMovies —
+   * keep the first occurrence, so order by downloads first to keep the
+   * most-downloaded copy. Has to happen before TMDB enrichment, which
+   * overwrites `downloads` with TMDB popularity. */
   private async fetchFromProviders(
     sourceId: MovieSourceId,
     searchParams: MovieSearchParams
@@ -107,7 +112,7 @@ export class MovieSourceAggregator {
     if (sourceId !== 'all' && this.providers.has(sourceId)) {
       const provider = this.providers.get(sourceId)!
       try {
-        return await provider.searchMovies(searchParams)
+        return sortMovies(await provider.searchMovies(searchParams), 'download_count', 'desc')
       } catch (err) {
         if (searchParams.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
           throw err
@@ -135,7 +140,7 @@ export class MovieSourceAggregator {
     })
 
     const seenTitles = new Set<string>()
-    return combined.filter(movie => {
+    return sortMovies(combined, 'download_count', 'desc').filter(movie => {
       const key = movie.title.toLowerCase().trim()
       if (seenTitles.has(key)) return false
       seenTitles.add(key)
