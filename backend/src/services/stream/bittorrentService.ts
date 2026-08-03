@@ -2,17 +2,9 @@ import path from 'path';
 import fs from 'fs';
 import { resolveSource } from './bittorrent/torrentSourceResolver';
 import { TorrentEngineManager, ActiveTorrentEngine } from './bittorrent/torrentEngineManager';
+import { TorrentEngine, TorrentStreamFile } from './bittorrent/engine/torrentEngine';
 
-export interface TorrentStreamFile {
-  name: string;
-  path: string;
-  length: number;
-  select: () => void;
-  deselect: () => void;
-  createReadStream: (options?: { start?: number; end?: number }) => any;
-}
-
-export type { ActiveTorrentEngine };
+export type { ActiveTorrentEngine, TorrentStreamFile };
 
 const defaultEngineManager = new TorrentEngineManager();
 
@@ -24,7 +16,7 @@ export async function getOrStartTorrent(
   imdbId?: string,
   downloadsBaseDir: string = path.join(process.cwd(), 'downloads'),
   engineManager: TorrentEngineManager = defaultEngineManager
-): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
+): Promise<{ engine: TorrentEngine; videoFile: TorrentStreamFile }> {
   const isHexHash = /^[a-fA-F0-9]{40}$/.test(torrentHash);
   const normalizedHash = isHexHash ? torrentHash.toLowerCase() : torrentHash;
 

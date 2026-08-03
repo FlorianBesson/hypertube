@@ -3,7 +3,7 @@ import { getMimeType, getVideoFormat } from './mimeService';
 import { movieDbService } from '../movies/movieDbService';
 import { getArchiveIdentifier } from './archive/archiveUtils';
 import * as bittorrentService from './bittorrentService';
-import { TorrentStreamFile } from './bittorrentService';
+import { TorrentEngine, TorrentStreamFile } from './bittorrent/engine/torrentEngine';
 
 export type { TorrentStreamFile };
 
@@ -33,7 +33,7 @@ export async function getCompletedMovie(torrentHash: string, imdbId?: string): P
 /**
  * Delegates BitTorrent live stream engine initialization.
  */
-export async function getOrStartTorrent(torrentHash: string, imdbId?: string): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
+export async function getOrStartTorrent(torrentHash: string, imdbId?: string): Promise<{ engine: TorrentEngine; videoFile: TorrentStreamFile }> {
   return bittorrentService.getOrStartTorrent(torrentHash, imdbId, downloadsBaseDir);
 }
 

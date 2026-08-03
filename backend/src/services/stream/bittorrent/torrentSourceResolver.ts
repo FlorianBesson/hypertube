@@ -1,5 +1,6 @@
 /**
- * Resolves a torrent hash, URL, or magnet link into a format compatible with torrent-stream (string or Buffer).
+ * Resolves a torrent hash, URL, or Internet Archive identifier into a magnet link or a
+ * raw .torrent file the torrent engine can start from.
  */
 export async function resolveSource(torrentHash: string): Promise<string | Buffer> {
   const isHexHash = /^[a-fA-F0-9]{40}$/.test(torrentHash);
