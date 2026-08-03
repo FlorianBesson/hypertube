@@ -6,7 +6,6 @@ import { HttpError } from '../../errors';
 
 const router = Router();
 
-// Zod validation schema for comment payload
 const createCommentSchema = z.object({
     content: z.string().trim().min(1, "Comment cannot be empty").max(1000, "Comment cannot exceed 1000 characters")
 });
@@ -29,16 +28,17 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
     res.json({ success: true, comments});
 });
 
-router.get("/:imdbId", authenticateToken, async (req: Request, res: Response) => {
-    const imdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
+router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
+    const rawParam = req.params.id || req.params.imdbId;
+    const idParam = Array.isArray(rawParam) ? rawParam[0] : rawParam;
 
-    if (!imdbId) {
-        throw new HttpError(400, "Missing IMDb identifier");
+    if (!idParam) {
+        throw new HttpError(400, "Missing identifier");
     }
 
     // If param is a pure integer number, return single comment by comment ID (GET /comments/:id)
-    const numericId = parseInt(imdbId, 10);
-    if (!isNaN(numericId) && numericId.toString() === imdbId) {
+    const numericId = parseInt(idParam, 10);
+    if (!isNaN(numericId) && numericId.toString() === idParam) {
         const comment = await prisma.comment.findUnique({
             where: { id: numericId },
             select: {
@@ -70,7 +70,7 @@ router.get("/:imdbId", authenticateToken, async (req: Request, res: Response) =>
     }
 
     const comments = await prisma.comment.findMany({
-        where: { imdbId },
+        where: { imdbId: idParam },
         orderBy: { createdAt: 'desc' },
         select: {
             id: true,
@@ -92,8 +92,9 @@ router.get("/:imdbId", authenticateToken, async (req: Request, res: Response) =>
 });
 
 
-router.post("/:imdbId", authenticateToken, async (req: Request, res: Response) => {
-    const imdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
+router.post("/:id", authenticateToken, async (req: Request, res: Response) => {
+    const rawParam = req.params.id || req.params.imdbId;
+    const imdbId = Array.isArray(rawParam) ? rawParam[0] : rawParam;
     const rawUserId = (req as any).user?.userId || (req as any).user?.id;
     const userId = typeof rawUserId === 'string' ? parseInt(rawUserId, 10) : Number(rawUserId);
 
@@ -105,13 +106,11 @@ router.post("/:imdbId", authenticateToken, async (req: Request, res: Response) =
         throw new HttpError(401, "Unauthenticated user");
     }
 
-    // Verify user exists in DB (in case of stale token / DB reset)
     const userExists = await prisma.user.findUnique({ where: { id: userId } });
     if (!userExists) {
         throw new HttpError(401, "Session expired or user no longer exists. Please log in again.");
     }
 
-    // Validate incoming request body with Zod
     const validation = createCommentSchema.safeParse(req.body);
     if (!validation.success) {
         throw new HttpError(400, validation.error.issues[0]?.message || "Invalid data");
@@ -119,7 +118,6 @@ router.post("/:imdbId", authenticateToken, async (req: Request, res: Response) =
 
     const { content } = validation.data;
 
-    // Persist comment in database
     const comment = await prisma.comment.create({
         data: {
             imdbId,
