@@ -5,11 +5,9 @@ import crypto from 'crypto';
 import { prisma } from '../../prisma';
 import { HttpError } from '../../errors';
 
+import { JWT_SECRET } from '../../config/jwt';
+
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is missing from environment variables");
-}
 
 interface OauthProfile {
     email: string;
