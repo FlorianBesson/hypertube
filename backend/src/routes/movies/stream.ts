@@ -172,8 +172,17 @@ router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
     const isHexHash = /^[a-fA-F0-9]{40}$/.test(rawTorrentHash);
     const torrentHash = archiveId || (isHexHash ? rawTorrentHash.toLowerCase() : rawTorrentHash);
 
-    const stats = torrentService.getTorrentStats(torrentHash);
-    res.json({ success: true, ...stats });
+    const { fileName, ...stats } = torrentService.getTorrentStats(torrentHash);
+
+    // A fully downloaded movie is served from disk without any engine, so its name only
+    // comes from the DB record.
+    const completedMovie = fileName ? null : await torrentService.getCompletedMovie(torrentHash);
+
+    res.json({
+        success: true,
+        ...stats,
+        format: torrentService.getVideoFormat(fileName ?? completedMovie?.filePath),
+    });
 });
 
 export default router;

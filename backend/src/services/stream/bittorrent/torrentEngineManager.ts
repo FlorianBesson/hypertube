@@ -27,17 +27,18 @@ export class TorrentEngineManager {
   }
 
   /**
-   * Returns active engine stats (seeds/peers wires length).
+   * Returns active engine stats (seeds/peers wires length and streamed file name).
    */
-  public getEngineStats(hash: string): { seeds: number; peers: number } {
+  public getEngineStats(hash: string): { seeds: number; peers: number; fileName: string | null } {
     const active = this.activeEngines.get(hash);
     if (!active || !active.engine) {
-      return { seeds: 0, peers: 0 };
+      return { seeds: 0, peers: 0, fileName: null };
     }
     const wires = active.engine.swarm?.wires || [];
     return {
       seeds: wires.length,
-      peers: wires.length
+      peers: wires.length,
+      fileName: active.videoFile?.name ?? null
     };
   }
 

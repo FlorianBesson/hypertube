@@ -47,7 +47,7 @@ export async function getOrStartTorrent(
 export function getTorrentStats(
   torrentHash: string,
   engineManager: TorrentEngineManager = defaultEngineManager
-): { seeds: number; peers: number } {
+): { seeds: number; peers: number; fileName: string | null } {
   return engineManager.getEngineStats(torrentHash.toLowerCase());
 }
 

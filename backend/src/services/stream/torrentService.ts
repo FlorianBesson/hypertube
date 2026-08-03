@@ -1,5 +1,5 @@
 import path from 'path';
-import { getMimeType } from './mimeService';
+import { getMimeType, getVideoFormat } from './mimeService';
 import { movieDbService } from '../movies/movieDbService';
 import { getArchiveIdentifier } from './archive/archiveUtils';
 import * as bittorrentService from './bittorrentService';
@@ -42,6 +42,7 @@ export async function getOrStartTorrent(torrentHash: string, imdbId?: string): P
  */
 export const torrentService = {
   getMimeType: getTorrentMimeType,
+  getVideoFormat,
   updateLastWatched,
   getCompletedMovie,
   getArchiveIdentifier,
