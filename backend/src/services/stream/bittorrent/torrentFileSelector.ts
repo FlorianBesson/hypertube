@@ -1,5 +1,5 @@
 import path from 'path';
-import { TorrentStreamFile } from '../bittorrentService';
+import { TorrentStreamFile } from './engine/torrentEngine';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mkv', '.avi', '.mov', '.m4v'];
 
