@@ -11,7 +11,9 @@ export const forgotPasswordHandler: RequestHandler = async (req: Request, res: R
     throw new HttpError(400, 'Email is required');
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
   if (!user) {
     // Return success even if user not found to prevent email enumeration
@@ -24,7 +26,7 @@ export const forgotPasswordHandler: RequestHandler = async (req: Request, res: R
   const resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
 
   await prisma.user.update({
-    where: { email },
+    where: { email: normalizedEmail },
     data: {
       resetPasswordToken: resetToken,
       resetPasswordExpires,
