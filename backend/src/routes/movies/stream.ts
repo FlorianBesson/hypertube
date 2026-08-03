@@ -3,6 +3,10 @@ import fs from 'fs';
 import { torrentService } from '../../services/stream';
 import { HttpError } from '../../errors';
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is missing from environment variables");
+}
 const router = Router();
 
 interface ByteRange {

@@ -57,8 +57,8 @@ export default function ProfileEditForm({
     setSavingProfile(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -67,7 +67,8 @@ export default function ProfileEditForm({
           firstName: editName,
           lastName: editLastName,
           email: editEmail,
-          bio: editBio
+          bio: editBio,
+          preferredLanguage: editLang
         })
       })
 

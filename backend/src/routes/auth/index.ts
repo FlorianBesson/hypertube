@@ -3,8 +3,12 @@ import { registerHandler } from './register';
 import loginRouter from './login';
 import { forgotPasswordHandler } from './forgot-password';
 import { resetPasswordHandler } from './reset-password';
+import { oauthTokenHandler } from './oauth';
 
 const router = Router();
+
+// OAuth Token Endpoint (mounted at /api/auth/token or /oauth/token)
+router.post("/token", oauthTokenHandler);
 
 // Register Endpoint (mounted at /api/auth/register)
 router.post("/register", registerHandler);
