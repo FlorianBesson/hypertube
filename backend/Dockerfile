@@ -1,6 +1,8 @@
 FROM node:24-alpine AS dev
 WORKDIR /app
 COPY package*.json tsconfig.json /app/
+RUN apk add ffmpeg
+RUN npm install fluent-ffmpeg 
 RUN npm ci
 COPY . . 
 EXPOSE 3000
@@ -10,6 +12,8 @@ CMD ["sh", "-c", "npm run db:deploy && npm run dev"]
 FROM node:24-alpine AS prod
 WORKDIR /app
 COPY package*.json tsconfig.json ./
+RUN apk add ffmpeg
+RUN npm install fluent-ffmpeg 
 RUN npm ci
 COPY . .
 RUN npx prisma generate
