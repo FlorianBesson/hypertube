@@ -3,10 +3,6 @@ import fs from 'fs';
 import { torrentService } from '../../services/stream';
 import { HttpError } from '../../errors';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is missing from environment variables");
-}
 const router = Router();
 
 interface ByteRange {
@@ -107,7 +103,7 @@ function sendVideoResponse(
  * Route: GET /api/movies/stream/:torrentHash
  * Description: Streams movie video file progressively using HTTP 206 Range Requests.
  * Supports instant streaming if complete file is cached, or background non-blocking torrent streaming.
- * Access: Public / Authenticated
+ * Access: Authenticated
  */
 router.get("/:torrentHash", async (req: Request, res: Response) => {
     const rawTorrentHash = Array.isArray(req.params.torrentHash) ? req.params.torrentHash[0] : req.params.torrentHash;

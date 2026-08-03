@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { buildStreamStatsUrl } from '../services/videoStream'
 
 const STATS_POLL_INTERVAL_MS = 2000
 
@@ -8,7 +9,7 @@ interface StreamStats {
 }
 
 /** Polls the P2P seed count and video container format for the current stream while no stream error is active. */
-export function useStreamStats(streamIdentifier: string, disabled: boolean): StreamStats {
+export function useStreamStats(streamIdentifier: string, disabled: boolean, token: string | null): StreamStats {
   const [stats, setStats] = useState<StreamStats>({ seeds: null, format: null })
 
   useEffect(() => {
@@ -16,8 +17,7 @@ export function useStreamStats(streamIdentifier: string, disabled: boolean): Str
 
     const fetchStats = async () => {
       try {
-        const statsUrl = `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/stats`
-        const res = await fetch(statsUrl)
+        const res = await fetch(buildStreamStatsUrl(streamIdentifier, token))
         if (res.ok) {
           const data = await res.json()
           if (data && data.success) {
@@ -35,7 +35,7 @@ export function useStreamStats(streamIdentifier: string, disabled: boolean): Str
     fetchStats()
     const interval = setInterval(fetchStats, STATS_POLL_INTERVAL_MS)
     return () => clearInterval(interval)
-  }, [streamIdentifier, disabled])
+  }, [streamIdentifier, disabled, token])
 
   return stats
 }

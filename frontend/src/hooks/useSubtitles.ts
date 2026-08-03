@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { TranslationType } from '../locales/translations'
+import { buildSubtitleUrl } from '../services/videoStream'
 
 const SUBTITLE_TOAST_DURATION_MS = 3500
 export const SUBTITLE_OFFSET_STEP_SEC = 0.5
@@ -14,7 +15,8 @@ export function useSubtitles(
   videoRef: RefObject<HTMLVideoElement | null>,
   imdbId: string | undefined,
   t: TranslationType['watch'],
-  lang: 'en' | 'fr'
+  lang: 'en' | 'fr',
+  token: string | null
 ) {
   const [selectedSubLang, setSelectedSubLang] = useState<string>(lang)
   const [showSubMenu, setShowSubMenu] = useState(false)
@@ -93,7 +95,7 @@ export function useSubtitles(
     }
 
     try {
-      const res = await fetch(`/api/movies/subtitles/${encodeURIComponent(imdbId)}/${code}`)
+      const res = await fetch(buildSubtitleUrl(imdbId, code, token))
       if (!res.ok) {
         const msg = (t.subtitlesUnavailable || 'Sous-titres indisponibles en {lang} pour ce film').replace('{lang}', label)
         showSubToast(msg)
