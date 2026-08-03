@@ -3,12 +3,15 @@ import Input from '../ui/Input'
 import Button from '../ui/Button'
 import { translations } from '../../locales/translations'
 
+import type { LoggedUser } from '../../App'
+
 interface PasswordChangeFormProps {
+  user: LoggedUser
   lang: 'en' | 'fr'
   showStatus: (type: 'success' | 'error', text: string) => void
 }
 
-export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeFormProps) {
+export default function PasswordChangeForm({ user, lang, showStatus }: PasswordChangeFormProps) {
   const t = translations[lang].passwordChangeForm
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -36,15 +39,15 @@ export default function PasswordChangeForm({ lang, showStatus }: PasswordChangeF
     setSavingPassword(true)
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/user/password', {
-        method: 'PUT',
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           currentPassword,
-          newPassword
+          password: newPassword
         })
       })
 

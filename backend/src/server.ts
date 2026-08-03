@@ -6,8 +6,10 @@ import { checkDbConnection } from './db/utils';
 
 // Import modular router packages for each domain
 import authRoutes from './routes/auth';
-import { meRouter, communityRouter } from './routes/users';
+import { oauthTokenHandler } from './routes/auth/oauth';
+import { communityRouter } from './routes/users';
 import movieRoutes from './routes/movies';
+import commentsRouter from './routes/movies/comments';
 
 import { initCronJobs } from './services/maintenance';
 
@@ -21,10 +23,14 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Register main API endpoints with their mount paths
+app.post('/oauth/token', oauthTokenHandler);
 app.use('/api/auth', authRoutes);
-app.use('/api/user', meRouter);
 app.use('/api/users', communityRouter);
+app.use('/users', communityRouter);
+app.use('/api/comments', commentsRouter);
+app.use('/comments', commentsRouter);
 app.use('/api/movies', movieRoutes);
+app.use('/movies', movieRoutes);
 
 /**
  * Health check endpoint for testing database connectivity.
@@ -43,6 +49,11 @@ app.get("/api/db-check", async (req, res) => {
 // Basic server test ping endpoint
 app.get('/api/ping', (req: Request, res: Response) => {
     res.send('Hello, TypeScript + Express!');
+});
+
+// 404 Catch-all handler for unhandled API endpoints
+app.use((req: Request, res: Response, next: NextFunction) => {
+    res.status(404).json({ success: false, message: "Route not found" });
 });
 
 // Error handling middleware

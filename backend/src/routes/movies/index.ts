@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import moviesListRouter from './list';
 import streamRouter from './stream';
 import commentsRouter from './comments';
 import subtitlesRouter from './subtitles';
@@ -14,7 +15,11 @@ router.use('/comments', commentsRouter);
 
 // Subtitles endpoints (/api/movies/subtitles/:imdbId/:lang)
 router.use('/subtitles', subtitlesRouter);
+
 // Watched endpoints (/api/movies/watched)
 router.use('/watched', watchedRouter);
+
+// List & detail endpoints (/api/movies and /api/movies/:id) - MUST be mounted last
+router.use('/', moviesListRouter);
 
 export default router;

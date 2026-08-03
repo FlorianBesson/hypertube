@@ -4,7 +4,6 @@ import { prisma } from '../../prisma';
 import bcrypt from 'bcrypt'
 import { HttpError } from '../../errors';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../../config/jwt';
 
 const RegisterSchema = z.object({
     email: z.
@@ -29,6 +28,11 @@ const RegisterSchema = z.object({
 })
 
 export async function registerHandler(req: Request, res: Response) {
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+        throw new Error("JWT_SECRET is missing from environment variables");
+    }
+    
     const result = RegisterSchema.safeParse({
         email: req.body.email,
         username: req.body.username,

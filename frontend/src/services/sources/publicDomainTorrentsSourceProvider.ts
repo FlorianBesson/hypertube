@@ -1,6 +1,7 @@
 import type { Movie } from '../../types/movie'
 import type { IMovieSourceProvider, MovieSearchParams, MovieSourceId } from './types'
 import { sortMovies } from '../../utils/movieFilters'
+import { resolveTitleTerms } from './searchTerms'
 
 import rawScrapedTorrents from './public_domain_torrents.json'
 
@@ -91,13 +92,12 @@ export class PublicDomainTorrentsSourceProvider implements IMovieSourceProvider 
   readonly name = 'Public Domain Torrents'
 
   async searchMovies(params: MovieSearchParams): Promise<Movie[]> {
-    const { query = '', queryTerms, genre = '', minRating = 0, sortBy = 'download_count', order = 'desc', page = 1, limit = 20 } = params
+    const { genre = '', minRating = 0, sortBy = 'download_count', order = 'desc', page = 1, limit = 20 } = params
 
     let filtered = [...PUBLIC_DOMAIN_TORRENTS_DATABASE]
 
     // 1. Text Search Filter (matches any resolved title term, e.g. English + French)
-    const searchTerms = (queryTerms && queryTerms.length > 0 ? queryTerms : (query.trim() ? [query.trim()] : []))
-      .map(t => t.toLowerCase())
+    const searchTerms = resolveTitleTerms(params).map(term => term.toLowerCase())
     if (searchTerms.length > 0) {
       filtered = filtered.filter(m => {
         const titleLower = m.title.toLowerCase()

@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { prisma } from '../../prisma';
 import { HttpError } from '../../errors';
+
 import { JWT_SECRET } from '../../config/jwt';
 
 const router = Router();
