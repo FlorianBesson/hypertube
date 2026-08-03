@@ -1,3 +1,5 @@
+import { fetchTorrentFile } from './torrentSourceFetcher';
+
 /**
  * Resolves a torrent hash, URL, or Internet Archive identifier into a magnet link or a
  * raw .torrent file the torrent engine can start from.
@@ -11,13 +13,7 @@ export async function resolveSource(torrentHash: string): Promise<string | Buffe
   }
 
   if (normalizedHash.startsWith('http://') || normalizedHash.startsWith('https://')) {
-    const res = await fetch(torrentHash, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} trying to fetch torrent URL`);
-    return Buffer.from(await res.arrayBuffer());
+    return fetchTorrentFile(torrentHash);
   }
 
   if (isHexHash) {
@@ -35,16 +31,7 @@ export async function resolveSource(torrentHash: string): Promise<string | Buffe
     return `magnet:?xt=urn:btih:${normalizedHash}&${trackers}`;
   }
 
-  const iaTorrentUrl = `https://archive.org/download/${normalizedHash}/${normalizedHash}_archive.torrent`;
-  const res = await fetch(iaTorrentUrl, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-  });
-  if (!res.ok) {
-    throw new Error(`Internet Archive torrent download failed: HTTP ${res.status}`);
-  }
-  return Buffer.from(await res.arrayBuffer());
+  return fetchTorrentFile(`https://archive.org/download/${normalizedHash}/${normalizedHash}_archive.torrent`);
 }
 
 export const TorrentSourceResolver = {
