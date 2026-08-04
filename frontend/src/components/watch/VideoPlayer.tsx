@@ -96,14 +96,6 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const token = localStorage.getItem('token')
   const streamIdentifier = resolveStreamIdentifier(movie)
   const streamUrl = buildStreamUrl(streamIdentifier, movie?.id, token)
-  const hlsPlaylistUrl = buildHlsPlaylistUrl(streamIdentifier, token)
-
-  const { seeds: realtimeSeeds, format: videoFormat, conversionStatus } = useStreamStats(streamIdentifier, Boolean(streamError), token)
-  // Non-native containers (e.g. mkv) are never pointed at directly: the backend converts
-  // them to HLS on the fly, and a bare <video src> would just error on unsupported bytes.
-  const useDirectSrc = conversionStatus === 'not_needed'
-  const isConverting = conversionStatus === 'converting'
-  const isHlsReady = conversionStatus === 'ready'
 
   // A growing HLS "event" playlist only reports the duration of segments converted so
   // far, which would make the progress bar/duration grow as conversion progresses. TMDB's
@@ -113,6 +105,25 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   // shown immediately (before the video even starts loading) rather than waiting on the
   // player to report it, unlike the growing "event" HLS playlist duration.
   const displayDuration = knownDurationSeconds ?? duration
+
+  // What movie-time the player wants the HLS conversion based at: 0 on first load, or a
+  // seek target once the user scrubs past what's been converted so far (see handleSeek).
+  // The backend can't always honor it exactly (e.g. duration unknown on a still-downloading
+  // source), so `confirmedOffsetSeconds` below — not this — is the real time base to use.
+  const [seekOffsetSeconds, setSeekOffsetSeconds] = useState(0)
+
+  const {
+    seeds: realtimeSeeds,
+    format: videoFormat,
+    conversionStatus,
+    offsetSeconds: confirmedOffsetSeconds
+  } = useStreamStats(streamIdentifier, Boolean(streamError), token, seekOffsetSeconds, knownDurationSeconds)
+  // Non-native containers (e.g. mkv) are never pointed at directly: the backend converts
+  // them to HLS on the fly, and a bare <video src> would just error on unsupported bytes.
+  const useDirectSrc = conversionStatus === 'not_needed'
+  const isConverting = conversionStatus === 'converting'
+  const isHlsReady = conversionStatus === 'ready'
+  const hlsPlaylistUrl = buildHlsPlaylistUrl(streamIdentifier, token, confirmedOffsetSeconds)
 
   const imdbId = movie?.imdbId || movie?.id
   const {
@@ -179,17 +190,28 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
     }
   }, [isHlsReady, hlsPlaylistUrl, attemptAutoplay, t.errorLoadingVideo])
 
-  // Seeking needs both the saved position and a loaded duration, whichever arrives last.
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !movie?.id || !isProgressLoaded || !displayDuration) return
-    if (resumedMovieIdRef.current === movie.id) return
+  // Bases the HLS conversion at a saved position once conversion-mode is known: a growing
+  // HLS "event" playlist can't jump ahead of what it's converted so far, so resuming means
+  // starting the conversion there directly (same idea as a manual seek — see handleSeek).
+  // Applied during render, React's documented pattern for adjusting state from a value
+  // that's already available at render time (a ref can't be read during render, hence a
+  // dedicated state guard rather than reusing resumedMovieIdRef below).
+  const [hlsResumeAppliedForMovieId, setHlsResumeAppliedForMovieId] = useState<string | null>(null)
+  const hlsModeKnown = conversionStatus !== null
+  if (hlsModeKnown && !useDirectSrc && isProgressLoaded && resumeAtSeconds > 0 && hlsResumeAppliedForMovieId !== (movie?.id ?? null)) {
+    setHlsResumeAppliedForMovieId(movie?.id ?? null)
+    setSeekOffsetSeconds(Math.floor(resumeAtSeconds))
+  }
 
-    if (resumeAtSeconds > 0) {
-      video.currentTime = resumeAtSeconds
-    }
+  // Resumes a saved position for a direct <video> once its duration is known.
+  useEffect(() => {
+    if (!useDirectSrc || !movie?.id || !isProgressLoaded || resumeAtSeconds <= 0) return
+    if (resumedMovieIdRef.current === movie.id) return
+    if (!videoRef.current || !displayDuration) return
+
+    videoRef.current.currentTime = resumeAtSeconds
     resumedMovieIdRef.current = movie.id
-  }, [isProgressLoaded, resumeAtSeconds, displayDuration, movie?.id])
+  }, [isProgressLoaded, resumeAtSeconds, displayDuration, movie?.id, useDirectSrc])
 
   useEffect(() => {
     return () => {
@@ -229,10 +251,23 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   useVideoShortcuts(togglePlay, toggleFullscreen, () => navigate('/dashboard'))
 
   const handleSeek = (posPercentage: number) => {
-    if (!videoRef.current || !displayDuration) return
-    const newTime = (posPercentage / 100) * displayDuration
-    videoRef.current.currentTime = newTime
-    setCurrentTime(newTime)
+    if (!displayDuration) return
+    const targetSeconds = (posPercentage / 100) * displayDuration
+
+    if (useDirectSrc) {
+      if (!videoRef.current) return
+      videoRef.current.currentTime = targetSeconds
+      setCurrentTime(targetSeconds)
+      setProgress(posPercentage)
+      return
+    }
+
+    // A growing HLS "event" playlist can't jump ahead of what's been converted so far, so
+    // seeking re-points the encoder at the new offset instead of the media element itself —
+    // the buffering overlay covers the still-old video while the backend catches up.
+    setIsBuffering(true)
+    setSeekOffsetSeconds(Math.floor(targetSeconds))
+    setCurrentTime(targetSeconds)
     setProgress(posPercentage)
   }
 
@@ -270,7 +305,10 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         }}
         onTimeUpdate={() => {
           if (videoRef.current) {
-            const cur = videoRef.current.currentTime
+            // In HLS mode the media element's own clock restarts at 0 for each new
+            // conversion session, so the real movie time is offset by wherever that
+            // session was based (see handleSeek / the resume effect).
+            const cur = (useDirectSrc ? 0 : confirmedOffsetSeconds) + videoRef.current.currentTime
             const dur = knownDurationSeconds ?? (videoRef.current.duration || 0)
             setCurrentTime(cur)
             setDuration(dur)
