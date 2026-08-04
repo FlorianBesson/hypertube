@@ -9,6 +9,7 @@ import { useWatchProgress } from '../../hooks/useWatchProgress'
 import { useStreamStats } from '../../hooks/useStreamStats'
 import { useSubtitles } from '../../hooks/useSubtitles'
 import { resolveStreamIdentifier, buildStreamUrl, buildHlsPlaylistUrl, buildSubtitleUrl, fetchStreamErrorMessage } from '../../services/videoStream'
+import { fetchTmdbMovieDetails } from '../../services/internetArchiveTmdb'
 import SubtitlesMenu from './SubtitlesMenu'
 import SubtitleOverlay from './SubtitleOverlay'
 import { useVideoShortcuts } from '../../hooks/useVideoShortcuts'
@@ -54,6 +55,22 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const { showControls, handleMouseMove } = useControlsVisibility(isPlaying, onControlsVisibilityChange)
   const { resumeAtSeconds, isProgressLoaded, saveProgress } = useWatchProgress(movie?.id)
 
+  // The search/watch Movie object never carries TMDB's runtime (only /movie/{id} has it,
+  // not /search/movie) — fetched here the same way InfoPanel does, since it's the only
+  // reliable source of the real total duration while an HLS conversion is still growing.
+  const [tmdbRuntimeMinutes, setTmdbRuntimeMinutes] = useState<number | null>(null)
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_TMDB_API_KEY
+    if (!movie?.tmdbId || !apiKey) return
+
+    const controller = new AbortController()
+    fetchTmdbMovieDetails(movie.tmdbId, apiKey, lang, controller.signal)
+      .then((details) => setTmdbRuntimeMinutes(details?.runtime ?? null))
+      .catch(() => {})
+
+    return () => controller.abort()
+  }, [movie?.tmdbId, lang])
+
   const resumeIfNotUserPaused = useCallback(() => {
     if (videoRef.current && videoRef.current.paused && !userPausedRef.current) {
       videoRef.current.play().catch(() => {})
@@ -87,6 +104,15 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const useDirectSrc = conversionStatus === 'not_needed'
   const isConverting = conversionStatus === 'converting'
   const isHlsReady = conversionStatus === 'ready'
+
+  // A growing HLS "event" playlist only reports the duration of segments converted so
+  // far, which would make the progress bar/duration grow as conversion progresses. TMDB's
+  // runtime is the real total, known upfront regardless of conversion state.
+  const knownDurationSeconds = tmdbRuntimeMinutes ? tmdbRuntimeMinutes * 60 : null
+  // Falls back to the video element's own duration only once TMDB's runtime is unavailable;
+  // shown immediately (before the video even starts loading) rather than waiting on the
+  // player to report it, unlike the growing "event" HLS playlist duration.
+  const displayDuration = knownDurationSeconds ?? duration
 
   const imdbId = movie?.imdbId || movie?.id
   const {
@@ -156,14 +182,14 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   // Seeking needs both the saved position and a loaded duration, whichever arrives last.
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !movie?.id || !isProgressLoaded || !duration) return
+    if (!video || !movie?.id || !isProgressLoaded || !displayDuration) return
     if (resumedMovieIdRef.current === movie.id) return
 
     if (resumeAtSeconds > 0) {
       video.currentTime = resumeAtSeconds
     }
     resumedMovieIdRef.current = movie.id
-  }, [isProgressLoaded, resumeAtSeconds, duration, movie?.id])
+  }, [isProgressLoaded, resumeAtSeconds, displayDuration, movie?.id])
 
   useEffect(() => {
     return () => {
@@ -203,8 +229,8 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   useVideoShortcuts(togglePlay, toggleFullscreen, () => navigate('/dashboard'))
 
   const handleSeek = (posPercentage: number) => {
-    if (!videoRef.current || !duration) return
-    const newTime = (posPercentage / 100) * duration
+    if (!videoRef.current || !displayDuration) return
+    const newTime = (posPercentage / 100) * displayDuration
     videoRef.current.currentTime = newTime
     setCurrentTime(newTime)
     setProgress(posPercentage)
@@ -245,7 +271,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         onTimeUpdate={() => {
           if (videoRef.current) {
             const cur = videoRef.current.currentTime
-            const dur = videoRef.current.duration || 0
+            const dur = knownDurationSeconds ?? (videoRef.current.duration || 0)
             setCurrentTime(cur)
             setDuration(dur)
             if (dur > 0) {
@@ -258,7 +284,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         }}
         onLoadedMetadata={() => {
           if (videoRef.current) {
-            setDuration(videoRef.current.duration || 0)
+            setDuration(knownDurationSeconds ?? (videoRef.current.duration || 0))
             setIsBuffering(false)
             resumeIfNotUserPaused()
             syncActiveCue()
@@ -396,7 +422,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
             </div>
 
             <span className="text-neutral-400 font-mono text-xs">
-              {formatTime(currentTime)} / {formatTime(duration)}
+              {formatTime(currentTime)} / {formatTime(displayDuration)}
             </span>
 
             {videoFormat && (
