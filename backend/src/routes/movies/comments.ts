@@ -4,13 +4,46 @@ import { prisma } from '../../prisma';
 import { authenticateToken } from '../../middlewares/auth';
 import { HttpError } from '../../errors';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 const createCommentSchema = z.object({
-    content: z.string().trim().min(1, "Comment cannot be empty").max(1000, "Comment cannot exceed 1000 characters")
+    content: z.string().trim().min(1, "Comment cannot be empty").max(1000, "Comment cannot exceed 1000 characters").optional(),
+    comment: z.string().trim().min(1, "Comment cannot be empty").max(1000, "Comment cannot exceed 1000 characters").optional(),
+    movie_id: z.string().optional(),
+    imdbId: z.string().optional()
+}).refine(data => data.content || data.comment, {
+    message: "Comment text is required (content or comment field)"
 });
 
 router.get("/", authenticateToken, async (req: Request, res: Response) => {
+    const rawParam = req.params.id || req.params.imdbId || req.params.movie_id;
+    const movieId = Array.isArray(rawParam) ? rawParam[0] : rawParam;
+
+    // If movie ID is present in path parameters (e.g. GET /movies/:id/comments or GET /movie/:id/comments)
+    if (movieId) {
+        const comments = await prisma.comment.findMany({
+            where: { imdbId: movieId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        firstName: true,
+                        lastName: true,
+                        photo: true
+                    }
+                }
+            }
+        });
+        res.json({ success: true, comments });
+        return;
+    }
+
+    // Otherwise (GET /comments): return list of latest comments globally
     const comments = await prisma.comment.findMany({
         orderBy: { createdAt: 'desc'},
         select: {
@@ -26,6 +59,57 @@ router.get("/", authenticateToken, async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, comments});
+});
+
+router.post("/", authenticateToken, async (req: Request, res: Response) => {
+    const rawParam = req.params.id || req.params.imdbId || req.params.movie_id || req.body.movie_id || req.body.imdbId;
+    const imdbId = Array.isArray(rawParam) ? rawParam[0] : rawParam;
+    const rawUserId = (req as any).user?.userId || (req as any).user?.id;
+    const userId = typeof rawUserId === 'string' ? parseInt(rawUserId, 10) : Number(rawUserId);
+
+    if (!imdbId) {
+        throw new HttpError(400, "Missing IMDb / movie identifier");
+    }
+
+    if (!userId || isNaN(userId)) {
+        throw new HttpError(401, "Unauthenticated user");
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+        throw new HttpError(401, "Session expired or user no longer exists. Please log in again.");
+    }
+
+    const validation = createCommentSchema.safeParse(req.body);
+    if (!validation.success) {
+        throw new HttpError(400, validation.error.issues[0]?.message || "Invalid data");
+    }
+
+    const content = (validation.data.content || validation.data.comment)!;
+
+    const comment = await prisma.comment.create({
+        data: {
+            imdbId: String(imdbId),
+            content,
+            userId
+        },
+        select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            user: {
+                select: {
+                    id: true,
+                    username: true,
+                    firstName: true,
+                    lastName: true,
+                    photo: true
+                }
+            }
+        }
+    });
+
+    res.status(201).json({ success: true, comment });
 });
 
 router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
@@ -120,8 +204,8 @@ router.post("/:id", authenticateToken, async (req: Request, res: Response) => {
 
     const comment = await prisma.comment.create({
         data: {
-            imdbId,
-            content,
+            imdbId: String(imdbId),
+            content: content || "",
             userId
         },
         select: {
