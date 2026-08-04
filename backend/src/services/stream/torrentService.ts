@@ -40,7 +40,7 @@ export async function getOrStartTorrent(torrentHash: string, imdbId?: string): P
 }
 
 /**
- * Starts (or reuses) the HLS remux session for a torrent hash: from the completed file on
+ * Starts (or reuses) the HLS transcode session for a torrent hash: from the completed file on
  * disk if one exists, otherwise from the live P2P stream. Safe to call on every stats poll —
  * both the torrent engine and the HLS session dedupe by hash internally.
  */

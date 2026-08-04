@@ -26,7 +26,9 @@ export function selectMainVideoFile(files: TorrentStreamFile[]): TorrentStreamFi
   });
 
   if (webFiles.length > 0) {
-    mainVideoFile = webFiles.sort((a, b) => b.length - a.length)[0];
+    // TEMP: smallest first (not largest) so a re-encode test doesn't grab a multi-GB
+    // preservation master by accident.
+    mainVideoFile = webFiles.sort((a, b) => a.length - b.length)[0];
   } else if (videoFiles.length > 0) {
     mainVideoFile = videoFiles.sort((a, b) => b.length - a.length)[0];
   } else {

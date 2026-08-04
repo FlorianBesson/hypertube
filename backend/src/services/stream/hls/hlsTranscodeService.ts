@@ -30,9 +30,13 @@ function isPlaylistReady(playlistPath: string): boolean {
 }
 
 /**
- * Starts an HLS remux session for a torrent hash, or returns the already-running one.
+ * Starts an HLS transcode session for a torrent hash, or returns the already-running one.
  * `openSource` is only invoked on first start: a second call for the same hash must not
  * open a competing read against the same (possibly still-downloading) torrent file.
+ *
+ * Always re-encodes (never -c copy): most public-domain sources this app streams predate
+ * H.264 (MPEG-2, Theora, ...), so a plain remux would produce segments no browser can
+ * decode. libx264/aac is the only combination guaranteed to play back everywhere.
  */
 export function getOrStartHlsSession(
   torrentHash: string,
@@ -51,16 +55,23 @@ export function getOrStartHlsSession(
   const session: HlsSession = { playlistPath, status: 'converting' };
   activeSessions.set(torrentHash, session);
 
-  ffmpeg(openSource())
+  const source = openSource();
+  // Surfaces the torrent read stream's own errors (e.g. a piece that failed verification)
+  // separately from ffmpeg's, since a broken pipe alone doesn't say which side caused it.
+  source.on('error', (err: Error) => console.error(`[hlsTranscodeService] Source stream error for ${torrentHash}:`, err.message));
+
+  ffmpeg(source)
     .outputOptions([
-      '-c', 'copy',
+      '-c:v', 'libx264',
+      '-preset', 'veryfast',
+      '-c:a', 'aac',
       '-f', 'hls',
       '-hls_time', '6',
       '-hls_playlist_type', 'event',
       '-hls_segment_filename', path.join(hlsDir, 'seg%05d.ts'),
     ])
-    .on('error', (err: Error) => {
-      console.error(`[hlsTranscodeService] ffmpeg error for ${torrentHash}:`, err.message);
+    .on('error', (err: Error, _stdout, stderr) => {
+      console.error(`[hlsTranscodeService] ffmpeg error for ${torrentHash}:`, err.message, stderr);
       activeSessions.delete(torrentHash);
     })
     .save(playlistPath);
