@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Hls from 'hls.js'
 import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
@@ -7,7 +8,8 @@ import { useControlsVisibility } from '../../hooks/useControlsVisibility'
 import { useWatchProgress } from '../../hooks/useWatchProgress'
 import { useStreamStats } from '../../hooks/useStreamStats'
 import { useSubtitles } from '../../hooks/useSubtitles'
-import { resolveStreamIdentifier, buildStreamUrl, buildSubtitleUrl, fetchStreamErrorMessage } from '../../services/videoStream'
+import { resolveStreamIdentifier, buildStreamUrl, buildHlsPlaylistUrl, buildSubtitleUrl, fetchStreamErrorMessage } from '../../services/videoStream'
+import { fetchTmdbMovieDetails } from '../../services/internetArchiveTmdb'
 import SubtitlesMenu from './SubtitlesMenu'
 import SubtitleOverlay from './SubtitleOverlay'
 import { useVideoShortcuts } from '../../hooks/useVideoShortcuts'
@@ -53,6 +55,22 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const { showControls, handleMouseMove } = useControlsVisibility(isPlaying, onControlsVisibilityChange)
   const { resumeAtSeconds, isProgressLoaded, saveProgress } = useWatchProgress(movie?.id)
 
+  // The search/watch Movie object never carries TMDB's runtime (only /movie/{id} has it,
+  // not /search/movie) — fetched here the same way InfoPanel does, since it's the only
+  // reliable source of the real total duration while an HLS conversion is still growing.
+  const [tmdbRuntimeMinutes, setTmdbRuntimeMinutes] = useState<number | null>(null)
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_TMDB_API_KEY
+    if (!movie?.tmdbId || !apiKey) return
+
+    const controller = new AbortController()
+    fetchTmdbMovieDetails(movie.tmdbId, apiKey, lang, controller.signal)
+      .then((details) => setTmdbRuntimeMinutes(details?.runtime ?? null))
+      .catch(() => {})
+
+    return () => controller.abort()
+  }, [movie?.tmdbId, lang])
+
   const resumeIfNotUserPaused = useCallback(() => {
     if (videoRef.current && videoRef.current.paused && !userPausedRef.current) {
       videoRef.current.play().catch(() => {})
@@ -78,8 +96,32 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const token = localStorage.getItem('token')
   const streamIdentifier = resolveStreamIdentifier(movie)
   const streamUrl = buildStreamUrl(streamIdentifier, movie?.id, token)
+  const hlsPlaylistUrl = buildHlsPlaylistUrl(streamIdentifier, token)
 
-  const { seeds: realtimeSeeds, format: videoFormat } = useStreamStats(streamIdentifier, Boolean(streamError), token)
+  // A growing HLS "event" playlist only reports the duration of segments converted so
+  // far, which would make the progress bar/duration grow as conversion progresses. TMDB's
+  // runtime is the real total, known upfront regardless of conversion state.
+  const knownDurationSeconds = tmdbRuntimeMinutes ? tmdbRuntimeMinutes * 60 : null
+  // Falls back to the video element's own duration only once TMDB's runtime is unavailable;
+  // shown immediately (before the video even starts loading) rather than waiting on the
+  // player to report it, unlike the growing "event" HLS playlist duration.
+  const displayDuration = knownDurationSeconds ?? duration
+
+  const {
+    seeds: realtimeSeeds,
+    format: videoFormat,
+    conversionStatus,
+    convertedSeconds
+  } = useStreamStats(streamIdentifier, Boolean(streamError), token)
+  // Non-native containers (e.g. mkv) are never pointed at directly: the backend converts
+  // them to HLS on the fly, and a bare <video src> would just error on unsupported bytes.
+  const useDirectSrc = conversionStatus === 'not_needed'
+  const isConverting = conversionStatus === 'converting'
+  const isHlsReady = conversionStatus === 'ready'
+  // How far the player is allowed to seek: the whole file for a direct/native source, or
+  // only what the HLS conversion has produced so far — jumping past that lands in a gap
+  // hls.js can't recover from cleanly (see handleSeek).
+  const seekLimitSeconds = useDirectSrc ? displayDuration : convertedSeconds
 
   const imdbId = movie?.imdbId || movie?.id
   const {
@@ -104,7 +146,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
 
   // Browsers block unmuted autoplay without a recent user gesture (e.g. after a page reload).
   // Retry muted in that case so playback still starts automatically.
-  useEffect(() => {
+  const attemptAutoplay = useCallback(() => {
     const video = videoRef.current
     if (!video) return
     video.play().catch(() => {
@@ -114,19 +156,49 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         video.play().catch(() => {})
       }
     })
-  }, [streamUrl])
+  }, [])
 
-  // Seeking needs both the saved position and a loaded duration, whichever arrives last.
+  useEffect(() => {
+    if (!useDirectSrc) return
+    attemptAutoplay()
+  }, [useDirectSrc, streamUrl, attemptAutoplay])
+
+  // Once the backend reports the HLS conversion as ready, attach hls.js (or hand the
+  // playlist straight to Safari, which plays HLS natively without hls.js).
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !movie?.id || !isProgressLoaded || !duration) return
-    if (resumedMovieIdRef.current === movie.id) return
+    if (!video || !isHlsReady) return
 
-    if (resumeAtSeconds > 0) {
-      video.currentTime = resumeAtSeconds
+    if (Hls.isSupported()) {
+      const hls = new Hls()
+      hls.on(Hls.Events.MANIFEST_PARSED, attemptAutoplay)
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          setStreamError(t.errorLoadingVideo)
+        }
+      })
+      hls.loadSource(hlsPlaylistUrl)
+      hls.attachMedia(video)
+      return () => hls.destroy()
     }
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = hlsPlaylistUrl
+      attemptAutoplay()
+    }
+  }, [isHlsReady, hlsPlaylistUrl, attemptAutoplay, t.errorLoadingVideo])
+
+  // Resumes a saved position once its duration is known. Only for a direct/native source:
+  // an HLS conversion in progress may not have reached that point yet (see seekLimitSeconds),
+  // so it just starts from the beginning instead of guessing.
+  useEffect(() => {
+    if (!useDirectSrc || !movie?.id || !isProgressLoaded || resumeAtSeconds <= 0) return
+    if (resumedMovieIdRef.current === movie.id) return
+    if (!videoRef.current || !displayDuration) return
+
+    videoRef.current.currentTime = resumeAtSeconds
     resumedMovieIdRef.current = movie.id
-  }, [isProgressLoaded, resumeAtSeconds, duration, movie?.id])
+  }, [isProgressLoaded, resumeAtSeconds, displayDuration, movie?.id, useDirectSrc])
 
   useEffect(() => {
     return () => {
@@ -166,11 +238,15 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   useVideoShortcuts(togglePlay, toggleFullscreen, () => navigate('/dashboard'))
 
   const handleSeek = (posPercentage: number) => {
-    if (!videoRef.current || !duration) return
-    const newTime = (posPercentage / 100) * duration
-    videoRef.current.currentTime = newTime
-    setCurrentTime(newTime)
-    setProgress(posPercentage)
+    if (!videoRef.current || !displayDuration) return
+    const targetSeconds = (posPercentage / 100) * displayDuration
+    // Clamped in JS rather than left to the browser: asking hls.js to seek past what its
+    // "event" playlist currently knows about doesn't fail cleanly, it restarts at 0.
+    const clampedSeconds = Math.min(targetSeconds, seekLimitSeconds)
+
+    videoRef.current.currentTime = clampedSeconds
+    setCurrentTime(clampedSeconds)
+    setProgress((clampedSeconds / displayDuration) * 100)
   }
 
   return (
@@ -181,7 +257,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
       {/* HTML5 Video Element connected to torrent stream API */}
       <video
         ref={videoRef}
-        src={streamUrl}
+        src={useDirectSrc ? streamUrl : undefined}
         className="absolute inset-0 z-0 w-full h-full object-contain bg-black"
         playsInline
         autoPlay
@@ -208,7 +284,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         onTimeUpdate={() => {
           if (videoRef.current) {
             const cur = videoRef.current.currentTime
-            const dur = videoRef.current.duration || 0
+            const dur = knownDurationSeconds ?? (videoRef.current.duration || 0)
             setCurrentTime(cur)
             setDuration(dur)
             if (dur > 0) {
@@ -221,7 +297,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         }}
         onLoadedMetadata={() => {
           if (videoRef.current) {
-            setDuration(videoRef.current.duration || 0)
+            setDuration(knownDurationSeconds ?? (videoRef.current.duration || 0))
             setIsBuffering(false)
             resumeIfNotUserPaused()
             syncActiveCue()
@@ -247,7 +323,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
           <Loader2 className="w-12 h-12 text-red-600 animate-spin mb-3" />
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
-              {t.buffering || 'Bufferisation du flux vidéo...'}
+              {isConverting ? (t.convertingVideo || 'Conversion de la vidéo...') : (t.buffering || 'Bufferisation du flux vidéo...')}
             </span>
             <span className="text-xs font-bold text-red-500 font-mono">
               ({bufferingSeconds}s)
@@ -318,6 +394,13 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
             handleSeek(pos * 100)
           }}
         >
+          {/* Portion already converted by the backend and safe to seek into */}
+          {!useDirectSrc && displayDuration > 0 && (
+            <div
+              className="absolute inset-y-0 left-0 bg-red-400/50 rounded-full"
+              style={{ width: `${Math.min(100, (convertedSeconds / displayDuration) * 100)}%` }}
+            />
+          )}
           <div
             className="h-full bg-red-600 rounded-full relative"
             style={{ width: `${progress}%` }}
@@ -359,7 +442,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
             </div>
 
             <span className="text-neutral-400 font-mono text-xs">
-              {formatTime(currentTime)} / {formatTime(duration)}
+              {formatTime(currentTime)} / {formatTime(displayDuration)}
             </span>
 
             {videoFormat && (

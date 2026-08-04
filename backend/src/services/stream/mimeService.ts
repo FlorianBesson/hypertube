@@ -33,7 +33,18 @@ export function getVideoFormat(filename?: string): string | null {
   return ext || null;
 }
 
+const BROWSER_NATIVE_EXTENSIONS = new Set(['.mp4', '.webm']);
+
+/**
+ * Whether a video file's container needs HLS conversion before a browser can play it.
+ */
+export function needsConversion(filename?: string): boolean {
+  if (!filename) return false;
+  return !BROWSER_NATIVE_EXTENSIONS.has(path.extname(filename).toLowerCase());
+}
+
 export const MimeService = {
   getMimeType,
   getVideoFormat,
+  needsConversion,
 };

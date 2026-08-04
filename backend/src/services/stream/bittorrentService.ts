@@ -9,6 +9,18 @@ export type { ActiveTorrentEngine, TorrentStreamFile };
 const defaultEngineManager = new TorrentEngineManager();
 
 /**
+ * Derives the on-disk download folder for a torrent hash. Deterministic so callers
+ * (e.g. the HLS conversion trigger) can locate it without an active engine reference.
+ */
+export function resolveDownloadFolder(torrentHash: string, downloadsBaseDir: string): string {
+  const isHexHash = /^[a-fA-F0-9]{40}$/.test(torrentHash);
+  const normalizedHash = isHexHash ? torrentHash.toLowerCase() : torrentHash;
+  // Sanitize folder name for safe filesystem storage
+  const folderName = isHexHash ? normalizedHash : encodeURIComponent(normalizedHash).replace(/%/g, '_').substring(0, 100);
+  return path.join(downloadsBaseDir, folderName);
+}
+
+/**
  * Initializes or returns an active non-blocking torrent stream engine.
  */
 export async function getOrStartTorrent(
@@ -25,9 +37,7 @@ export async function getOrStartTorrent(
     return active.readyPromise;
   }
 
-  // Sanitize folder name for safe filesystem storage
-  const folderName = isHexHash ? normalizedHash : encodeURIComponent(normalizedHash).replace(/%/g, '_').substring(0, 100);
-  const downloadFolder = path.join(downloadsBaseDir, folderName);
+  const downloadFolder = resolveDownloadFolder(normalizedHash, downloadsBaseDir);
   if (!fs.existsSync(downloadFolder)) {
     fs.mkdirSync(downloadFolder, { recursive: true });
   }

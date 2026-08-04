@@ -23,6 +23,10 @@ export function buildStreamStatsUrl(streamIdentifier: string, token: string | nu
   return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/stats${buildTokenQuery(token)}`
 }
 
+export function buildHlsPlaylistUrl(streamIdentifier: string, token: string | null): string {
+  return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/hls/playlist.m3u8${buildTokenQuery(token)}`
+}
+
 export function buildSubtitleUrl(imdbId: string, langCode: string, token: string | null): string {
   return `/api/movies/subtitles/${encodeURIComponent(imdbId)}/${langCode}${buildTokenQuery(token)}`
 }

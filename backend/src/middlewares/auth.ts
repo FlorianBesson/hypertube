@@ -13,6 +13,15 @@ const extractQueryToken = (req: Request): string | undefined => {
     return Array.isArray(rawToken) ? (rawToken[0] as string) : (rawToken as string | undefined);
 };
 
+/**
+ * Whichever token authenticated this request (header or query). Used by the HLS playlist
+ * route to reattach the token to segment URIs, since resolving a relative URL against the
+ * playlist's own URL drops its query string.
+ */
+export const extractRequestToken = (req: Request): string | undefined => {
+    return extractBearerToken(req) ?? extractQueryToken(req);
+};
+
 const verifyRequestToken = (req: Request, next: NextFunction, token: string | undefined) => {
     // If no token is provided, deny access with a 401 Unauthorized status
     if (!token) {
