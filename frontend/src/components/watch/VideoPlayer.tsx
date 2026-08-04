@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Hls from 'hls.js'
 import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { TranslationType } from '../../locales/translations'
@@ -7,7 +8,7 @@ import { useControlsVisibility } from '../../hooks/useControlsVisibility'
 import { useWatchProgress } from '../../hooks/useWatchProgress'
 import { useStreamStats } from '../../hooks/useStreamStats'
 import { useSubtitles } from '../../hooks/useSubtitles'
-import { resolveStreamIdentifier, buildStreamUrl, buildSubtitleUrl, fetchStreamErrorMessage } from '../../services/videoStream'
+import { resolveStreamIdentifier, buildStreamUrl, buildHlsPlaylistUrl, buildSubtitleUrl, fetchStreamErrorMessage } from '../../services/videoStream'
 import SubtitlesMenu from './SubtitlesMenu'
 import SubtitleOverlay from './SubtitleOverlay'
 import { useVideoShortcuts } from '../../hooks/useVideoShortcuts'
@@ -78,8 +79,14 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const token = localStorage.getItem('token')
   const streamIdentifier = resolveStreamIdentifier(movie)
   const streamUrl = buildStreamUrl(streamIdentifier, movie?.id, token)
+  const hlsPlaylistUrl = buildHlsPlaylistUrl(streamIdentifier, token)
 
-  const { seeds: realtimeSeeds, format: videoFormat } = useStreamStats(streamIdentifier, Boolean(streamError), token)
+  const { seeds: realtimeSeeds, format: videoFormat, conversionStatus } = useStreamStats(streamIdentifier, Boolean(streamError), token)
+  // Non-native containers (e.g. mkv) are never pointed at directly: the backend converts
+  // them to HLS on the fly, and a bare <video src> would just error on unsupported bytes.
+  const useDirectSrc = conversionStatus === 'not_needed'
+  const isConverting = conversionStatus === 'converting'
+  const isHlsReady = conversionStatus === 'ready'
 
   const imdbId = movie?.imdbId || movie?.id
   const {
@@ -104,7 +111,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
 
   // Browsers block unmuted autoplay without a recent user gesture (e.g. after a page reload).
   // Retry muted in that case so playback still starts automatically.
-  useEffect(() => {
+  const attemptAutoplay = useCallback(() => {
     const video = videoRef.current
     if (!video) return
     video.play().catch(() => {
@@ -114,7 +121,37 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
         video.play().catch(() => {})
       }
     })
-  }, [streamUrl])
+  }, [])
+
+  useEffect(() => {
+    if (!useDirectSrc) return
+    attemptAutoplay()
+  }, [useDirectSrc, streamUrl, attemptAutoplay])
+
+  // Once the backend reports the HLS conversion as ready, attach hls.js (or hand the
+  // playlist straight to Safari, which plays HLS natively without hls.js).
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !isHlsReady) return
+
+    if (Hls.isSupported()) {
+      const hls = new Hls()
+      hls.on(Hls.Events.MANIFEST_PARSED, attemptAutoplay)
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          setStreamError(t.errorLoadingVideo)
+        }
+      })
+      hls.loadSource(hlsPlaylistUrl)
+      hls.attachMedia(video)
+      return () => hls.destroy()
+    }
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = hlsPlaylistUrl
+      attemptAutoplay()
+    }
+  }, [isHlsReady, hlsPlaylistUrl, attemptAutoplay, t.errorLoadingVideo])
 
   // Seeking needs both the saved position and a loaded duration, whichever arrives last.
   useEffect(() => {
@@ -181,7 +218,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
       {/* HTML5 Video Element connected to torrent stream API */}
       <video
         ref={videoRef}
-        src={streamUrl}
+        src={useDirectSrc ? streamUrl : undefined}
         className="absolute inset-0 z-0 w-full h-full object-contain bg-black"
         playsInline
         autoPlay
@@ -247,7 +284,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
           <Loader2 className="w-12 h-12 text-red-600 animate-spin mb-3" />
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-neutral-300 tracking-wider uppercase">
-              {t.buffering || 'Bufferisation du flux vidéo...'}
+              {isConverting ? (t.convertingVideo || 'Conversion de la vidéo...') : (t.buffering || 'Bufferisation du flux vidéo...')}
             </span>
             <span className="text-xs font-bold text-red-500 font-mono">
               ({bufferingSeconds}s)

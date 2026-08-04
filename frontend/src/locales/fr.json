@@ -199,6 +199,7 @@
     "quality": "1080p Web-DL",
     "errorLoadingVideo": "Erreur lors du chargement de la vidéo.",
     "buffering": "Bufferisation du flux vidéo...",
+    "convertingVideo": "Conversion de la vidéo en cours...",
     "videoUnavailable": "Flux vidéo indisponible",
     "retry": "Réessayer",
     "messagesCount": "messages",
