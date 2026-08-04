@@ -203,6 +203,9 @@ Expected data: comment, movie_id. Rest is filled by the server.
 During the evaluation, you will be asked to provide evidence that your API is
 truly RESTful.
 
+## Bonus Part
+You can now add any bonus features you wish. They will be evaluated at the discretion of your evaluators but you must still adhere to the basic constraints. For instance, downloading a torrent must occur on the server side in the background.
+
 ## Submission and peer-evaluation
 
 The following instructions will be part of your defense. Be cautious when you

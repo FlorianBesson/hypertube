@@ -2,18 +2,16 @@ import path from 'path';
 import fs from 'fs';
 import { movieDbService } from '../../movies/movieDbService';
 import { TorrentFileSelector } from './torrentFileSelector';
-import { TorrentStreamFile } from '../bittorrentService';
-
-const torrentStream = require('torrent-stream');
+import { createTorrentEngine, TorrentEngine, TorrentStreamFile } from './engine/torrentEngine';
 
 export interface ActiveTorrentEngine {
-  engine: any;
+  engine: TorrentEngine;
   torrentHash: string;
   imdbId?: string;
   videoFile: TorrentStreamFile | null;
   downloadsDir: string;
   isReady: boolean;
-  readyPromise: Promise<{ engine: any; videoFile: TorrentStreamFile }>;
+  readyPromise: Promise<{ engine: TorrentEngine; videoFile: TorrentStreamFile }>;
 }
 
 export class TorrentEngineManager {
@@ -27,22 +25,23 @@ export class TorrentEngineManager {
   }
 
   /**
-   * Returns active engine stats (seeds/peers wires length).
+   * Returns active engine stats (seeds/peers wires length and streamed file name).
    */
-  public getEngineStats(hash: string): { seeds: number; peers: number } {
+  public getEngineStats(hash: string): { seeds: number; peers: number; fileName: string | null } {
     const active = this.activeEngines.get(hash);
     if (!active || !active.engine) {
-      return { seeds: 0, peers: 0 };
+      return { seeds: 0, peers: 0, fileName: null };
     }
     const wires = active.engine.swarm?.wires || [];
     return {
       seeds: wires.length,
-      peers: wires.length
+      peers: wires.length,
+      fileName: active.videoFile?.name ?? null
     };
   }
 
   /**
-   * Spawns and manages a torrent-stream engine instance with timeout protection,
+   * Spawns and manages a torrent engine instance with timeout protection,
    * video file selection on ready, and completion tracking on idle.
    */
   public createEngine(
@@ -50,11 +49,11 @@ export class TorrentEngineManager {
     torrentSource: string | Buffer,
     downloadFolder: string,
     imdbId?: string
-  ): Promise<{ engine: any; videoFile: TorrentStreamFile }> {
-    let resolveReady!: (val: { engine: any; videoFile: TorrentStreamFile }) => void;
+  ): Promise<{ engine: TorrentEngine; videoFile: TorrentStreamFile }> {
+    let resolveReady!: (val: { engine: TorrentEngine; videoFile: TorrentStreamFile }) => void;
     let rejectReady!: (err: any) => void;
 
-    const readyPromise = new Promise<{ engine: any; videoFile: TorrentStreamFile }>((resolve, reject) => {
+    const readyPromise = new Promise<{ engine: TorrentEngine; videoFile: TorrentStreamFile }>((resolve, reject) => {
       resolveReady = resolve;
       rejectReady = reject;
     });
@@ -63,14 +62,12 @@ export class TorrentEngineManager {
     const metadataTimer = setTimeout(() => {
       if (!activeEngine.isReady) {
         this.activeEngines.delete(torrentHash);
+        engine.destroy();
         rejectReady(new Error("No active seeder found for this torrent. The movie cannot be downloaded."));
       }
     }, 15000);
 
-    const engine = torrentStream(torrentSource, {
-      path: downloadFolder,
-      verify: false,
-    });
+    const engine = createTorrentEngine(torrentSource, { path: downloadFolder });
 
     const activeEngine: ActiveTorrentEngine = {
       engine,
@@ -88,7 +85,7 @@ export class TorrentEngineManager {
       clearTimeout(metadataTimer);
 
       try {
-        const mainVideoFile = TorrentFileSelector.selectMainVideoFile(engine.files as TorrentStreamFile[]);
+        const mainVideoFile = TorrentFileSelector.selectMainVideoFile(engine.files);
         activeEngine.videoFile = mainVideoFile;
         activeEngine.isReady = true;
 
@@ -121,6 +118,8 @@ export class TorrentEngineManager {
     engine.on('error', (err: any) => {
       console.error(`[TorrentEngineManager] Torrent engine error (${torrentHash}):`, err);
       if (!activeEngine.isReady) {
+        this.activeEngines.delete(torrentHash);
+        clearTimeout(metadataTimer);
         rejectReady(err);
       }
     });

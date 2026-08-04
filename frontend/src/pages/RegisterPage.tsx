@@ -126,9 +126,6 @@ export default function RegisterPage({
 
         {success ? (
           <div className="bg-emerald-500/10 border border-emerald-500/40 rounded px-4 py-6 text-emerald-300 text-center flex flex-col gap-2">
-            <svg className="w-8 h-8 text-emerald-400 mx-auto animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
             <p className="font-semibold text-sm">
               {lang === 'fr' ? 'Inscription réussie ! Redirection...' : 'Registration successful! Redirecting...'}
             </p>

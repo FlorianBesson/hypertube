@@ -24,6 +24,16 @@ export function getMimeType(filename?: string): string {
   }
 }
 
+/**
+ * Returns the container format of a video file ("mkv", "mp4", ...), or null when unknown.
+ */
+export function getVideoFormat(filename?: string): string | null {
+  if (!filename) return null;
+  const ext = path.extname(filename).toLowerCase().replace('.', '');
+  return ext || null;
+}
+
 export const MimeService = {
   getMimeType,
+  getVideoFormat,
 };

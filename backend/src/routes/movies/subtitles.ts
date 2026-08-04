@@ -8,6 +8,7 @@ const router = Router();
 /**
  * Route: GET /api/movies/subtitles/:imdbId/:lang
  * Description: Serves WebVTT subtitle file for a specific movie IMDb ID and language.
+ * Access: Authenticated
  */
 router.get("/:imdbId/:lang", async (req: Request, res: Response) => {
     const rawImdbId = Array.isArray(req.params.imdbId) ? req.params.imdbId[0] : req.params.imdbId;
@@ -27,7 +28,6 @@ router.get("/:imdbId/:lang", async (req: Request, res: Response) => {
     }
 
     res.setHeader('Content-Type', 'text/vtt');
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.sendFile(filePath);
 });
 

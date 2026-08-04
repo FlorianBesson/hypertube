@@ -6,18 +6,21 @@ import { HttpError } from '../../errors';
 import jwt from 'jsonwebtoken';
 
 const RegisterSchema = z.object({
-    email: z.
-        email("Field is required"),
-    
+    email: z
+        .email("Field is required")
+        .transform((value) => value.toLowerCase().trim()),
+
     username: z
         .string("Field is required")
+        .trim()
         .min(3, {
             error: (iss) => {
                 iss.minimum;
                 iss.inclusive;
                 return `Username must have ${iss.minimum} characters or more`
             }
-        }),
+        })
+        .transform((value) => value.toLowerCase()),
     firstName: z.string("Field is required").trim().min(1, "First name is required"),
     lastName: z.string("Field is required").trim().min(1, "Last name is required"),
     password: z
@@ -53,10 +56,19 @@ export async function registerHandler(req: Request, res: Response) {
             email: email
         }
     })
-    
+
     if (user)
         throw new HttpError(400, "Email already in use");
-    
+
+    const usernameOwner = await prisma.user.findUnique({
+        where: {
+            username: username
+        }
+    })
+
+    if (usernameOwner)
+        throw new HttpError(400, "Username already in use");
+
     const newUser = await prisma.user.create({
         data: {
             username: username,

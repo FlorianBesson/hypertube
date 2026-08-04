@@ -5,9 +5,9 @@ import type { TranslationType } from '../../locales/translations'
 import type { Movie } from '../../types/movie'
 import { useControlsVisibility } from '../../hooks/useControlsVisibility'
 import { useWatchProgress } from '../../hooks/useWatchProgress'
-import { useRealtimeSeeds } from '../../hooks/useRealtimeSeeds'
+import { useStreamStats } from '../../hooks/useStreamStats'
 import { useSubtitles } from '../../hooks/useSubtitles'
-import { resolveStreamIdentifier, buildStreamUrl, fetchStreamErrorMessage } from '../../services/videoStream'
+import { resolveStreamIdentifier, buildStreamUrl, buildSubtitleUrl, fetchStreamErrorMessage } from '../../services/videoStream'
 import SubtitlesMenu from './SubtitlesMenu'
 import SubtitleOverlay from './SubtitleOverlay'
 import { useVideoShortcuts } from '../../hooks/useVideoShortcuts'
@@ -79,7 +79,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
   const streamIdentifier = resolveStreamIdentifier(movie)
   const streamUrl = buildStreamUrl(streamIdentifier, movie?.id, token)
 
-  const realtimeSeeds = useRealtimeSeeds(streamIdentifier, Boolean(streamError))
+  const { seeds: realtimeSeeds, format: videoFormat } = useStreamStats(streamIdentifier, Boolean(streamError), token)
 
   const imdbId = movie?.imdbId || movie?.id
   const {
@@ -94,7 +94,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
     selectSubtitle,
     adjustOffset,
     resetOffset
-  } = useSubtitles(videoRef, imdbId, t, lang)
+  } = useSubtitles(videoRef, imdbId, t, lang, token)
 
   useEffect(() => {
     if (videoRef.current) {
@@ -232,7 +232,7 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
           <track
             key={tr.code}
             kind="subtitles"
-            src={`/api/movies/subtitles/${encodeURIComponent(imdbId)}/${tr.code}`}
+            src={buildSubtitleUrl(imdbId, tr.code, token)}
             srcLang={tr.code}
             label={tr.label}
           />
@@ -361,6 +361,12 @@ export default function VideoPlayer({ movie, t, lang, onControlsVisibilityChange
             <span className="text-neutral-400 font-mono text-xs">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
+
+            {videoFormat && (
+              <span className="px-1.5 py-0.5 rounded border border-white/15 bg-white/10 text-[10px] font-bold tracking-wider uppercase text-neutral-300">
+                {videoFormat}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-4">

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Hypertube — web app to search + stream torrent video, royalty-free/legal sources only (publicdomaintorrents.info, archive.org). Built at 42 (school project, `subject.md` = original spec).
 
-Stack: React 19 + Vite + TypeScript + Tailwind 4 + React Router (frontend) — Express 5 + TypeScript + Prisma 7 + PostgreSQL (backend) — BitTorrent (torrent-stream) for streaming — JWT/bcrypt/OAuth (42, Google) for auth — Nodemailer (Brevo SMTP) — Docker Compose + Caddy for infra.
+Stack: React 19 + Vite + TypeScript + Tailwind 4 + React Router (frontend) — Express 5 + TypeScript + Prisma 7 + PostgreSQL (backend) — in-house BitTorrent client for streaming (the subject forbids torrent-streaming libraries, so no torrent-stream/webtorrent/peerflix) — JWT/bcrypt/OAuth (42, Google) for auth — Nodemailer (Brevo SMTP) — Docker Compose + Caddy for infra.
 
 ## Commands
 
@@ -45,7 +45,11 @@ Run `npm run lint` / `npx tsc --noEmit` locally the same way before considering 
 These are two separate pipelines that only meet at the torrent hash / imdbId:
 
 - **Search & catalog** (`frontend/src/services/sources/`): `movieSourceAggregator.ts` queries `ArchiveSourceProvider` and `PublicDomainTorrentsSourceProvider` in parallel directly from the browser, deduplicates by title, enriches results with TMDB metadata (`internetArchiveTmdb.ts`, bilingual en/fr query resolution), then filters to items with a confirmed TMDB match, a public-domain-era release year, and matching spoken-language. The backend is not involved in search — no server-side movie search endpoint exists.
-- **Streaming** (`backend/src/services/stream/`): `torrentService.ts` is a facade over `bittorrentService.ts` (P2P via torrent-stream). Archive.org-sourced ids are normalized via `getArchiveIdentifier` and streamed through the same P2P engine — `torrentSourceResolver.ts` fetches the item's `.torrent` file from archive.org and hands it to torrent-stream like any other torrent; there is no CDN/direct-download path. `routes/movies/stream.ts` serves via HTTP 206 range requests, preferring an already-completed file on disk (`downloads/`) over live P2P streaming. `movieDbService.ts`/`movieRepository.ts` persist minimal `Movie` rows (imdbId, hash, filePath, completion) to track what's cached.
+- **Streaming** (`backend/src/services/stream/`): `torrentService.ts` is a facade over `bittorrentService.ts`, which drives the in-house BitTorrent client in `bittorrent/`. Archive.org-sourced ids are normalized via `getArchiveIdentifier` and streamed through the same P2P engine — `torrentSourceResolver.ts` fetches the item's `.torrent` file from archive.org and hands it to the engine like any other torrent; there is no CDN/direct-download path. `routes/movies/stream.ts` serves via HTTP 206 range requests, preferring an already-completed file on disk (`downloads/`) over live P2P streaming. `movieDbService.ts`/`movieRepository.ts` persist minimal `Movie` rows (imdbId, hash, filePath, completion) to track what's cached.
+
+### BitTorrent client (`backend/src/services/stream/bittorrent/`)
+
+The subject bans libraries that stream video from a torrent, so the whole BitTorrent stack is written here. `protocol/` holds the wire-level pieces — `bencode.ts`, `metainfo.ts` (info hash from the raw `info` slice, never a re-encode), `magnetUri.ts`, `trackerClient.ts` (HTTP + UDP announce, BEP 15/23), `peerConnection.ts` (peer wire protocol, extension protocol BEP 10, metadata exchange BEP 9), `bitfield.ts`. `engine/` turns those into a downloader: `torrentEngine.ts` announces, keeps a peer pool and exposes the `files` / `swarm.wires` / `ready`+`idle`+`error` surface the rest of the backend consumes; `downloadScheduler.ts` picks blocks (prioritizing pieces near an active reader so playback starts early), verifies each piece's SHA-1 and writes it via `pieceStorage.ts`; `torrentFileReadStream.ts` blocks on pieces that have not arrived yet, which is what makes progressive streaming work. There is no DHT — peers come from the torrent's trackers only.
 
 ### Backend route/service layering
 
