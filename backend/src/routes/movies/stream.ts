@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import fs from 'fs';
 import { torrentService } from '../../services/stream';
 import { HttpError } from '../../errors';
+import { extractRequestToken } from '../../middlewares/auth';
 
 const router = Router();
 
@@ -182,16 +183,18 @@ router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
     const torrentHash = normalizeTorrentHash(req.params.torrentHash);
     const imdbId = parseImdbId(req.query.imdbId);
 
-    const { fileName, ...stats } = torrentService.getTorrentStats(torrentHash);
+    // The engine's selected file (and therefore the format/conversion decision) is only
+    // known once it's started, so resolve it here rather than trusting getTorrentStats
+    // alone — on the very first poll no engine is active yet and its fileName is null,
+    // which would otherwise default the format decision to "native" and mislead the player.
+    const completedMovie = await torrentService.getCompletedMovie(torrentHash, imdbId);
+    const sourceName = completedMovie?.filePath ?? (await torrentService.getOrStartTorrent(torrentHash, imdbId)).videoFile.name;
 
-    // A fully downloaded movie is served from disk without any engine, so its name only
-    // comes from the DB record.
-    const completedMovie = fileName ? null : await torrentService.getCompletedMovie(torrentHash, imdbId);
-    const sourceName = fileName ?? completedMovie?.filePath;
+    const { fileName: _fileName, ...stats } = torrentService.getTorrentStats(torrentHash);
     const format = torrentService.getVideoFormat(sourceName);
 
     let conversionStatus: 'not_needed' | 'converting' | 'ready' = 'not_needed';
-    if (sourceName && torrentService.needsConversion(sourceName)) {
+    if (torrentService.needsConversion(sourceName)) {
         const status = torrentService.getHlsConversionStatus(torrentHash);
         if (status) {
             conversionStatus = status;
@@ -226,8 +229,16 @@ router.get("/:torrentHash/hls/playlist.m3u8", async (req: Request, res: Response
         throw new HttpError(404, "HLS playlist not ready yet");
     }
 
+    // hls.js/Safari resolve each segment URI relative to this playlist's own URL, which
+    // drops the query string — reattach the token so segment requests stay authenticated.
+    const token = extractRequestToken(req);
+    const rawPlaylist = fs.readFileSync(playlistPath, 'utf8');
+    const playlist = token
+        ? rawPlaylist.replace(/^(seg\d{5}\.ts)$/gm, `$1?token=${encodeURIComponent(token)}`)
+        : rawPlaylist;
+
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-    fs.createReadStream(playlistPath).pipe(res);
+    res.send(playlist);
 });
 
 /**
