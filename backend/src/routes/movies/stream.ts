@@ -119,12 +119,6 @@ function parseImdbId(rawImdbId: unknown): string | undefined {
     return Array.isArray(rawImdbId) ? (rawImdbId[0] as string) : (rawImdbId as string | undefined);
 }
 
-function parseIntParam(raw: unknown): number | undefined {
-    const value = Array.isArray(raw) ? raw[0] : raw;
-    const parsed = typeof value === 'string' ? parseInt(value, 10) : NaN;
-    return Number.isFinite(parsed) ? parsed : undefined;
-}
-
 /**
  * Route: GET /api/movies/stream/:torrentHash
  * Description: Streams movie video file progressively using HTTP 206 Range Requests.
@@ -188,10 +182,6 @@ router.get("/:torrentHash", async (req: Request, res: Response) => {
 router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
     const torrentHash = normalizeTorrentHash(req.params.torrentHash);
     const imdbId = parseImdbId(req.query.imdbId);
-    // Where the player wants to be based (0 on first load, or a seek target when scrubbing
-    // past what an in-progress HLS conversion has produced so far).
-    const requestedOffsetSeconds = parseIntParam(req.query.offset) ?? 0;
-    const totalDurationSeconds = parseIntParam(req.query.duration);
 
     // The engine's selected file (and therefore the format/conversion decision) is only
     // known once it's started, so resolve it here rather than trusting getTorrentStats
@@ -204,25 +194,20 @@ router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
     const format = torrentService.getVideoFormat(sourceName);
 
     let conversionStatus: 'not_needed' | 'converting' | 'ready' = 'not_needed';
-    // The offset the conversion is actually running at, which the player must use as its
-    // time base — it can differ from what was requested (see ensureHlsConversion).
-    let offsetSeconds = requestedOffsetSeconds;
+    let convertedSeconds = 0;
     if (torrentService.needsConversion(sourceName)) {
-        const status = torrentService.getHlsConversionStatus(torrentHash, requestedOffsetSeconds);
+        const status = torrentService.getHlsConversionStatus(torrentHash);
         if (status) {
             conversionStatus = status;
         } else {
             // Nothing else triggers the download/conversion for non-native containers, since
-            // the frontend deliberately never points a bare <video src> at them. Also covers
-            // restarting the encoder at a new offset after the player scrubs ahead.
-            offsetSeconds = await torrentService
-                .ensureHlsConversion(torrentHash, imdbId, requestedOffsetSeconds, totalDurationSeconds)
-                .catch((err) => {
-                    console.error(`[stream] Error starting HLS conversion for ${torrentHash}:`, err);
-                    return requestedOffsetSeconds;
-                });
+            // the frontend deliberately never points a bare <video src> at them.
+            torrentService.ensureHlsConversion(torrentHash, imdbId).catch((err) => {
+                console.error(`[stream] Error starting HLS conversion for ${torrentHash}:`, err);
+            });
             conversionStatus = 'converting';
         }
+        convertedSeconds = torrentService.getHlsConvertedSeconds(torrentHash);
     }
 
     res.json({
@@ -230,31 +215,30 @@ router.get("/:torrentHash/stats", async (req: Request, res: Response) => {
         ...stats,
         format,
         conversionStatus,
-        offsetSeconds,
+        convertedSeconds,
     });
 });
 
 /**
  * Route: GET /api/movies/stream/:torrentHash/hls/playlist.m3u8
- * Serves the growing HLS playlist for the session at `offset` seconds, once the conversion
- * (started via /stats) has produced at least one segment.
+ * Serves the growing HLS playlist once the conversion session (started via /stats) has
+ * produced at least one segment.
  */
 router.get("/:torrentHash/hls/playlist.m3u8", async (req: Request, res: Response) => {
     const torrentHash = normalizeTorrentHash(req.params.torrentHash);
-    const offsetSeconds = parseIntParam(req.query.offset) ?? 0;
-    const playlistPath = torrentService.getHlsPlaylistPath(torrentHash, offsetSeconds);
+    const playlistPath = torrentService.getHlsPlaylistPath(torrentHash);
 
     if (!fs.existsSync(playlistPath)) {
         throw new HttpError(404, "HLS playlist not ready yet");
     }
 
     // hls.js/Safari resolve each segment URI relative to this playlist's own URL, which
-    // drops the query string — reattach the offset (which session's segments to read) and
-    // the token (still needed to authenticate) so segment requests keep working.
+    // drops the query string — reattach the token so segment requests stay authenticated.
     const token = extractRequestToken(req);
     const rawPlaylist = fs.readFileSync(playlistPath, 'utf8');
-    const segmentQuery = `?offset=${offsetSeconds}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
-    const playlist = rawPlaylist.replace(/^(seg\d{5}\.ts)$/gm, `$1${segmentQuery}`);
+    const playlist = token
+        ? rawPlaylist.replace(/^(seg\d{5}\.ts)$/gm, `$1?token=${encodeURIComponent(token)}`)
+        : rawPlaylist;
 
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     res.send(playlist);
@@ -262,20 +246,18 @@ router.get("/:torrentHash/hls/playlist.m3u8", async (req: Request, res: Response
 
 /**
  * Route: GET /api/movies/stream/:torrentHash/hls/:segment
- * Serves an individual HLS segment file from the session at `offset` seconds. The segment
- * name is restricted to ffmpeg's own "seg00000.ts" naming pattern so it can't be used to
- * read arbitrary paths.
+ * Serves an individual HLS segment file. The segment name is restricted to ffmpeg's own
+ * "seg00000.ts" naming pattern so it can't be used to read arbitrary paths.
  */
 router.get("/:torrentHash/hls/:segment", async (req: Request, res: Response) => {
     const torrentHash = normalizeTorrentHash(req.params.torrentHash);
-    const offsetSeconds = parseIntParam(req.query.offset) ?? 0;
     const segment = Array.isArray(req.params.segment) ? req.params.segment[0] : req.params.segment;
 
     if (!segment || !/^seg\d{5}\.ts$/.test(segment)) {
         throw new HttpError(400, "Invalid segment name");
     }
 
-    const segmentPath = torrentService.getHlsSegmentPath(torrentHash, offsetSeconds, segment);
+    const segmentPath = torrentService.getHlsSegmentPath(torrentHash, segment);
     if (!fs.existsSync(segmentPath)) {
         throw new HttpError(404, "Segment not found");
     }

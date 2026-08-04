@@ -9,33 +9,21 @@ interface StreamStats {
   seeds: number | null
   format: string | null
   conversionStatus: ConversionStatus | null
-  // The offset (seconds) the HLS conversion is actually running at. Authoritative over
-  // whatever offset was requested: a still-downloading source with an unknown total
-  // duration can't honor an arbitrary seek and falls back to 0 on the backend.
-  offsetSeconds: number
+  // How much of the movie (seconds) the HLS conversion has produced so far — used to cap
+  // seeking at what's actually playable and to render the "converted" portion of the bar.
+  convertedSeconds: number
 }
 
-/**
- * Polls the P2P seed count, video container format and HLS conversion status for the
- * current stream while no stream error is active. `offsetSeconds`/`totalDurationSeconds`
- * tell the backend where the player wants to be based (0, or a seek target) so it can
- * (re)start the HLS conversion there.
- */
-export function useStreamStats(
-  streamIdentifier: string,
-  disabled: boolean,
-  token: string | null,
-  offsetSeconds: number,
-  totalDurationSeconds: number | null
-): StreamStats {
-  const [stats, setStats] = useState<StreamStats>({ seeds: null, format: null, conversionStatus: null, offsetSeconds: 0 })
+/** Polls the P2P seed count, video container format and HLS conversion progress for the current stream while no stream error is active. */
+export function useStreamStats(streamIdentifier: string, disabled: boolean, token: string | null): StreamStats {
+  const [stats, setStats] = useState<StreamStats>({ seeds: null, format: null, conversionStatus: null, convertedSeconds: 0 })
 
   useEffect(() => {
     if (disabled) return
 
     const fetchStats = async () => {
       try {
-        const res = await fetch(buildStreamStatsUrl(streamIdentifier, token, offsetSeconds, totalDurationSeconds))
+        const res = await fetch(buildStreamStatsUrl(streamIdentifier, token))
         if (res.ok) {
           const data = await res.json()
           if (data && data.success) {
@@ -43,7 +31,7 @@ export function useStreamStats(
               seeds: typeof data.seeds === 'number' ? data.seeds : null,
               format: typeof data.format === 'string' ? data.format : null,
               conversionStatus: typeof data.conversionStatus === 'string' ? data.conversionStatus : null,
-              offsetSeconds: typeof data.offsetSeconds === 'number' ? data.offsetSeconds : 0
+              convertedSeconds: typeof data.convertedSeconds === 'number' ? data.convertedSeconds : 0
             })
           }
         }
@@ -55,7 +43,7 @@ export function useStreamStats(
     fetchStats()
     const interval = setInterval(fetchStats, STATS_POLL_INTERVAL_MS)
     return () => clearInterval(interval)
-  }, [streamIdentifier, disabled, token, offsetSeconds, totalDurationSeconds])
+  }, [streamIdentifier, disabled, token])
 
   return stats
 }

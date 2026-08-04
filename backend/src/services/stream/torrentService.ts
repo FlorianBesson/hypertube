@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { getMimeType, getVideoFormat, needsConversion } from './mimeService';
 import { movieDbService } from '../movies/movieDbService';
 import { getArchiveIdentifier } from './archive/archiveUtils';
@@ -39,61 +40,47 @@ export async function getOrStartTorrent(torrentHash: string, imdbId?: string): P
 }
 
 /**
- * Starts (or restarts, if a different offset is already running) the HLS transcode session
- * for a torrent hash, seeked to `offsetSeconds`: from the completed file on disk if one
- * exists (fast, accurate -ss seek), otherwise from the live P2P stream (byte offset
- * estimated from `totalDurationSeconds`, assuming a roughly constant bitrate). Safe to call
- * on every stats poll — both the torrent engine and the HLS session dedupe internally when
- * the requested offset matches what's already running.
- *
- * Returns the offset the session actually ended up at, which can differ from the request:
- * without a known total duration there is no way to map a time to a byte offset in a
- * still-downloading source, so that case falls back to 0 (the start).
+ * Starts (or reuses) the HLS transcode session for a torrent hash: from the completed file
+ * on disk if one exists, otherwise from the live P2P stream. Safe to call on every stats
+ * poll — both the torrent engine and the HLS session dedupe by hash internally.
  */
-export async function ensureHlsConversion(
-  torrentHash: string,
-  imdbId: string | undefined,
-  offsetSeconds: number,
-  totalDurationSeconds: number | undefined
-): Promise<number> {
+export async function ensureHlsConversion(torrentHash: string, imdbId?: string): Promise<void> {
   const downloadFolder = bittorrentService.resolveDownloadFolder(torrentHash, downloadsBaseDir);
   const completedMovie = await getCompletedMovie(torrentHash, imdbId);
 
   if (completedMovie) {
-    const session = hlsTranscodeService.getOrStartHlsSession(
+    hlsTranscodeService.getOrStartHlsSession(
       torrentHash,
-      offsetSeconds,
-      { type: 'file', path: completedMovie.filePath },
+      () => fs.createReadStream(completedMovie.filePath),
       downloadFolder
     );
-    return session.offsetSeconds;
+    return;
   }
 
   const { videoFile } = await getOrStartTorrent(torrentHash, imdbId);
-  const effectiveOffset = totalDurationSeconds ? offsetSeconds : 0;
-  const byteOffset = totalDurationSeconds
-    ? Math.floor((effectiveOffset / totalDurationSeconds) * videoFile.length)
-    : 0;
+  hlsTranscodeService.getOrStartHlsSession(torrentHash, () => videoFile.createReadStream(), downloadFolder);
+}
 
-  const session = hlsTranscodeService.getOrStartHlsSession(
-    torrentHash,
-    effectiveOffset,
-    { type: 'stream', open: () => videoFile.createReadStream({ start: byteOffset }) },
-    downloadFolder
+export function getHlsConversionStatus(torrentHash: string): hlsTranscodeService.ConversionStatus | null {
+  return hlsTranscodeService.getConversionStatus(torrentHash);
+}
+
+export function getHlsPlaylistPath(torrentHash: string): string {
+  return hlsTranscodeService.getPlaylistPath(bittorrentService.resolveDownloadFolder(torrentHash, downloadsBaseDir));
+}
+
+export function getHlsSegmentPath(torrentHash: string, segment: string): string {
+  return hlsTranscodeService.getSegmentPath(bittorrentService.resolveDownloadFolder(torrentHash, downloadsBaseDir), segment);
+}
+
+/**
+ * How much of the movie (in seconds) the HLS conversion has produced so far — the frontend
+ * uses this to cap seeking at what's actually playable instead of jumping into a gap.
+ */
+export function getHlsConvertedSeconds(torrentHash: string): number {
+  return hlsTranscodeService.getConvertedSeconds(
+    hlsTranscodeService.getPlaylistPath(bittorrentService.resolveDownloadFolder(torrentHash, downloadsBaseDir))
   );
-  return session.offsetSeconds;
-}
-
-export function getHlsConversionStatus(torrentHash: string, offsetSeconds: number): hlsTranscodeService.ConversionStatus | null {
-  return hlsTranscodeService.getConversionStatus(torrentHash, offsetSeconds);
-}
-
-export function getHlsPlaylistPath(torrentHash: string, offsetSeconds: number): string {
-  return hlsTranscodeService.getPlaylistPath(bittorrentService.resolveDownloadFolder(torrentHash, downloadsBaseDir), offsetSeconds);
-}
-
-export function getHlsSegmentPath(torrentHash: string, offsetSeconds: number, segment: string): string {
-  return hlsTranscodeService.getSegmentPath(bittorrentService.resolveDownloadFolder(torrentHash, downloadsBaseDir), offsetSeconds, segment);
 }
 
 /**
@@ -112,4 +99,5 @@ export const torrentService = {
   getHlsConversionStatus,
   getHlsPlaylistPath,
   getHlsSegmentPath,
+  getHlsConvertedSeconds,
 };

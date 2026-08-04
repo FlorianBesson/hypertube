@@ -19,19 +19,12 @@ export function buildStreamUrl(streamIdentifier: string, movieId: string | undef
   return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}${query}`
 }
 
-export function buildStreamStatsUrl(
-  streamIdentifier: string,
-  token: string | null,
-  offsetSeconds: number,
-  totalDurationSeconds: number | null
-): string {
-  const params: Record<string, string> = { offset: String(offsetSeconds) }
-  if (totalDurationSeconds) params.duration = String(Math.round(totalDurationSeconds))
-  return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/stats${buildTokenQuery(token, params)}`
+export function buildStreamStatsUrl(streamIdentifier: string, token: string | null): string {
+  return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/stats${buildTokenQuery(token)}`
 }
 
-export function buildHlsPlaylistUrl(streamIdentifier: string, token: string | null, offsetSeconds: number): string {
-  return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/hls/playlist.m3u8${buildTokenQuery(token, { offset: String(offsetSeconds) })}`
+export function buildHlsPlaylistUrl(streamIdentifier: string, token: string | null): string {
+  return `/api/movies/stream/${encodeURIComponent(streamIdentifier)}/hls/playlist.m3u8${buildTokenQuery(token)}`
 }
 
 export function buildSubtitleUrl(imdbId: string, langCode: string, token: string | null): string {

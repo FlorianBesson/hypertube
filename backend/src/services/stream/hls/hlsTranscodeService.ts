@@ -1,38 +1,27 @@
 import path from 'path';
 import fs from 'fs';
 import { Readable } from 'stream';
-import ffmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 
 export type ConversionStatus = 'converting' | 'ready';
 
-export type HlsSource =
-  // A fully downloaded file: ffmpeg can seek it accurately and cheaply via -ss on a real,
-  // seekable input instead of reading/decoding everything before the target offset.
-  | { type: 'file'; path: string }
-  // A still-downloading torrent: the caller has already opened a read stream starting at
-  // the byte offset estimated for the requested time (see torrentService.ensureHlsConversion).
-  | { type: 'stream'; open: () => Readable };
-
 interface HlsSession {
-  offsetSeconds: number;
-  hlsDir: string;
   playlistPath: string;
   status: ConversionStatus;
-  command: FfmpegCommand;
 }
 
 const activeSessions = new Map<string, HlsSession>();
 
-function getHlsDir(downloadFolder: string, offsetSeconds: number): string {
-  return path.join(downloadFolder, 'hls', String(offsetSeconds));
+function getHlsDir(downloadFolder: string): string {
+  return path.join(downloadFolder, 'hls');
 }
 
-export function getPlaylistPath(downloadFolder: string, offsetSeconds: number): string {
-  return path.join(getHlsDir(downloadFolder, offsetSeconds), 'playlist.m3u8');
+export function getPlaylistPath(downloadFolder: string): string {
+  return path.join(getHlsDir(downloadFolder), 'playlist.m3u8');
 }
 
-export function getSegmentPath(downloadFolder: string, offsetSeconds: number, segment: string): string {
-  return path.join(getHlsDir(downloadFolder, offsetSeconds), segment);
+export function getSegmentPath(downloadFolder: string, segment: string): string {
+  return path.join(getHlsDir(downloadFolder), segment);
 }
 
 function isPlaylistReady(playlistPath: string): boolean {
@@ -41,11 +30,23 @@ function isPlaylistReady(playlistPath: string): boolean {
 }
 
 /**
- * Starts an HLS transcode session seeked to `offsetSeconds`, or returns the already-running
- * one if it's already at that offset. A request for a different offset (the user scrubbed
- * the progress bar) kills the previous ffmpeg process and starts a fresh one there — a
- * "growing" HLS playlist has no way to jump ahead of what it's converted so far, so seeking
- * past that point means re-pointing the encoder instead.
+ * Sums the #EXTINF durations already written to the playlist: how much of the movie has
+ * been converted so far, in seconds. Used to cap seeking at what's actually playable.
+ */
+export function getConvertedSeconds(playlistPath: string): number {
+  if (!fs.existsSync(playlistPath)) return 0;
+  const contents = fs.readFileSync(playlistPath, 'utf8');
+  let total = 0;
+  for (const match of contents.matchAll(/^#EXTINF:([\d.]+),/gm)) {
+    total += parseFloat(match[1]);
+  }
+  return total;
+}
+
+/**
+ * Starts an HLS transcode session for a torrent hash, or returns the already-running one.
+ * `openSource` is only invoked on first start: a second call for the same hash must not
+ * open a competing read against the same (possibly still-downloading) torrent file.
  *
  * Always re-encodes (never -c copy): most public-domain sources this app streams predate
  * H.264 (MPEG-2, Theora, ...), so a plain remux would produce segments no browser can
@@ -53,56 +54,39 @@ function isPlaylistReady(playlistPath: string): boolean {
  */
 export function getOrStartHlsSession(
   torrentHash: string,
-  offsetSeconds: number,
-  source: HlsSource,
+  openSource: () => Readable,
   downloadFolder: string
 ): HlsSession {
   const existing = activeSessions.get(torrentHash);
   if (existing) {
-    if (existing.offsetSeconds === offsetSeconds) {
-      return existing;
-    }
-    existing.command.kill('SIGKILL');
-    activeSessions.delete(torrentHash);
+    return existing;
   }
 
-  const hlsDir = getHlsDir(downloadFolder, offsetSeconds);
+  const hlsDir = getHlsDir(downloadFolder);
   fs.mkdirSync(hlsDir, { recursive: true });
-  const playlistPath = getPlaylistPath(downloadFolder, offsetSeconds);
+  const playlistPath = getPlaylistPath(downloadFolder);
 
-  const outputOptions = [
-    '-c:v', 'libx264',
-    '-preset', 'veryfast',
-    '-c:a', 'aac',
-    '-f', 'hls',
-    '-hls_time', '6',
-    '-hls_playlist_type', 'event',
-    '-hls_segment_filename', path.join(hlsDir, 'seg%05d.ts'),
-  ];
-
-  let command: FfmpegCommand;
-  if (source.type === 'file') {
-    command = ffmpeg(source.path).inputOptions(['-ss', String(offsetSeconds)]);
-  } else {
-    const stream = source.open();
-    // Surfaces the torrent read stream's own errors (e.g. a piece that failed verification)
-    // separately from ffmpeg's, since a broken pipe alone doesn't say which side caused it.
-    stream.on('error', (err: Error) => console.error(`[hlsTranscodeService] Source stream error for ${torrentHash}:`, err.message));
-    command = ffmpeg(stream);
-  }
-
-  const session: HlsSession = { offsetSeconds, hlsDir, playlistPath, status: 'converting', command };
+  const session: HlsSession = { playlistPath, status: 'converting' };
   activeSessions.set(torrentHash, session);
 
-  command
-    .outputOptions(outputOptions)
+  const source = openSource();
+  // Surfaces the torrent read stream's own errors (e.g. a piece that failed verification)
+  // separately from ffmpeg's, since a broken pipe alone doesn't say which side caused it.
+  source.on('error', (err: Error) => console.error(`[hlsTranscodeService] Source stream error for ${torrentHash}:`, err.message));
+
+  ffmpeg(source)
+    .outputOptions([
+      '-c:v', 'libx264',
+      '-preset', 'veryfast',
+      '-c:a', 'aac',
+      '-f', 'hls',
+      '-hls_time', '6',
+      '-hls_playlist_type', 'event',
+      '-hls_segment_filename', path.join(hlsDir, 'seg%05d.ts'),
+    ])
     .on('error', (err: Error, _stdout, stderr) => {
-      // A kill() to start a newer-offset session also lands here as an "error" — only log
-      // and clear the map entry when this session is still the active one.
-      if (activeSessions.get(torrentHash) === session) {
-        console.error(`[hlsTranscodeService] ffmpeg error for ${torrentHash}:`, err.message, stderr);
-        activeSessions.delete(torrentHash);
-      }
+      console.error(`[hlsTranscodeService] ffmpeg error for ${torrentHash}:`, err.message, stderr);
+      activeSessions.delete(torrentHash);
     })
     .save(playlistPath);
 
@@ -110,13 +94,11 @@ export function getOrStartHlsSession(
 }
 
 /**
- * Returns null when no session is running for this exact offset (either never started, or
- * the active session is for a different offset — e.g. mid-restart after a seek), so the
- * caller knows to (re)start one.
+ * Returns null when no session has been started yet, so the caller knows to trigger one.
  */
-export function getConversionStatus(torrentHash: string, offsetSeconds: number): ConversionStatus | null {
+export function getConversionStatus(torrentHash: string): ConversionStatus | null {
   const session = activeSessions.get(torrentHash);
-  if (!session || session.offsetSeconds !== offsetSeconds) {
+  if (!session) {
     return null;
   }
   if (session.status !== 'ready' && isPlaylistReady(session.playlistPath)) {
