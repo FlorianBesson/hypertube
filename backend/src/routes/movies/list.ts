@@ -6,23 +6,6 @@ import path from 'path';
 const router = Router();
 const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.VITE_TMDB_API_KEY;
 
-async function fetchPopularMoviesFromTmdb(page: number = 1) {
-    const url = `https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error("TMDb fetch error");
-    }
-    const data = await response.json() as any;
-    return (data.results || []).map((m: any) => ({
-        id: m.id.toString(),
-        name: m.title || m.original_title,
-        production_year: m.release_date ? parseInt(m.release_date.substring(0, 4), 10) : null,
-        imdb_mark: m.vote_average || null,
-        poster_path: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-        overview: m.overview
-    }));
-}
-
 async function fetchMovieDetailsFromTmdb(id: string) {
     const isImdbId = id.startsWith('tt');
     const endpoint = isImdbId
@@ -64,12 +47,88 @@ async function fetchMovieDetailsFromTmdb(id: string) {
     };
 }
 
+
+async function fetchFrontpageMoviesFromArchive(page: number = 1, limit: number = 20) {
+    try {
+        const url = `https://archive.org/advancedsearch.php?q=mediatype%3Amovies+AND+collection%3Afeature_films&rows=30&page=${page}&output=json&sort%5B%5D=downloads+desc&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=year&fl%5B%5D=avg_rating`;
+        const response = await fetch(url);
+        if (response.ok) {
+            const data = await response.json() as any;
+            const docs = data.response?.docs || [];
+            if (docs.length > 0) {
+                const matchedMovies: any[] = [];
+                for (const m of docs) {
+                    const cleanedTitle = (m.title || m.identifier).replace(/^"\s*/, '').replace(/"\s*$/, '').trim();
+                    const movieInfo = await fetchMovieDetailsFromTmdb(cleanedTitle);
+                    if (movieInfo && movieInfo.production_year && movieInfo.production_year <= 1978 && movieInfo.production_year >= 1888) {
+                        matchedMovies.push({
+                            id: m.identifier,
+                            name: movieInfo.name,
+                            imdb_mark: movieInfo.imdb_mark,
+                            production_year: movieInfo.production_year,
+                            poster_path: movieInfo.poster_path || `https://archive.org/services/img/${m.identifier}`
+                        });
+                        if (matchedMovies.length >= limit) break;
+                    }
+                }
+                if (matchedMovies.length > 0) return matchedMovies;
+            }
+        }
+    } catch (err) {
+        console.error("Error fetching Archive.org movies:", err);
+    }
+    return [];
+}
+
+function getFrontpagePublicDomainMovies(page: number = 1, limit: number = 20) {
+    try {
+        const jsonPath = path.join(__dirname, '../../data/public_domain_torrents.json');
+        if (fs.existsSync(jsonPath)) {
+            const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+            const startIndex = (page - 1) * limit;
+            return raw.slice(startIndex, startIndex + limit).map((m: any) => ({
+                id: m.imdb_id || `pdt-${m.id}`,
+                name: m.title,
+                imdb_mark: m.vote_average || null,
+                production_year: m.release_date ? parseInt(m.release_date.substring(0, 4), 10) : null,
+                poster_path: m.poster_path || null
+            }));
+        }
+    } catch (err) {
+        console.error("Error reading public domain movies json:", err);
+    }
+    return [];
+}
+
+async function fetchCombinedFrontpageMovies(page: number = 1, limit: number = 20) {
+    const archiveMovies = await fetchFrontpageMoviesFromArchive(page, limit);
+    const pdtMovies = getFrontpagePublicDomainMovies(page, limit);
+
+    const combined = [...archiveMovies, ...pdtMovies];
+    const seen = new Set<string>();
+    const result: any[] = [];
+
+    for (const movie of combined) {
+        const key = movie.name.toLowerCase().trim();
+        if (!seen.has(key)) {
+            seen.add(key);
+            result.push(movie);
+        }
+        if (result.length >= limit) break;
+    }
+
+    return result;
+}
+
 router.get("/", async (req: Request, res: Response) => {
     try {
         const page = parseInt((req.query.page as string) || "1", 10);
-        const movies = await fetchPopularMoviesFromTmdb(isNaN(page) ? 1 : page);
+        let movies = await fetchCombinedFrontpageMovies(isNaN(page) ? 1 : page);
 
-        // Subject format: returns list of movies on frontpage with id & name
+        if (movies.length === 0) {
+            movies = getFrontpagePublicDomainMovies(isNaN(page) ? 1 : page);
+        }
+
         res.json({
             success: true,
             movies: movies.map((m: any) => ({

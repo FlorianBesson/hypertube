@@ -11,8 +11,8 @@ const router = Router();
 // Streaming endpoint (/api/movies/stream/:torrentHash)
 router.use('/stream', authenticateMediaToken, streamRouter);
 
-// Comments endpoints (/api/movies/comments/:imdbId)
-router.use('/comments', commentsRouter);
+// Comments endpoints (/movies/:id/comments or /movie/:id/comments)
+router.use('/:id/comments', commentsRouter);
 
 // Subtitles endpoints (/api/movies/subtitles/:imdbId/:lang)
 router.use('/subtitles', authenticateMediaToken, subtitlesRouter);

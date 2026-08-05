@@ -31,6 +31,8 @@ app.use('/api/comments', commentsRouter);
 app.use('/comments', commentsRouter);
 app.use('/api/movies', movieRoutes);
 app.use('/movies', movieRoutes);
+app.use('/api/movie', movieRoutes);
+app.use('/movie', movieRoutes);
 
 /**
  * Health check endpoint for testing database connectivity.
