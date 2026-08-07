@@ -1,6 +1,5 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import path from 'path';
-import { prisma } from './prisma';
 import { HttpError } from './errors';
 import { checkDbConnection } from './db/utils';
 
@@ -33,25 +32,6 @@ app.use('/api/movies', movieRoutes);
 app.use('/movies', movieRoutes);
 app.use('/api/movie', movieRoutes);
 app.use('/movie', movieRoutes);
-
-/**
- * Health check endpoint for testing database connectivity.
- * Verifies that the Prisma Client can establish a connection and read from the Postgres database.
- */
-app.get("/api/db-check", async (req, res) => {
-    try {
-        await prisma.user.count();
-        res.json({ success: true, message: "Database connected to Express !" });
-    } catch (error) {
-        console.error("DB Check error:", error);
-        res.status(500).json({ success: false, message: "DB Error" });
-    }
-});
-
-// Basic server test ping endpoint
-app.get('/api/ping', (req: Request, res: Response) => {
-    res.send('Hello, TypeScript + Express!');
-});
 
 // 404 Catch-all handler for unhandled API endpoints
 app.use((req: Request, res: Response, next: NextFunction) => {
