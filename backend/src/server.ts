@@ -33,6 +33,12 @@ app.use('/movies', movieRoutes);
 app.use('/api/movie', movieRoutes);
 app.use('/movie', movieRoutes);
 
+// Internal liveness probe. It deliberately lives outside the public API namespace
+// and is not proxied by Caddy in production.
+app.get('/healthz', (_req: Request, res: Response) => {
+    res.sendStatus(204);
+});
+
 // 404 Catch-all handler for unhandled API endpoints
 app.use((req: Request, res: Response, next: NextFunction) => {
     res.status(404).json({ success: false, message: "Route not found" });
