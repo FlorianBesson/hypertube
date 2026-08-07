@@ -52,7 +52,7 @@ export default function ProfileEditForm({
     setSavingProfile(true)
     try {
       const token = localStorage.getItem('token')
-      const payload: Record<string, any> = {
+      const payload: Record<string, string> = {
         firstName: editName,
         lastName: editLastName,
         bio: editBio,
