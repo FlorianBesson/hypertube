@@ -83,6 +83,7 @@ export function getOrStartHlsSession(
       '-hls_time', '6',
       '-hls_playlist_type', 'event',
       '-hls_segment_filename', path.join(hlsDir, 'seg%05d.ts'),
+      '-threads', '2',
     ])
     .on('error', (err: Error, _stdout, stderr) => {
       console.error(`[hlsTranscodeService] ffmpeg error for ${torrentHash}:`, err.message, stderr);
