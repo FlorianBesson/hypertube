@@ -108,5 +108,5 @@ re: down clean-downloads dev
 
 clean-downloads: ## Remove backend/downloads dir
 	@echo "$(BLUE)Removing backend/downloads...$(NC)"
-	rm -rf backend/downloads
+	@docker compose -f compose.dev.yml exec api-express rm -rf /app/downloads 2>/dev/null || docker run --rm -v $(PWD)/backend:/app alpine rm -rf /app/downloads 2>/dev/null || rm -rf backend/downloads
 h: help

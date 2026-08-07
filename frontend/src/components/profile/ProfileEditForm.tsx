@@ -23,7 +23,7 @@ export default function ProfileEditForm({
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(user.firstName || '')
   const [editLastName, setEditLastName] = useState(user.lastName || '')
-  const [editEmail, setEditEmail] = useState(user.email)
+  const [editEmail, setEditEmail] = useState(user.email || '')
   const [editBio, setEditBio] = useState(user.bio || '')
   const [editLang, setEditLang] = useState<'en' | 'fr'>(lang)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -37,7 +37,7 @@ export default function ProfileEditForm({
     setPrevLang(lang)
     setEditName(user.firstName || '')
     setEditLastName(user.lastName || '')
-    setEditEmail(user.email)
+    setEditEmail(user.email || '')
     setEditBio(user.bio || '')
     setEditLang(lang)
   }
@@ -48,28 +48,30 @@ export default function ProfileEditForm({
    */
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Email is a mandatory field
-    if (!editEmail) {
-      showStatus('error', t.emailRequired)
-      return
-    }
 
     setSavingProfile(true)
     try {
       const token = localStorage.getItem('token')
+      const payload: Record<string, string> = {
+        firstName: editName,
+        lastName: editLastName,
+        bio: editBio,
+        preferredLanguage: editLang
+      }
+
+      const trimmedEmail = editEmail.trim()
+      // Only include email if user specified a non-empty new value
+      if (trimmedEmail) {
+        payload.email = trimmedEmail
+      }
+
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          firstName: editName,
-          lastName: editLastName,
-          email: editEmail,
-          bio: editBio,
-          preferredLanguage: editLang
-        })
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
@@ -94,7 +96,7 @@ export default function ProfileEditForm({
   const handleCancelEditing = () => {
     setEditName(user.firstName || '')
     setEditLastName(user.lastName || '')
-    setEditEmail(user.email)
+    setEditEmail(user.email || '')
     setEditBio(user.bio || '')
     setEditLang(lang)
     setIsEditing(false)
@@ -127,7 +129,7 @@ export default function ProfileEditForm({
         )}
       </div>
 
-      <form onSubmit={handleSaveProfile} className="flex flex-col gap-5">
+      <form onSubmit={handleSaveProfile} noValidate className="flex flex-col gap-5">
         
         {/* Field: First Name */}
         <div className="flex flex-col gap-1.5">
@@ -174,7 +176,6 @@ export default function ProfileEditForm({
               value={editLastName}
               onChange={(e) => setEditLastName(e.target.value)}
               placeholder={t.placeholderLastName}
-              required
             />
           ) : (
             <>
@@ -202,7 +203,7 @@ export default function ProfileEditForm({
               type="email"
               value={editEmail}
               onChange={(e) => setEditEmail(e.target.value)}
-              required
+              placeholder={user.email || ''}
             />
           ) : (
             <>

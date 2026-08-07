@@ -229,6 +229,25 @@ function App() {
     setUser(updatedUser)
   }
 
+  // Validate token with backend on initial load / token change
+  useEffect(() => {
+    if (!token) return
+
+    fetch('/api/users', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then((res) => {
+        if (res.status === 401 || res.status === 403) {
+          handleLogout()
+        }
+      })
+      .catch((err) => {
+        console.error('Token validation check failed:', err)
+      })
+  }, [token])
+
   useEffect(() => {
     const isCallback42 = window.location.pathname === "/auth/callback/42";
     const isCallbackGoogle = window.location.pathname === "/auth/callback/google";
