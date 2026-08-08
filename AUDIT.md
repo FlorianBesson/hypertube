@@ -48,17 +48,7 @@ Multer accepte un fichier à partir de son extension et du MIME type fourni par 
 
 Correction recommandée : vérifier les magic bytes côté serveur, accepter uniquement JPEG/PNG/WebP réels, rejeter les fichiers invalides et servir les uploads avec `X-Content-Type-Options: nosniff`.
 
-### 3. Deuxième source non interrogée en ligne
-
-**Risque : non-conformité au sujet.**
-
-Internet Archive est interrogé en ligne, mais la source « Public Domain Torrents » est un fichier JSON embarqué dans le frontend. Le sujet demande que le moteur de recherche interroge au moins deux sources externes légales.
-
-- Code concerné : `frontend/src/services/sources/publicDomainTorrentsSourceProvider.ts`
-
-Correction recommandée : implémenter une requête vers une seconde source légale au moment de la recherche, ou documenter une API/endpoint légal réellement utilisé.
-
-### 4. Sous-titres non téléchargés automatiquement
+### 3. Sous-titres non téléchargés automatiquement
 
 **Risque : non-conformité fonctionnelle.**
 
@@ -70,7 +60,7 @@ Correction recommandée : lancer le téléchargement en tâche de fond au démar
 
 ## Constats importants
 
-### 5. Payloads de commentaires incompatibles avec le sujet
+### 4. Payloads de commentaires incompatibles avec le sujet
 
 **Risque : API REST évaluée comme incomplète.**
 
@@ -80,7 +70,7 @@ Le schéma accepte `comment` ou `content`, mais certaines routes extraient uniqu
 
 Correction recommandée : normaliser systématiquement avec `const content = validation.data.content ?? validation.data.comment` dans les routes POST et PATCH, puis tester les payloads documentés dans le sujet.
 
-### 6. Politique de mot de passe incohérente
+### 5. Politique de mot de passe incohérente
 
 **Risque : sécurité / validation de formulaire.**
 
@@ -91,7 +81,7 @@ L'inscription impose une longueur, un chiffre et un caractère spécial. La modi
 
 Correction recommandée : partager un même schéma Zod pour l'inscription, le reset et la modification de mot de passe.
 
-### 7. Clé TMDB exposée au navigateur
+### 6. Clé TMDB exposée au navigateur
 
 **Risque : secret non protégé.**
 
@@ -102,7 +92,7 @@ Une variable préfixée `VITE_` est injectée dans le bundle frontend. `VITE_TMD
 
 Correction recommandée : déplacer les appels TMDB vers le backend et ne jamais injecter cette clé dans le navigateur.
 
-### 8. JWT dans localStorage et dans les URLs média
+### 7. JWT dans localStorage et dans les URLs média
 
 **Risque : vol de session en cas de XSS, fuite dans les logs ou l'historique.**
 
@@ -113,7 +103,7 @@ Le JWT est stocké dans `localStorage` puis ajouté aux URLs de streaming et de 
 
 Correction recommandée : privilégier un cookie `HttpOnly`, `Secure`, `SameSite` pour la session et utiliser un jeton média éphémère spécifique si nécessaire.
 
-### 9. OAuth sans paramètre state
+### 8. OAuth sans paramètre state
 
 **Risque : login-CSRF.**
 
@@ -123,7 +113,7 @@ Les flux OAuth 42 et Google ne génèrent ni ne vérifient de paramètre `state`
 
 Correction recommandée : générer un `state` cryptographiquement aléatoire, le lier à une session/cookie de courte durée et vérifier sa valeur au callback.
 
-### 10. Comptes de démonstration aux identifiants publics
+### 9. Comptes de démonstration aux identifiants publics
 
 **Risque : accès non autorisé si le seed est utilisé hors développement.**
 
@@ -156,7 +146,6 @@ Mettre à jour les dépendances transitives avant d'utiliser `file-type` pour s�
 1. Corriger la traversée de chemins dans les sous-titres.
 2. Sécuriser les uploads d'avatar.
 3. Corriger les payloads de commentaires REST.
-4. Mettre en place une vraie seconde source externe.
-5. Déclencher le téléchargement automatique des sous-titres.
-6. Unifier la validation des mots de passe et ajouter les protections HTTP/OAuth.
-7. Déplacer TMDB côté backend et revoir les tokens média.
+4. Déclencher le téléchargement automatique des sous-titres.
+5. Unifier la validation des mots de passe et ajouter les protections HTTP/OAuth.
+6. Déplacer TMDB côté backend et revoir les tokens média.
