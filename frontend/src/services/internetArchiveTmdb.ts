@@ -261,6 +261,7 @@ export interface TmdbMovieDetails {
   genres?: string[]
   cast?: TmdbCastMember[]
   director?: string
+  producers?: string[]
   trailerUrl?: string
 }
 
@@ -343,6 +344,12 @@ export async function fetchTmdbMovieDetails(
 
   const director = data.credits?.crew?.find(member => member.job === 'Director')?.name
 
+  const producers = Array.from(new Set(
+    (data.credits?.crew || [])
+      .filter(member => member.job === 'Producer')
+      .map(member => member.name)
+  )).slice(0, 3)
+
   const trailer = (data.videos?.results || [])
     .filter(video => video.site === 'YouTube' && video.type === 'Trailer')
     .sort((left, right) => Number(right.official) - Number(left.official))[0]
@@ -355,6 +362,7 @@ export async function fetchTmdbMovieDetails(
     genres: (data.genres || []).map(genre => genre.name),
     cast: cast.length > 0 ? cast : undefined,
     director,
+    producers: producers.length > 0 ? producers : undefined,
     trailerUrl: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined
   }
 }

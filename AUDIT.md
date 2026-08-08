@@ -80,17 +80,7 @@ Le schéma accepte `comment` ou `content`, mais certaines routes extraient uniqu
 
 Correction recommandée : normaliser systématiquement avec `const content = validation.data.content ?? validation.data.comment` dans les routes POST et PATCH, puis tester les payloads documentés dans le sujet.
 
-### 6. Informations vidéo incomplètes
-
-**Risque : non-conformité partielle.**
-
-Le détail affiche le réalisateur et le casting, mais ne récupère ni n'affiche le producteur, pourtant demandé avec le réalisateur et les acteurs principaux.
-
-- Code concerné : `frontend/src/services/internetArchiveTmdb.ts`
-
-Correction recommandée : extraire les membres d'équipe dont le rôle est `Producer` dans les crédits TMDB et les afficher dans le panneau de détails.
-
-### 7. Politique de mot de passe incohérente
+### 6. Politique de mot de passe incohérente
 
 **Risque : sécurité / validation de formulaire.**
 
@@ -101,7 +91,7 @@ L'inscription impose une longueur, un chiffre et un caractère spécial. La modi
 
 Correction recommandée : partager un même schéma Zod pour l'inscription, le reset et la modification de mot de passe.
 
-### 8. Clé TMDB exposée au navigateur
+### 7. Clé TMDB exposée au navigateur
 
 **Risque : secret non protégé.**
 
@@ -112,7 +102,7 @@ Une variable préfixée `VITE_` est injectée dans le bundle frontend. `VITE_TMD
 
 Correction recommandée : déplacer les appels TMDB vers le backend et ne jamais injecter cette clé dans le navigateur.
 
-### 9. JWT dans localStorage et dans les URLs média
+### 8. JWT dans localStorage et dans les URLs média
 
 **Risque : vol de session en cas de XSS, fuite dans les logs ou l'historique.**
 
@@ -123,7 +113,7 @@ Le JWT est stocké dans `localStorage` puis ajouté aux URLs de streaming et de 
 
 Correction recommandée : privilégier un cookie `HttpOnly`, `Secure`, `SameSite` pour la session et utiliser un jeton média éphémère spécifique si nécessaire.
 
-### 10. OAuth sans paramètre state
+### 9. OAuth sans paramètre state
 
 **Risque : login-CSRF.**
 
@@ -133,7 +123,7 @@ Les flux OAuth 42 et Google ne génèrent ni ne vérifient de paramètre `state`
 
 Correction recommandée : générer un `state` cryptographiquement aléatoire, le lier à une session/cookie de courte durée et vérifier sa valeur au callback.
 
-### 11. Comptes de démonstration aux identifiants publics
+### 10. Comptes de démonstration aux identifiants publics
 
 **Risque : accès non autorisé si le seed est utilisé hors développement.**
 
@@ -170,4 +160,3 @@ Mettre à jour les dépendances transitives avant d'utiliser `file-type` pour s�
 5. Déclencher le téléchargement automatique des sous-titres.
 6. Unifier la validation des mots de passe et ajouter les protections HTTP/OAuth.
 7. Déplacer TMDB côté backend et revoir les tokens média.
-8. Compléter les informations de film avec le producteur.

@@ -23,6 +23,7 @@ export interface Movie {
   genres?: string[]
   cast?: { name: string; character?: string; profilePath?: string }[]
   director?: string
+  producers?: string[]
   trailerUrl?: string
 }
 

@@ -192,6 +192,14 @@ export default function MovieDetailsModal({ movie, onClose, t, lang }: MovieDeta
                       <span className="text-white font-medium">{details.director}</span>
                     </div>
                   )}
+                  {details?.producers && details.producers.length > 0 && (
+                    <div>
+                      <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">
+                        {details.producers.length > 1 ? (t.producers || 'Producteurs') : (t.producer || 'Producteur')}
+                      </span>
+                      <span className="text-white font-medium">{details.producers.join(', ')}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="font-bold text-neutral-400 uppercase tracking-wider block mb-0.5">{t.language || 'Langue'}</span>
                     <span className="text-white font-medium">{getLanguageDisplayName(movie.language, lang) || t.notSpecified || 'Non renseigné'}</span>

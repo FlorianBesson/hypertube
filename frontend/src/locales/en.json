@@ -106,6 +106,8 @@
     "language": "Language",
     "playMovie": "Watch movie",
     "director": "Director",
+    "producer": "Producer",
+    "producers": "Producers",
     "budget": "Budget",
     "revenue": "Revenue",
     "cast": "Main cast",
